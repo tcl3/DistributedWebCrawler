@@ -6,11 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 
-namespace DistributedWebCrawler.Core.Extensions
+namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddQueue<TData, TQueue>(this IServiceCollection services) 
+        public static IServiceCollection AddQueue<TData, TQueue>(this IServiceCollection services)
             where TQueue : class, IProducerConsumer<TData>
         {
             services.AddSingleton<IProducerConsumer<TData>, TQueue>();
@@ -47,7 +47,7 @@ namespace DistributedWebCrawler.Core.Extensions
             where TClient : class
             where TSettings : class
         {
-            return services.AddHttpClient<TClient>((serviceProvider, client) => 
+            return services.AddHttpClient<TClient>((serviceProvider, client) =>
             {
                 var settings = serviceProvider.GetRequiredService<TSettings>();
                 clientConfigurationAction(client, settings);

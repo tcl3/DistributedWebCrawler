@@ -16,15 +16,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="6.0.0" />
     <PackageReference Include="NLog" Version="4.7.12" />
     <PackageReference Include="NLog.Extensions.Logging" Version="1.7.4" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DistributedWebCrawler.Extensions.DependencyInjection\DistributedWebCrawler.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\DistributedWebCrawler.Core\DistributedWebCrawler.Core.csproj" />
   </ItemGroup>
 
