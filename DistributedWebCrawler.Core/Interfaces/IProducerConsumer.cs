@@ -24,8 +24,8 @@ namespace DistributedWebCrawler.Core.Interfaces
     }
 
     public interface IConsumer<TData> : IProducerConsumer
-    {
-        bool TryDequeue([NotNullWhen(returnValue: true)] out TData? data);
+    {       
+        Task<TData> DequeueAsync();
     }
 
     public interface IProducerConsumer

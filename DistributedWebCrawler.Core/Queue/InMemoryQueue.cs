@@ -3,35 +3,47 @@ using Priority_Queue;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
     public class InMemoryQueue<TData> : IProducerConsumer<TData>
     {
         private readonly ConcurrentQueue<TData> _queue;
-        
+        private readonly ConcurrentQueue<TaskCompletionSource<TData>> _taskQueue;
+
         public InMemoryQueue()
         {
             _queue = new();
+            _taskQueue = new();
         }
 
         public int Count => _queue.Count;
 
         public void Enqueue(TData data)
         {
-            _queue.Enqueue(data);
+            if (_taskQueue.TryDequeue(out var taskCompletionSource))
+            {
+                taskCompletionSource.SetResult(data);
+            }
+            else 
+            { 
+                _queue.Enqueue(data);
+            }
         }
 
-        public bool TryDequeue([NotNullWhen(returnValue: true)] out TData? data)
+        public Task<TData> DequeueAsync()
         {
-            var result = _queue.TryDequeue(out data);
-
-            if (result && data == null)
+            if (_queue.TryDequeue(out var data))
             {
-                return false;
+                return Task.FromResult(data);
             }
 
-            return result;
+            var tcs = new TaskCompletionSource<TData>();
+
+            _taskQueue.Enqueue(tcs);
+
+            return tcs.Task;            
         }
     }
 }

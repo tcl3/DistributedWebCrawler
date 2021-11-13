@@ -41,48 +41,44 @@ namespace DistributedWebCrawler.Core.Components
         private async Task QueueLoop()
         {
             while (Status != CrawlerComponentStatus.Completed)
-            {
-                while (_consumer.TryDequeue(out var currentItem))
+            {                
+                await _itemSemaphore.WaitAsync().ConfigureAwait(false);
+
+                if (_isPaused)
                 {
-                    await _itemSemaphore.WaitAsync().ConfigureAwait(false);
-
-                    if (_isPaused)
-                    {
-                        await _pauseSemaphore.WaitAsync().ConfigureAwait(false);
-                    }
-
-                    var task = ProcessItemAsync(currentItem);
-
-                    _ = task.ContinueWith(r =>
-                    {
-                        _itemSemaphore.Release();
-                    }, TaskScheduler.Current);
-
-                    _ = task.ContinueWith(r =>
-                    {
-                        _logger.LogInformation($"Task canceled while processing queued item");
-                    }, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled, TaskScheduler.Current);
-
-                    _ = task.ContinueWith(r =>
-                    {
-                        var aggregateException = task.Exception;
-
-                        if (aggregateException == null || aggregateException.InnerExceptions.Count == 0)
-                        {
-                            _logger.LogError($"Uncaught exception in {Name}.");
-                            return;
-                        }
-
-                        foreach (var exception in aggregateException.InnerExceptions)
-                        {
-                            _logger.LogError(exception, $"Uncaught exception in {Name}");
-                        }
-
-                    }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Current);
+                    await _pauseSemaphore.WaitAsync().ConfigureAwait(false);
                 }
 
-                // FIXME: This is currently here to avoid hammering the CPU. Need to implement IQueue.DequeueAsync(TimeSpan timeout) rather than using TryDequeue() above.
-                await Task.Delay(1).ConfigureAwait(false);
+                var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
+
+                var task = ProcessItemAsync(currentItem);
+
+                _ = task.ContinueWith(r =>
+                {
+                    _itemSemaphore.Release();
+                }, TaskScheduler.Current);
+
+                _ = task.ContinueWith(r =>
+                {
+                    _logger.LogInformation($"Task canceled while processing queued item");
+                }, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled, TaskScheduler.Current);
+
+                _ = task.ContinueWith(r =>
+                {
+                    var aggregateException = task.Exception;
+
+                    if (aggregateException == null || aggregateException.InnerExceptions.Count == 0)
+                    {
+                        _logger.LogError($"Uncaught exception in {Name}.");
+                        return;
+                    }
+
+                    foreach (var exception in aggregateException.InnerExceptions)
+                    {
+                        _logger.LogError(exception, $"Uncaught exception in {Name}");
+                    }
+
+                }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Current);                
             }
         }
 
