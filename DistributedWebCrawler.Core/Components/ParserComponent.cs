@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    // FIXME: This should be backed by a thread pool. The current implementation doesn't allow for more than one document to be parsed at once.
     public class ParserComponent : AbstractTaskQueueComponent<ParseRequest>
     {
         private readonly IConsumer<ParseRequest> _parseRequestConsumer;
@@ -35,7 +34,12 @@ namespace DistributedWebCrawler.Core.Components
             _logger = logger;
         }
 
-        protected override async Task ProcessItemAsync(ParseRequest parseRequest)
+        protected override Task ProcessItemAsync(ParseRequest parseRequest)
+        {
+            return Task.Run(async () => await ProcessItemInternalAsync(parseRequest).ConfigureAwait(false));
+        }
+
+        private async Task ProcessItemInternalAsync(ParseRequest parseRequest)
         {
             var ingestResult = parseRequest.IngestResult;
             
@@ -60,7 +64,7 @@ namespace DistributedWebCrawler.Core.Components
 
                 _logger.LogDebug($"Request sent to scheduler for host {currentUri}");
 
-                _schedulerRequestProducer.Enqueue(schedulerRequest);                
+                _schedulerRequestProducer.Enqueue(schedulerRequest);
             }
         }
 
