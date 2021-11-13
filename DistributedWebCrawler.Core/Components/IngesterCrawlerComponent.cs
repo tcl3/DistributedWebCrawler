@@ -14,7 +14,6 @@ namespace DistributedWebCrawler.Core.Components
     public class IngesterCrawlerComponent : AbstractQueuedCrawlerComponent<IngestRequest>
     {
         private readonly IngesterSettings _ingesterSettings;
-        private readonly ICrawlerComponentInterrogator _crawlerComponentInterrogator;
         private readonly IProducer<ParseRequest> _parseRequestProducer;
         private readonly IRobotsCache _robotsCache;
         private readonly CrawlerClient _crawlerClient;
@@ -23,13 +22,11 @@ namespace DistributedWebCrawler.Core.Components
         public IngesterCrawlerComponent(IngesterSettings ingesterSettings,
             IConsumer<IngestRequest> ingestRequestConsumer, 
             IProducer<ParseRequest> parseRequestProducer,
-            ICrawlerComponentInterrogator crawlerComponentInterrogator, 
             IRobotsCache robotsCache,
             CrawlerClient crawlerClient,
             ILogger<IngesterCrawlerComponent> logger) 
             : base(ingestRequestConsumer, logger, nameof(IngesterCrawlerComponent), ingesterSettings.MaxDomainsToCrawl)
         {
-            _crawlerComponentInterrogator = crawlerComponentInterrogator;
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;
             _robotsCache = robotsCache;

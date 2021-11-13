@@ -19,21 +19,18 @@ namespace DistributedWebCrawler.Core.Components
         private readonly IConsumer<ParseRequest> _parseRequestConsumer;
 
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
-        private readonly ICrawlerComponentInterrogator _crawlerComponentInterrogator;
         private readonly ILinkParser _linkParser;
         private readonly ILogger<ParserCrawlerComponent> _logger;
 
         public ParserCrawlerComponent(ParserSettings parserSettings,
             IConsumer<ParseRequest> parseRequestConsumer,
             IProducer<SchedulerRequest> schedulerRequestProducer,
-            ICrawlerComponentInterrogator crawlerComponentInterrogator,
             ILinkParser linkParser,
             ILogger<ParserCrawlerComponent> logger)
             : base(parseRequestConsumer, logger, nameof(ParserCrawlerComponent), parserSettings.MaxConcurrentThreads)
         {
             _parseRequestConsumer = parseRequestConsumer;
             _schedulerRequestProducer = schedulerRequestProducer;
-            _crawlerComponentInterrogator = crawlerComponentInterrogator;
             _linkParser = linkParser;
             _logger = logger;
         }
@@ -108,9 +105,7 @@ namespace DistributedWebCrawler.Core.Components
         protected override CrawlerComponentStatus GetStatus()
         {
             // FIXME: Implement the correct status here to allow us to exit when done
-            return _schedulerRequestProducer.IsEmpty() && _crawlerComponentInterrogator.AllOtherComponentsAre(Name, CrawlerComponentStatus.Completed)
-                    ? CrawlerComponentStatus.Idle
-                    : CrawlerComponentStatus.Busy;
+            return CrawlerComponentStatus.Busy;
         }
     }
 }
