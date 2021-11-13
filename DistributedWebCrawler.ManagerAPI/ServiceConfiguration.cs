@@ -1,25 +1,11 @@
-﻿using AngleSharp.Html.Parser;
-using DistributedWebCrawler.Core.Components;
-using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Extensions;
-using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.LinkParser;
-using DistributedWebCrawler.Core.Model;
-using DistributedWebCrawler.Core.Queue;
+﻿using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Exceptions;
 using DistributedWebCrawler.Core.Seeding;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core;
-using DistributedWebCrawler.ManagerAPI;
+using DistributedWebCrawler.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.ManagerAPI
 {
@@ -33,55 +19,31 @@ namespace DistributedWebCrawler.ManagerAPI
                 loggingBuilder.AddNLog();
             });
 
-            services.ConfigureDependencies(configuration);
+            services.AddSeeder()
+                .WithComponent<SchedulerQueueSeeder>()
+                .WithSettings(configuration.GetSection("SeederSettings"));
 
-            services.AddSingleton<CrawlerHttpClientHandler>();
-            services.AddHttpClientWithSettings<CrawlerClient, CrawlerClientSettings>(ConfigureDefaultClient)
-                .ConfigurePrimaryHttpMessageHandler<CrawlerHttpClientHandler>();
-            services.AddHttpClientWithSettings<RobotsClient, CrawlerClientSettings>(ConfigureDefaultClient)
-                .ConfigurePrimaryHttpMessageHandler<CrawlerHttpClientHandler>();
+            services.AddScheduler()
+                .WithRobotsCache<InMemoryRobotsCache>(configuration.GetSection("RobotsTxtSettings"))
+                .WithInMemoryProducerConsumer()
+                .WithSettings(configuration.GetSection("SchedulerSettings"))
+                .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings"));
+
+            services.AddIngester()
+                .WithInMemoryProducerConsumer()
+                .WithSettings(configuration.GetSection("IngesterSettings"))
+                .WithClient<CrawlerClient>(configuration.GetSection("CrawlerClientSettings"));
+
+            services.AddParser()
+                .WithAngleSharpLinkParser()
+                .WithInMemoryProducerConsumer()
+                .WithSettings(configuration.GetSection("ParserSettings"));
+
+            services.AddSingleton<ICrawlerManager, CrawlerManager>();
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             return services.BuildServiceProvider();
-        }
-
-        private static IServiceCollection ConfigureDependencies(this IServiceCollection services, IConfiguration configuration)
-        {
-            return services
-                .AddSingleton<ISeederComponent, SchedulerQueueSeeder>()
-                .AddSingleton<ISeeder, CompositeSeeder>()
-                .AddSettings<CrawlerClientSettings>(configuration, "CrawlerClientSettings")
-                .AddSettings<IngesterSettings>(configuration, "IngesterSettings")
-                .AddSettings<SchedulerSettings>(configuration, "SchedulerSettings")
-                .AddSettings<ParserSettings>(configuration, "ParserSettings")
-                .AddSettings<RobotsTxtSettings>(configuration, "RobotsTxtSettings")
-                .AddSettings<SeederSettings>(configuration, "SeederSettings")
-                .AddSingleton<IRobotsCache, InMemoryRobotsCache>()
-                .AddSingleton<ICrawlerComponentInterrogator, CrawlerComponentInterrogator>()
-                .AddSingleton<ICrawlerManager, CrawlerManager>()
-                .AddSingleton<IHtmlParser>(s => new HtmlParser()) // TODO: Move into provider?
-                .AddSingleton<ILinkParser, AngleSharpLinkParser>()
-                .AddSingleton<ICrawlerComponent, IngesterCrawlerComponent>()
-                .AddSingleton<ICrawlerComponent, ParserCrawlerComponent>()
-                .AddSingleton<ICrawlerComponent, SchedulerCrawlerComponent>()
-                .AddSingleton(x => new Lazy<IEnumerable<ICrawlerComponent>>(() => x.GetServices<ICrawlerComponent>()))
-                .AddQueue<IngestRequest, InMemoryQueue<IngestRequest>>()
-                .AddQueue<ParseRequest, InMemoryQueue<ParseRequest>>()
-                .AddQueue<SchedulerRequest, InMemoryQueue<SchedulerRequest>>()
-                ;
-        }
-
-        private static void ConfigureDefaultClient(HttpClient client, CrawlerClientSettings settings)
-        {
-            if (settings.AcceptLanguage != null)
-            {
-                client.DefaultRequestHeaders.Add("Accept-Language", settings.AcceptLanguage);
-            }
-            client.DefaultRequestHeaders.Add("User-Agent", settings.UserAgentString);
-            client.DefaultRequestHeaders.Add("Accept", "*/*");
-            client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
         }
     }
 }
