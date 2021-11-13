@@ -36,6 +36,8 @@ This is the default `appsettings.json` with added comments.
     "FilePath": "./path/to/file",
   },
   "IngesterSettings": {
+    // Don't download links larger than this number of bytes
+    "MaxContentLengthBytes": 1048576,
     // The maximum number of domains that can be downloaded from in parallel
     "MaxDomainsToCrawl": 50,
     // The number of HTTP 3xx redirects that will be followed before failing

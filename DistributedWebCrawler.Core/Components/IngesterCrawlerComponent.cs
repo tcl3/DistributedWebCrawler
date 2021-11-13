@@ -86,6 +86,11 @@ namespace DistributedWebCrawler.Core.Components
                 throw new IngesterException($"Failed to retrieve URI {currentUri} . Status code {(int)response.StatusCode}");
             }
 
+            if (response.Content.Headers.ContentLength > _ingesterSettings.MaxContentLengthBytes)
+            {
+                throw new IngesterException($"Content length for {currentUri} ({response.Content.Headers.ContentLength} bytes) is longer than the maximum allowed ({_ingesterSettings.MaxContentLengthBytes} bytes)");
+            }
+
             var urlContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             _logger.LogDebug($"Successfully retrieved content for URI {currentUri}");

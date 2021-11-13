@@ -9,5 +9,8 @@ namespace DistributedWebCrawler.Core.Configuration
 
         [Range(1, 100)]
         public int MaxRedirects { get; set; }
+
+        [Range(1, long.MaxValue)]
+        public long? MaxContentLengthBytes { get; set; }
     }
 }
