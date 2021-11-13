@@ -11,21 +11,21 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class IngesterCrawlerComponent : AbstractQueuedCrawlerComponent<IngestRequest>
+    public class IngesterComponent : AbstractTaskQueueComponent<IngestRequest>
     {
         private readonly IngesterSettings _ingesterSettings;
         private readonly IProducer<ParseRequest> _parseRequestProducer;
         private readonly IRobotsCache _robotsCache;
         private readonly CrawlerClient _crawlerClient;
-        private readonly ILogger<IngesterCrawlerComponent> _logger;
+        private readonly ILogger<IngesterComponent> _logger;
         
-        public IngesterCrawlerComponent(IngesterSettings ingesterSettings,
+        public IngesterComponent(IngesterSettings ingesterSettings,
             IConsumer<IngestRequest> ingestRequestConsumer, 
             IProducer<ParseRequest> parseRequestProducer,
             IRobotsCache robotsCache,
             CrawlerClient crawlerClient,
-            ILogger<IngesterCrawlerComponent> logger) 
-            : base(ingestRequestConsumer, logger, nameof(IngesterCrawlerComponent), ingesterSettings.MaxDomainsToCrawl)
+            ILogger<IngesterComponent> logger) 
+            : base(ingestRequestConsumer, logger, nameof(IngesterComponent), ingesterSettings.MaxDomainsToCrawl)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;

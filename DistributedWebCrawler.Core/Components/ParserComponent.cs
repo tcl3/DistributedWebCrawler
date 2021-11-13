@@ -14,20 +14,20 @@ using System.Threading.Tasks;
 namespace DistributedWebCrawler.Core.Components
 {
     // FIXME: This should be backed by a thread pool. The current implementation doesn't allow for more than one document to be parsed at once.
-    public class ParserCrawlerComponent : AbstractQueuedCrawlerComponent<ParseRequest>
+    public class ParserComponent : AbstractTaskQueueComponent<ParseRequest>
     {
         private readonly IConsumer<ParseRequest> _parseRequestConsumer;
 
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly ILinkParser _linkParser;
-        private readonly ILogger<ParserCrawlerComponent> _logger;
+        private readonly ILogger<ParserComponent> _logger;
 
-        public ParserCrawlerComponent(ParserSettings parserSettings,
+        public ParserComponent(ParserSettings parserSettings,
             IConsumer<ParseRequest> parseRequestConsumer,
             IProducer<SchedulerRequest> schedulerRequestProducer,
             ILinkParser linkParser,
-            ILogger<ParserCrawlerComponent> logger)
-            : base(parseRequestConsumer, logger, nameof(ParserCrawlerComponent), parserSettings.MaxConcurrentThreads)
+            ILogger<ParserComponent> logger)
+            : base(parseRequestConsumer, logger, nameof(ParserComponent), parserSettings.MaxConcurrentThreads)
         {
             _parseRequestConsumer = parseRequestConsumer;
             _schedulerRequestProducer = schedulerRequestProducer;

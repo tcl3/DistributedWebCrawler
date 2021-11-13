@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public abstract class AbstractQueuedCrawlerComponent<TData> : AbstractCrawlerComponent
+    public abstract class AbstractTaskQueueComponent<TData> : AbstractComponent
     {
         private readonly IConsumer<TData> _consumer;
         private readonly ILogger _logger;        
@@ -17,7 +17,7 @@ namespace DistributedWebCrawler.Core.Components
         
         private readonly SemaphoreSlim _pauseSemaphore;
 
-        protected AbstractQueuedCrawlerComponent(IConsumer<TData> consumer, ILogger logger,
+        protected AbstractTaskQueueComponent(IConsumer<TData> consumer, ILogger logger,
             string name, int maxConcurrentItems) : base(logger, name)
         {
             _consumer = consumer;

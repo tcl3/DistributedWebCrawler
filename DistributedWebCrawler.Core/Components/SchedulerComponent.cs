@@ -12,7 +12,7 @@ using Priority_Queue;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class SchedulerCrawlerComponent : AbstractQueuedCrawlerComponent<SchedulerRequest>
+    public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest>
     {
         private class SchedulerQueueEntry
         {
@@ -27,7 +27,7 @@ namespace DistributedWebCrawler.Core.Components
         }
 
         private readonly SchedulerSettings _schedulerSettings;
-        private readonly ILogger<SchedulerCrawlerComponent> _logger;
+        private readonly ILogger<SchedulerComponent> _logger;
         private readonly IRobotsCache _robotsCache;
         private readonly IProducer<IngestRequest> _ingestRequestProducer;
 
@@ -35,12 +35,12 @@ namespace DistributedWebCrawler.Core.Components
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _visitedPathsLookup;
         private readonly SimplePriorityQueue<SchedulerQueueEntry, DateTimeOffset> _nextPathForHostQueue;
 
-        public SchedulerCrawlerComponent(SchedulerSettings schedulerSettings,
+        public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest> consumer,
-            ILogger<SchedulerCrawlerComponent> logger,
+            ILogger<SchedulerComponent> logger,
             IRobotsCache robotsCache,
             IProducer<IngestRequest> ingestRequestProducer)
-            : base(consumer, logger, nameof(SchedulerCrawlerComponent), schedulerSettings.MaxConcurrentRobotsRequests)
+            : base(consumer, logger, nameof(SchedulerComponent), schedulerSettings.MaxConcurrentRobotsRequests)
         {
             _schedulerSettings = schedulerSettings;
             _logger = logger;

@@ -13,7 +13,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
     {
         public IngesterBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<ICrawlerComponent, IngesterCrawlerComponent>();
+            services.AddSingleton<ICrawlerComponent, IngesterComponent>();
         }
     }
 }

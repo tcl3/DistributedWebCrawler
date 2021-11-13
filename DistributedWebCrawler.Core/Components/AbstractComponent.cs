@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DistributedWebCrawler.Core.Compontents
 {
-    public abstract class AbstractCrawlerComponent : ICrawlerComponent
+    public abstract class AbstractComponent : ICrawlerComponent
     {
         private readonly ILogger _logger;
 
@@ -14,7 +14,7 @@ namespace DistributedWebCrawler.Core.Compontents
 
         private readonly TaskCompletionSource _taskCompletionSource;
         
-        protected AbstractCrawlerComponent(ILogger logger, string name)
+        protected AbstractComponent(ILogger logger, string name)
         {
             _logger = logger;
             Name = name;

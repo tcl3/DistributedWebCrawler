@@ -14,7 +14,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
     {
         public SchedulerBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<ICrawlerComponent, SchedulerCrawlerComponent>();
+            services.AddSingleton<ICrawlerComponent, SchedulerComponent>();
         }
 
         ISchedulerBuilder ISchedulerBuilder.WithRobotsCache<TCache>(IConfiguration robotsTxtConfiguration)

@@ -11,7 +11,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
     {
         public ParserBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<ICrawlerComponent, ParserCrawlerComponent>();
+            services.AddSingleton<ICrawlerComponent, ParserComponent>();
         }
 
         IParserBuilder IParserBuilder.WithLinkParser<TParser>()
