@@ -7,6 +7,9 @@ EXPOSE 80
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 COPY ["DistributedWebCrawler.ManagerAPI/DistributedWebCrawler.ManagerAPI.csproj", "DistributedWebCrawler.ManagerAPI/"]
+COPY ["DistributedWebCrawler.Extensions.RabbitMQ/DistributedWebCrawler.Extensions.RabbitMQ.csproj", "DistributedWebCrawler.Extensions.RabbitMQ/"]
+COPY ["DistributedWebCrawler.Core/DistributedWebCrawler.Core.csproj", "DistributedWebCrawler.Core/"]
+COPY ["DistributedWebCrawler.Extensions.DependencyInjection/DistributedWebCrawler.Extensions.DependencyInjection.csproj", "DistributedWebCrawler.Extensions.DependencyInjection/"]
 RUN dotnet restore "DistributedWebCrawler.ManagerAPI/DistributedWebCrawler.ManagerAPI.csproj"
 COPY . .
 WORKDIR "/src/DistributedWebCrawler.ManagerAPI"

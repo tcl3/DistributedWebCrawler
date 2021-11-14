@@ -8,10 +8,11 @@ namespace DistributedWebCrawler.ManagerAPI
 
             var configuration = new ConfigurationBuilder()
                            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                           .AddEnvironmentVariables()
                            .Build();
             
             // Add services to the container.
-            ServiceConfiguration.ConfigureServices(builder.Services, configuration.GetSection("CrawlerSettings"));
+            ServiceConfiguration.ConfigureServices(builder.Services, configuration);
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

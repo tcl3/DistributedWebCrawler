@@ -28,6 +28,13 @@
   <ItemGroup>
     <ProjectReference Include="..\DistributedWebCrawler.Core\DistributedWebCrawler.Core.csproj" />
     <ProjectReference Include="..\DistributedWebCrawler.Extensions.DependencyInjection\DistributedWebCrawler.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="..\DistributedWebCrawler.Extensions.RabbitMQ\DistributedWebCrawler.Extensions.RabbitMQ.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
