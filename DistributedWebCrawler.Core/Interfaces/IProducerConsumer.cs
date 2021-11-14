@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
-    public interface IProducerConsumer<TData> : IProducer<TData>, IConsumer<TData>, IProducerConsumer
+    public interface IProducerConsumer<TData> : IProducer<TData>, IConsumer<TData>
     {
 
     }
 
-    public interface IProducerConsumer<TData, TPriority> : IProducer<TData, TPriority>, IConsumer<TData>, IProducerConsumer
+    public interface IProducerConsumer<TData, TPriority> : IProducer<TData, TPriority>, IConsumer<TData>
     {
 
     }
@@ -18,18 +18,13 @@ namespace DistributedWebCrawler.Core.Interfaces
         void Enqueue(TData data, TPriority priority);
     }
 
-    public interface IProducer<TData> : IProducerConsumer
+    public interface IProducer<TData>
     {
         void Enqueue(TData data);
     }
 
-    public interface IConsumer<TData> : IProducerConsumer
+    public interface IConsumer<TData>
     {       
         Task<TData> DequeueAsync();
-    }
-
-    public interface IProducerConsumer
-    {
-        int Count { get; }
     }
 }
