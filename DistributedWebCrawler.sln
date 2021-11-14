@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.Conso
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.Extensions.DependencyInjection", "DistributedWebCrawler.Extensions.DependencyInjection\DistributedWebCrawler.Extensions.DependencyInjection.csproj", "{B08DBE5D-FE9F-44F2-BC64-759025135D30}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedWebCrawler.ManagerAPI", "DistributedWebCrawler.ManagerAPI\DistributedWebCrawler.ManagerAPI.csproj", "{CDD7CBCE-B4AC-4D06-B934-2C9BCADE2B21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.ManagerAPI", "DistributedWebCrawler.ManagerAPI\DistributedWebCrawler.ManagerAPI.csproj", "{CDD7CBCE-B4AC-4D06-B934-2C9BCADE2B21}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.Extensions.RabbitMQ", "DistributedWebCrawler.Extensions.RabbitMQ\DistributedWebCrawler.Extensions.RabbitMQ.csproj", "{0258B73D-71FB-4210-BBA1-CA6290B5129E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{CDD7CBCE-B4AC-4D06-B934-2C9BCADE2B21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDD7CBCE-B4AC-4D06-B934-2C9BCADE2B21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDD7CBCE-B4AC-4D06-B934-2C9BCADE2B21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0258B73D-71FB-4210-BBA1-CA6290B5129E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0258B73D-71FB-4210-BBA1-CA6290B5129E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0258B73D-71FB-4210-BBA1-CA6290B5129E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0258B73D-71FB-4210-BBA1-CA6290B5129E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

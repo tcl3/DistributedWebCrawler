@@ -1,9 +1,16 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace DistributedWebCrawler.Core.Model
 {
     public class IngestRequest
     {
+        [JsonConstructor]
+        public IngestRequest()
+        {
+            Uri = default!;
+        }
+
         public IngestRequest(Uri host)
         {
             if (host == null || !host.IsAbsoluteUri)
@@ -13,7 +20,8 @@ namespace DistributedWebCrawler.Core.Model
 
             Uri = host;
         }
-        public Uri Uri { get; }
+
+        public Uri Uri { get; set; }
 
         public int CurrentCrawlDepth { get; set; }
         public bool MaxDepthReached { get; set; }
