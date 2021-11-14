@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.Manag
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.Extensions.RabbitMQ", "DistributedWebCrawler.Extensions.RabbitMQ\DistributedWebCrawler.Extensions.RabbitMQ.csproj", "{0258B73D-71FB-4210-BBA1-CA6290B5129E}"
 EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{15FE459C-83B5-4DCA-B22F-D7C779697843}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{0258B73D-71FB-4210-BBA1-CA6290B5129E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0258B73D-71FB-4210-BBA1-CA6290B5129E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0258B73D-71FB-4210-BBA1-CA6290B5129E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15FE459C-83B5-4DCA-B22F-D7C779697843}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15FE459C-83B5-4DCA-B22F-D7C779697843}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15FE459C-83B5-4DCA-B22F-D7C779697843}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15FE459C-83B5-4DCA-B22F-D7C779697843}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

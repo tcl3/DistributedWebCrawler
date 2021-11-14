@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  distributedwebcrawler.managerapi:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "80"

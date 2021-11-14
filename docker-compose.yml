@@ -1,0 +1,42 @@
+version: '3.4'
+
+services:
+  distributedwebcrawler.managerapi:
+    image: ${DOCKER_REGISTRY-}distributedwebcrawlermanagerapi
+    container_name: 'ManagerAPI'
+    build:
+      context: .
+      dockerfile: DistributedWebCrawler.ManagerAPI/Dockerfile
+    ports:
+      - 58081:80
+    environment:
+        RABBITMQ_HOSTNAME: "rabbitmq"
+        #RABBITMQ_PORT: "5672"
+        #RABBITMQ_USERNAME: "guest"
+        #RABBITMQ_PASSWORD: ""
+    networks:
+       - rabbitmq_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    #ports:
+      #- 127.0.0.1:5671:5672
+      #- 127.0.0.1:15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    networks:
+        - rabbitmq_net
+    healthcheck:
+        test: ["CMD", "wget", "-nv -t1 --spider", "http://localhost:15672"]
+        interval: 10s
+        timeout: 10s
+        retries: 10
+
+networks:
+  rabbitmq_net:
+    driver: bridge
