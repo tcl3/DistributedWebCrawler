@@ -31,44 +31,14 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
             Services.AddSettings<TSettings>(configuration);
             return this;
         }
-    }
 
-    public abstract class ComponentBuilder<TRequest, TResult, TSettings> 
-        : IComponentBuilder<TRequest, TResult, TSettings>
-        where TRequest : class
-        where TResult : class
-        where TSettings : class
-    {
-        public ComponentBuilder(IServiceCollection services)
+        IComponentBuilder<TSettings> IComponentBuilder<TSettings>.WithClient<TClient>(IConfiguration configuration)
         {
-            Services = services;
-        }
+            Services.AddSettings<CrawlerClientSettings>(configuration);
+            Services.AddSingleton<CrawlerHttpClientHandler>();
+            Services.AddHttpClientWithSettings<TClient, CrawlerClientSettings>(ConfigureClient)
+                .ConfigurePrimaryHttpMessageHandler<CrawlerHttpClientHandler>();
 
-        public IServiceCollection Services { get; }
-
-        public IComponentBuilder<TRequest, TResult, TSettings> WithConsumer<TConsumer>() 
-            where TConsumer : class, IConsumer<TRequest>
-        {
-            Services.AddSingleton<TConsumer>();
-            return this;
-        }
-
-        public IComponentBuilder<TRequest, TResult, TSettings> WithProducer<TProducer>() 
-            where TProducer : class, IProducer<TResult>
-        {
-            Services.AddSingleton<TProducer>();
-            return this;
-        }
-
-        public IComponentBuilder<TRequest, TResult, TSettings> WithSettings(TSettings settings)
-        {
-            Services.AddSingleton<TSettings>(settings);
-            return this;
-        }
-
-        public IComponentBuilder<TRequest, TResult, TSettings> WithSettings(IConfiguration configuration)
-        {
-            Services.AddSettings<TSettings>(configuration);
             return this;
         }
 
@@ -83,15 +53,17 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
             client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
             client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
         }
+    }
 
-        IComponentBuilder<TRequest, TResult, TSettings> IComponentBuilder<TRequest, TResult, TSettings>.WithClient<TClient>(IConfiguration configuration)
+    public abstract class ComponentBuilder<TRequest, TResult, TSettings> : ComponentBuilder<TSettings>
+        where TRequest : class
+        where TResult : class
+        where TSettings : class
+    {
+        public ComponentBuilder(IServiceCollection services) : base(services)
         {
-            Services.AddSettings<CrawlerClientSettings>(configuration);
-            Services.AddSingleton<CrawlerHttpClientHandler>();
-            Services.AddHttpClientWithSettings<TClient, CrawlerClientSettings>(ConfigureClient)
-                .ConfigurePrimaryHttpMessageHandler<CrawlerHttpClientHandler>();
-
-            return this;
+            services.AddSingleton<IProducer<TResult>>(x => x.GetRequiredService<IProducerConsumer<TResult>>());
+            services.AddSingleton<IConsumer<TRequest>>(x => x.GetRequiredService<IProducerConsumer<TRequest>>());
         }
     }
 }

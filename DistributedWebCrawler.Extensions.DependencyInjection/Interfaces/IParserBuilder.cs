@@ -4,7 +4,7 @@ using DistributedWebCrawler.Core.Model;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection.Interfaces
 {
-    public interface IParserBuilder : IComponentBuilder<ParseRequest, SchedulerRequest, ParserSettings>
+    public interface IParserBuilder : IComponentBuilder<ParserSettings>
     {
         IParserBuilder WithLinkParser<TParser>() where TParser : class, ILinkParser;
     }

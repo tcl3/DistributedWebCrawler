@@ -29,25 +29,23 @@ namespace DistributedWebCrawler.Core
                 loggingBuilder.AddNLog();
             });
 
-
             services.AddSeeder()
                 .WithComponent<SchedulerQueueSeeder>()
                 .WithSettings(configuration.GetSection("SeederSettings"));
 
+            services.AddInMemoryProducerConsumer();
+
             services.AddScheduler()
                 .WithRobotsCache<InMemoryRobotsCache>(configuration.GetSection("RobotsTxtSettings"))
-                .WithInMemoryProducerConsumer()
                 .WithSettings(configuration.GetSection("SchedulerSettings"))
                 .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings"));
 
             services.AddIngester()
-                .WithInMemoryProducerConsumer()
                 .WithSettings(configuration.GetSection("IngesterSettings"))
                 .WithClient<CrawlerClient>(configuration.GetSection("CrawlerClientSettings"));
 
             services.AddParser()
                 .WithAngleSharpLinkParser()
-                .WithInMemoryProducerConsumer()
                 .WithSettings(configuration.GetSection("ParserSettings"));
 
             services.AddSingleton<ICrawlerManager, CrawlerManager>();

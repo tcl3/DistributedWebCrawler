@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection.Interfaces
 {
-    public interface ISchedulerBuilder : IComponentBuilder<SchedulerRequest, IngestRequest, SchedulerSettings>
+    public interface ISchedulerBuilder : IComponentBuilder<SchedulerSettings>
     {
         ISchedulerBuilder WithRobotsCache<TCache>(IConfiguration robotsTxtConfiguration) 
             where TCache : class, IRobotsCache;
