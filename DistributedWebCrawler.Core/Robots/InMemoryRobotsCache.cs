@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using NRobotsCore = Robots;
 
-namespace DistributedWebCrawler.Core.Exceptions
+namespace DistributedWebCrawler.Core.Robots
 {
     public class InMemoryRobotsCache : IRobotsCache
     {
@@ -66,11 +66,12 @@ namespace DistributedWebCrawler.Core.Exceptions
                 IRobots robots = new RobotsImpl(authority, robotsTxtString, userAgentString);
                 return robots;
 
-            } catch (HttpRequestException)
+            }
+            catch (HttpRequestException)
             {
                 // Returning null here means that we will not retry getting robots.txt every time we make a request for its domain
                 return null;
-            }            
+            }
         }
 
         private CacheEntry AddCacheEntry(string authority)

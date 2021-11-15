@@ -1,5 +1,4 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Exceptions;
 using DistributedWebCrawler.Core.Seeding;
 using NLog.Extensions.Logging;
 using System.Text;
@@ -7,6 +6,7 @@ using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.RabbitMQ;
+using DistributedWebCrawler.Core.Robots;
 
 namespace DistributedWebCrawler.ManagerAPI
 {

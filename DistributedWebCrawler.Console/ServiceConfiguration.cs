@@ -1,5 +1,4 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Exceptions;
 using DistributedWebCrawler.Core.Seeding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +8,7 @@ using System;
 using System.Text;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.DependencyInjection;
+using DistributedWebCrawler.Core.Robots;
 
 namespace DistributedWebCrawler.Core
 {
