@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Enums;
 using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace DistributedWebCrawler.Console
 
             var crawlerManager = ServiceConfiguration.CreateCrawler(configuration);
 
-           await crawlerManager.StartAsync();
+           await crawlerManager.StartAsync(CrawlerStartState.Paused);
 
             // For testing pause / resume functionality
             //await Task.Delay(5000);

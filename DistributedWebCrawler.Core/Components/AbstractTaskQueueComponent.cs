@@ -24,7 +24,7 @@ namespace DistributedWebCrawler.Core.Components
             _logger = logger;
 
             _itemSemaphore = new SemaphoreSlim(maxConcurrentItems);
-            _pauseSemaphore = new SemaphoreSlim(1);
+            _pauseSemaphore = new SemaphoreSlim(0);
         }
 
         protected override CrawlerComponentStatus GetStatus()

@@ -5,7 +5,7 @@ namespace DistributedWebCrawler.Core.Interfaces
 {
     public interface ICrawlerComponent
     {
-        Task StartAsync();
+        Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running);
         Task PauseAsync();
         Task ResumeAsync();
         Task WaitUntilCompletedAsync();

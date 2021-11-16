@@ -38,7 +38,7 @@ namespace DistributedWebCrawler.Core.Compontents
 
         public string Name { get; }
 
-        public Task StartAsync()
+        public Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
         {
             if (IsStarted)
             {
@@ -48,8 +48,14 @@ namespace DistributedWebCrawler.Core.Compontents
             IsStarted = true;
 
             _logger.LogInformation($"{Name} component started");
+            
+            if (startState == CrawlerStartState.Paused)
+            {
+                var pauseTask = PauseAsync();
+                pauseTask.Wait();
+            }
 
-            ComponentStartAsync()
+            _ = ComponentStartAsync()
                 .ContinueWith(t => 
                 {
                     if (t.IsCanceled) _taskCompletionSource.SetCanceled();

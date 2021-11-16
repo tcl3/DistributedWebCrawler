@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
+﻿using DistributedWebCrawler.Core.Enums;
+using DistributedWebCrawler.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace DistributedWebCrawler.Core
             _logger = logger;
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
         {
             if (_isStarted)
             {
@@ -38,7 +39,7 @@ namespace DistributedWebCrawler.Core
                 _isSeeded = true;
             }            
 
-            await ForEachComponent(c => c.StartAsync()).ConfigureAwait(false);
+            await ForEachComponent(c => c.StartAsync(startState)).ConfigureAwait(false);
         }
 
         public Task PauseAsync()
