@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core
 {
-    public class CrawlerManager : ICrawlerManager
+    public class InMemoryCrawlerManager : ICrawlerManager
     {
         private readonly IEnumerable<ICrawlerComponent> _crawlerComponents;
         private readonly ISeeder _seeder;
-        private readonly ILogger<CrawlerManager> _logger;
+        private readonly ILogger<InMemoryCrawlerManager> _logger;
 
         private bool _isSeeded;
         private bool _isStarted;
-        public CrawlerManager(IEnumerable<ICrawlerComponent> crawlerComponents,
-            ISeeder seeder, ILogger<CrawlerManager> logger)
+        public InMemoryCrawlerManager(IEnumerable<ICrawlerComponent> crawlerComponents,
+            ISeeder seeder, ILogger<InMemoryCrawlerManager> logger)
         {
             _crawlerComponents = crawlerComponents;
             

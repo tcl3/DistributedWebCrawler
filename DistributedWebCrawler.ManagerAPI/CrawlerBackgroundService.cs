@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
+﻿using DistributedWebCrawler.Core.Enums;
+using DistributedWebCrawler.Core.Interfaces;
 
 namespace DistributedWebCrawler.ManagerAPI
 {
@@ -11,13 +12,10 @@ namespace DistributedWebCrawler.ManagerAPI
             _crawlerManager = crawlerManager;
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            await _crawlerManager.StartAsync();
-            
-            // Start the crawler in the paused state
-            // TODO: Add a call to the CrawlerManager to initialize the crawler without starting it.
-            await _crawlerManager.PauseAsync();
+            _crawlerManager.StartAsync(CrawlerStartState.Paused);
+            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

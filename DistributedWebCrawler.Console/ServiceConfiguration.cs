@@ -48,7 +48,7 @@ namespace DistributedWebCrawler.Core
                 .WithAngleSharpLinkParser()
                 .WithSettings(configuration.GetSection("ParserSettings"));
 
-            services.AddSingleton<ICrawlerManager, CrawlerManager>();
+            services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 

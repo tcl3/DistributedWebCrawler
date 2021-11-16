@@ -26,8 +26,6 @@ namespace DistributedWebCrawler.ManagerAPI
                 .WithComponent<SchedulerQueueSeeder>()
                 .WithSettings(crawlerConfiguration.GetSection("SeederSettings"));
 
-            services.AddRabbitMQProducerConsumer(configuration);
-
             services.AddScheduler()
                 .WithRobotsCache<InMemoryRobotsCache>(crawlerConfiguration.GetSection("RobotsTxtSettings"))
                 .WithSettings(crawlerConfiguration.GetSection("SchedulerSettings"))
@@ -41,8 +39,10 @@ namespace DistributedWebCrawler.ManagerAPI
                 .WithAngleSharpLinkParser()
                 .WithSettings(crawlerConfiguration.GetSection("ParserSettings"));
 
-            services.AddSingleton<ICrawlerManager, CrawlerManager>();
+            services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
 
+            services.AddRabbitMQProducerConsumer(configuration);
+            services.AddRabbitMQManager(configuration);
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             return services.BuildServiceProvider();

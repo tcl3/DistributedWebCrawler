@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
@@ -7,10 +8,9 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddRabbitMQProducerConsumer(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddSingleton(typeof(IProducerConsumer<>), typeof(RabbitMQProducerConsumer<>));
 
+        private static IServiceCollection AddRabbitMQConnection(this IServiceCollection services, IConfiguration configuration)
+        {
             services.AddSingleton<IConnectionFactory>(_ =>
             {
                 var connectionFactory = new ConnectionFactory
@@ -45,12 +45,26 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 return connectionFactory;
             });
 
-            services.AddSingleton<IConnection>(s =>
-            {
-                var connectionFactory = s.GetRequiredService<IConnectionFactory>();
-                return connectionFactory.CreateConnection();
-            });
+            services.AddSingleton<IPersistentConnection, RabbitMQPersistentConnection>();
 
+            return services;
+        }
+
+        public static IServiceCollection AddRabbitMQProducerConsumer(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddRabbitMQConnection(configuration);
+
+            services.AddSingleton(typeof(IProducerConsumer<>), typeof(RabbitMQProducerConsumer<>));
+           
+            services.Decorate<ICrawlerComponent, RabbitMQComponentDecorator>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddRabbitMQManager(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddRabbitMQConnection(configuration);
+            services.Decorate<ICrawlerManager, RabbitMQCrawlerManagerDecorator>();
             return services;
         }
     }
