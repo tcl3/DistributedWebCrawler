@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Priority_Queue;
+using Nager.PublicSuffix;
 
 namespace DistributedWebCrawler.Core.Components
 {
@@ -16,12 +17,14 @@ namespace DistributedWebCrawler.Core.Components
     {
         private class SchedulerQueueEntry
         {
-            public Uri Uri { get; set; }
-            public SchedulerRequest SchedulerRequest { get; set; }
+            public Uri Uri { get;  }
+            public string Domain { get; }
+            public SchedulerRequest SchedulerRequest { get; }
 
-            public SchedulerQueueEntry(Uri uri, SchedulerRequest schedulerRequest)
+            public SchedulerQueueEntry(Uri uri, string domain, SchedulerRequest schedulerRequest)
             {
                 Uri = uri;
+                Domain = domain;
                 SchedulerRequest = schedulerRequest;
             }
         }
@@ -33,7 +36,10 @@ namespace DistributedWebCrawler.Core.Components
 
         private readonly ConcurrentDictionary<Uri, bool> _visitedUris;
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _visitedPathsLookup;
+        private readonly ConcurrentDictionary<string, IEnumerable<Uri>> _queuedPathsLookup;
         private readonly SimplePriorityQueue<SchedulerQueueEntry, DateTimeOffset> _nextPathForHostQueue;
+
+        private readonly IDomainParser _domainParser;
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest> consumer,
@@ -49,7 +55,10 @@ namespace DistributedWebCrawler.Core.Components
 
             _visitedUris = new();
             _visitedPathsLookup = new();
+            _queuedPathsLookup = new();
             _nextPathForHostQueue = new();
+
+            _domainParser = new DomainParser(new WebTldRuleProvider());
         }
 
         protected override Task ComponentStartAsync()
@@ -89,7 +98,7 @@ namespace DistributedWebCrawler.Core.Components
                         _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
                     }
 
-                    AddNextUriToSchedulerQueue(schedulerRequest);
+                    AddNextUriToSchedulerQueue(entry.Domain, schedulerRequest);
                 }
 
                 // FIXME: This is currently here to avoid hammering the CPU. We should probably use a mutex/semaphore with an appropriate timeout.
@@ -107,11 +116,16 @@ namespace DistributedWebCrawler.Core.Components
             }
 
             var visitedPathsForHost = Enumerable.Empty<string>();
-            _visitedPathsLookup.AddOrUpdate(schedulerRequest.Uri.ToString(), schedulerRequest.Paths,
+            
+            var domain = _domainParser.Parse(schedulerRequest.Uri).RegistrableDomain;
+            var firstTimeVisit = !_visitedPathsLookup.Any(x => x.Key.EndsWith(domain, StringComparison.OrdinalIgnoreCase));
+
+            _visitedPathsLookup.AddOrUpdate(schedulerRequest.Uri.Authority, schedulerRequest.Paths,
                 (key, oldValue) =>
                 {
                     visitedPathsForHost = oldValue;
-                    return oldValue.Union(schedulerRequest.Paths);
+                    var union = oldValue.Union(schedulerRequest.Paths);
+                    return union;
                 });
 
             var pathsToVisit = schedulerRequest.Paths.Except(visitedPathsForHost);
@@ -143,36 +157,48 @@ namespace DistributedWebCrawler.Core.Components
 
             schedulerRequest.Paths = pathsToVisit;
 
-            if (!_nextPathForHostQueue.Any(x => x.Uri.Host == schedulerRequest.Uri.Host))
+            var urisToVisit = pathsToVisit.Select(path => new Uri(schedulerRequest.Uri, path)).ToArray();
+
+            var alreadyQueued = false;
+            _queuedPathsLookup.AddOrUpdate(domain, urisToVisit, (key, oldValue) => 
             {
-                AddNextUriToSchedulerQueue(schedulerRequest, first: true);
-            }
+                alreadyQueued = true;
+                return oldValue.Union(urisToVisit);
+            });
+
+            if (!alreadyQueued) 
+            {
+                AddNextUriToSchedulerQueue(domain, schedulerRequest, firstTimeVisit);
+            }                
         }
 
-        private void AddNextUriToSchedulerQueue(SchedulerRequest schedulerRequest, bool first = false)
+        private void AddNextUriToSchedulerQueue(string domain, SchedulerRequest schedulerRequest, bool first = false)
         {
-            var nextPathForHost = schedulerRequest.Paths.First();
-            var pathsToQueue = schedulerRequest.Paths;
-
-            if (!first)
+            if (!_queuedPathsLookup.TryGetValue(domain, out var urisToVisit) || !urisToVisit.Any())
             {
-                pathsToQueue = pathsToQueue.Skip(1);
+                return;
             }
 
-            schedulerRequest.Paths = pathsToQueue;
+            var nextUriToVisit = urisToVisit.First();
+            urisToVisit = urisToVisit.Skip(1);
 
-            if (schedulerRequest.Paths.Any())
+            var queueEntry = new SchedulerQueueEntry(nextUriToVisit, domain, schedulerRequest);
+                
+            var notBefore = DateTimeOffset.Now;
+            if (!first)
             {
-                var queueEntry = new SchedulerQueueEntry(new Uri(schedulerRequest.Uri, nextPathForHost), schedulerRequest);
-                var notBefore = DateTimeOffset.Now;
-                if (!first)
-                {
-                    notBefore = notBefore.AddMilliseconds(_schedulerSettings.SameDomainCrawlDelayMillis);
-                }
+                notBefore = notBefore.AddMilliseconds(_schedulerSettings.SameDomainCrawlDelayMillis);
+            }
 
-                _nextPathForHostQueue.Enqueue(queueEntry, notBefore);
-
-                _visitedPathsLookup.AddOrUpdate(schedulerRequest.Uri.ToString(), pathsToQueue, (key, oldValue) => oldValue.Union(schedulerRequest.Paths).ToHashSet());
+            _nextPathForHostQueue.Enqueue(queueEntry, notBefore);                
+            
+            if (urisToVisit.Any())
+            {
+                _queuedPathsLookup.AddOrUpdate(domain, urisToVisit, (key, oldValue) => urisToVisit);
+            } 
+            else
+            {
+                _queuedPathsLookup.TryRemove(domain, out _);
             }
         }
     }
