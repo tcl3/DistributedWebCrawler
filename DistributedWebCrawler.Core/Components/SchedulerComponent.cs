@@ -122,7 +122,8 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     pathsToVisit = pathsToVisit.Where(path =>
                     {
-                        var allowed = robots.Allowed(path);
+                        var fullUri = new Uri(schedulerRequest.Uri, path);
+                        var allowed = robots.Allowed(fullUri);
 
                         if (!allowed)
                         {

@@ -8,6 +8,6 @@ namespace DistributedWebCrawler.Core.Interfaces
         Uri BaseUri { get; }
         int CrawlDelay { get; }
         IEnumerable<string> SitemapUrls { get; }
-        bool Allowed(string path);
+        bool Allowed(Uri uri);
     }
 }

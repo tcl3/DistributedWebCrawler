@@ -47,7 +47,6 @@ namespace DistributedWebCrawler.Core.Robots
             {
                 var robotsResponse = await _robotsClient.GetAsync(authorityUri).ConfigureAwait(false);
 
-
                 if (!robotsResponse.IsSuccessStatusCode)
                 {
                     return null;
@@ -102,32 +101,37 @@ namespace DistributedWebCrawler.Core.Robots
         {
             public Uri BaseUri => _robots.BaseUri;
 
-            public int CrawlDelay { get; }
+            private int? _crawlDelay;
+            public int CrawlDelay
+            {
+                get
+                {
+                    if (_crawlDelay == null)
+                    {
+                        _crawlDelay = _robots.GetCrawlDelay(_userAgent);
+                    }
+
+                    return _crawlDelay.Value;
+                } 
+            }
 
             public IEnumerable<string> SitemapUrls => _robots.GetSitemapUrls();
 
             private readonly NRobotsCore.Robots _robots;
+            private readonly string _userAgent;
+
+            private const string AllAgents = "*";
 
             public RobotsImpl(string host, string content, string? userAgent)
             {
                 _robots = new NRobotsCore.Robots();
                 _robots.LoadContent(content, host);
-
-                CrawlDelay = GetCrawlDelay(_robots, userAgent);
+                _userAgent = userAgent ?? AllAgents;
             }
 
-            private static int GetCrawlDelay(NRobotsCore.IRobots robots, string? userAgent)
+            public bool Allowed(Uri uri)
             {
-                var delayForUserAgent = string.IsNullOrWhiteSpace(userAgent)
-                    ? 0
-                    : robots.GetCrawlDelay(userAgent);
-
-                return delayForUserAgent > 0 ? delayForUserAgent : robots.GetCrawlDelay();
-            }
-
-            public bool Allowed(string path)
-            {
-                return _robots.Allowed(path);
+                return _robots.Allowed(uri, _userAgent);
             }
         }
     }
