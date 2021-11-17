@@ -1,0 +1,31 @@
+{
+ "rabbit_version": "3.6.6",
+ "users": [
+  {
+   "name": "crawler",
+   "password_hash": "FBaEpzwybLlxjmAJQo4T8LnRftdi7Ssi19AYb67vqDaBM4BB",
+   "hashing_algorithm": "rabbit_password_hashing_sha256",
+   "tags": ""
+  },
+  {
+   "name": "admin",
+   "password_hash": "LXM4exGxsR3cAv1VC6fj5ihZGDwfdwCuYVxbc4YgLGNBsdxc",
+   "hashing_algorithm": "rabbit_password_hashing_sha256",
+   "tags": "administrator"
+  }
+ ], 
+ "permissions": [
+  {
+   "user": "crawler",
+   "vhost": "\/",
+   "configure": ".*",
+   "write": ".*",
+   "read": ".*"
+  }
+ ],
+ "parameters": [],
+ "policies": [],
+ "queues": [],
+ "exchanges": [],
+ "bindings": []
+}

@@ -12,8 +12,8 @@ services:
     environment:
         RABBITMQ_HOSTNAME: "rabbitmq"
         #RABBITMQ_PORT: "5672"
-        #RABBITMQ_USERNAME: "guest"
-        #RABBITMQ_PASSWORD: ""
+        RABBITMQ_USERNAME: "crawler"
+        RABBITMQ_PASSWORD: "test"
     networks:
        - rabbitmq_net
     depends_on:
@@ -23,12 +23,15 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: 'rabbitmq'
-    #ports:
-      #- 127.0.0.1:5671:5672
-      #- 127.0.0.1:15672:15672
+    ports:
+      #- 127.0.0.1:5672:5672
+      - 127.0.0.1:15672:15672
+    environment:
+        RABBITMQ_PID_FILE: "/var/lib/rabbitmq/mnesia/rabbitmq"
     volumes:
+      - ./rabbitmq-config/:/etc/rabbitmq/
       - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
-      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq/
     networks:
         - rabbitmq_net
     healthcheck:
