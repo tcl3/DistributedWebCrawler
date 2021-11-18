@@ -42,8 +42,15 @@ namespace DistributedWebCrawler.Core.Components
         private async Task ProcessItemInternalAsync(ParseRequest parseRequest)
         {
             var ingestResult = parseRequest.IngestResult;
-            
-            var links = await ParseLinksAsync(parseRequest.Uri, ingestResult).ConfigureAwait(false);
+
+            var links = (await _linkParser.ParseLinksAsync(ingestResult).ConfigureAwait(false)).ToList();
+
+            if (!links.Any())
+            {
+                return;
+            }
+
+            _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri} path {ingestResult.Path}");
 
             var linksGroupedByHost = links.ToLookup(k => GetHostFromHref(k.Href, parseRequest.Uri), v => v.Href);
 
@@ -86,25 +93,7 @@ namespace DistributedWebCrawler.Core.Components
             return new(absoluteUri.GetLeftPart(UriPartial.Authority));
         }
 
-        private async Task<IEnumerable<Hyperlink>> ParseLinksAsync(Uri host, IngestResult ingestResult)
-        {
-            if (string.IsNullOrWhiteSpace(ingestResult.Content))
-            {
-                return Enumerable.Empty<Hyperlink>();
-            }
 
-            if (ingestResult.MediaType == MediaTypeNames.Text.Html)
-            {
-                var links = (await _linkParser.ParseLinksAsync(ingestResult).ConfigureAwait(false)).ToList();
-
-                _logger.LogDebug($"{links.Count} links successfully parsed from domain {host} path {ingestResult.Path}");
-
-                return links;
-            }
-
-            _logger.LogWarning($"Parsing of domain {host} path {ingestResult.Path} skipped due to unknown media type: {ingestResult.MediaType}");
-            return Enumerable.Empty<Hyperlink>();
-        }
 
         protected override CrawlerComponentStatus GetStatus()
         {

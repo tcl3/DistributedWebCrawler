@@ -18,11 +18,17 @@ namespace DistributedWebCrawler.Core.LinkParser
             var document = await _htmlParser.ParseDocumentAsync(content).ConfigureAwait(false);
 
             var hyperlinks = document.QuerySelectorAll("a")               
-                .Select(e => new Hyperlink 
-                { 
-                    Href = e.GetAttribute("href") ?? string.Empty,
+                .Select(e => {
+                    var linkText = (e.GetAttribute("href") ?? string.Empty).Trim().TrimEnd('#');
+                    if (linkText.EndsWith("#/"))
+                    {
+                        linkText = linkText.Substring(0, linkText.Length - 2) + '/';
+                    }
+                    return linkText;
                 })
-                .Where(h => !string.IsNullOrWhiteSpace(h.Href));
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct()
+                .Select(text => new Hyperlink {  Href = text });
 
             return hyperlinks;
         }

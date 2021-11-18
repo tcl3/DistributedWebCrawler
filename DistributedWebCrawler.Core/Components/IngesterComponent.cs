@@ -6,7 +6,10 @@ using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Mime;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
@@ -17,6 +20,8 @@ namespace DistributedWebCrawler.Core.Components
         private readonly IProducer<ParseRequest> _parseRequestProducer;
         private readonly CrawlerClient _crawlerClient;
         private readonly ILogger<IngesterComponent> _logger;
+
+        private static readonly HashSet<string> ParseableMediaTypes = new() { MediaTypeNames.Text.Html, MediaTypeNames.Text.Plain };
         
         public IngesterComponent(IngesterSettings ingesterSettings,
             IConsumer<IngestRequest> ingestRequestConsumer, 
@@ -48,6 +53,12 @@ namespace DistributedWebCrawler.Core.Components
             try
             {
                 var ingestResult = await IngestCurrentPathAsync(item.Uri, allowRedirects: true).ConfigureAwait(false);
+
+                if (string.IsNullOrWhiteSpace(ingestResult.Content) || (!ParseableMediaTypes.Contains(ingestResult.MediaType)))
+                {
+                    _logger.LogWarning($"Not passing {ingestResult.Path} to parser. Non parseable content type");
+                    return;
+                }
 
                 var parseRequest = new ParseRequest(item.Uri, ingestResult)
                 {
