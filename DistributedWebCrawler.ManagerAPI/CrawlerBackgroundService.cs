@@ -12,10 +12,9 @@ namespace DistributedWebCrawler.ManagerAPI
             _crawlerManager = crawlerManager;
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _crawlerManager.StartAsync(CrawlerStartState.Paused);
-            return Task.CompletedTask;
+            await _crawlerManager.StartAsync(CrawlerStartState.Running).ConfigureAwait(false);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
