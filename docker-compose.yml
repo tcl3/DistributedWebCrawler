@@ -1,9 +1,9 @@
 version: '3.4'
 
 services:
-  distributedwebcrawler.managerapi:
+  managerapi:
     image: ${DOCKER_REGISTRY-}distributedwebcrawlermanagerapi
-    container_name: 'ManagerAPI'
+    container_name: 'managerapi'
     build:
       context: .
       dockerfile: DistributedWebCrawler.ManagerAPI/Dockerfile
@@ -14,6 +14,81 @@ services:
         #RABBITMQ_PORT: "5672"
         RABBITMQ_USERNAME: "crawler"
         RABBITMQ_PASSWORD: "test"
+    networks:
+       - rabbitmq_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # This is an example of how to run multiple crawler components in a single container. 
+  #
+  # Be sure to uncomment the service in docker-override.yml if using this
+  #components:
+  #  image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+  #  container_name: 'components'
+  #  build:
+  #    context: .
+  #    dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+  #  environment:
+  #    COMPONENTAPI_ROLE: "scheduler,ingester,parser" 
+  #    RABBITMQ_HOSTNAME: "rabbitmq"
+  #    #RABBITMQ_PORT: "5672"
+  #    RABBITMQ_USERNAME: "crawler"
+  #    RABBITMQ_PASSWORD: "test"
+  #  networks:
+  #     - rabbitmq_net
+  #  depends_on:
+  #    rabbitmq:
+  #      condition: service_healthy
+
+  scheduler:
+    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+    container_name: 'scheduler'
+    build:
+      context: .
+      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+    environment:
+      COMPONENTAPI_ROLE: "scheduler" 
+      RABBITMQ_HOSTNAME: "rabbitmq"
+      #RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "crawler"
+      RABBITMQ_PASSWORD: "test"
+    networks:
+       - rabbitmq_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ingester:
+    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+    container_name: 'ingester'
+    build:
+      context: .
+      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+    environment:
+      COMPONENTAPI_ROLE: "ingester"
+      RABBITMQ_HOSTNAME: "rabbitmq"
+      #RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "crawler"
+      RABBITMQ_PASSWORD: "test"
+    networks:
+       - rabbitmq_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  parser:
+    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+    container_name: 'parser'
+    build:
+      context: .
+      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+    environment:
+      COMPONENTAPI_ROLE: "parser"
+      RABBITMQ_HOSTNAME: "rabbitmq"
+      #RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "crawler"
+      RABBITMQ_PASSWORD: "test"
     networks:
        - rabbitmq_net
     depends_on:
