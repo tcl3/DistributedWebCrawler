@@ -5,6 +5,7 @@ using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Text;
 
 namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 {
@@ -63,7 +64,7 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
             {
                 var settings = serviceProvider.GetRequiredService<TSettings>();
                 clientConfigurationAction(client, settings);
-            });
+            }).AddHttpMessageHandler(() => new FallackEncodingHandler(Encoding.UTF8));
         }
     }
 }
