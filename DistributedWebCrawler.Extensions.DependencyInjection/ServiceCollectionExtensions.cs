@@ -33,9 +33,9 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
             return services;
         }
 
-        public static ISeederBuilder AddSeeder(this IServiceCollection services)
+        public static ISeederBuilder AddSeeder<TData>(this IServiceCollection services) where TData : class
         {
-            return new SeederBuilder(services);
+            return new SeederBuilder<TData>(services);
         }
 
         public static IServiceCollection AddSettings<TSettings>(this IServiceCollection services,

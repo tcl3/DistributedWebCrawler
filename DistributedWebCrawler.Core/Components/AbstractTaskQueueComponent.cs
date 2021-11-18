@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public abstract class AbstractTaskQueueComponent<TData> : AbstractComponent
+    public abstract class AbstractTaskQueueComponent<TData> : AbstractComponent 
+        where TData : class
     {
         private readonly IConsumer<TData> _consumer;
         private readonly ILogger _logger;        

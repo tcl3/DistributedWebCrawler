@@ -9,8 +9,10 @@ using System.Text;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Robots;
+using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core;
 
-namespace DistributedWebCrawler.Core
+namespace DistributedWebCrawler.Console
 {
     internal static class ServiceConfiguration
     {
@@ -29,7 +31,7 @@ namespace DistributedWebCrawler.Core
                 loggingBuilder.AddNLog();
             });
 
-            services.AddSeeder()
+            services.AddSeeder<SchedulerRequest>()
                 .WithComponent<SchedulerQueueSeeder>()
                 .WithSettings(configuration.GetSection("SeederSettings"));
 

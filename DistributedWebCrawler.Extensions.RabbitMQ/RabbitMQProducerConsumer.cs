@@ -14,6 +14,7 @@ using System.Text.Json;
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public class RabbitMQProducerConsumer<TData> : IProducerConsumer<TData>
+        where TData : class
     {
         private readonly IPersistentConnection _connection;
         private readonly ILogger<RabbitMQProducerConsumer<TData>> _logger;

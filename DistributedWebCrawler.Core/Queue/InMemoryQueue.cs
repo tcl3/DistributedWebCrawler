@@ -1,13 +1,11 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using Priority_Queue;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
     public class InMemoryQueue<TData> : IProducerConsumer<TData>
+        where TData : class
     {
         private readonly ConcurrentQueue<TData> _queue;
         private readonly ConcurrentQueue<TaskCompletionSource<TData>> _taskQueue;
