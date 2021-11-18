@@ -81,7 +81,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 _receiveChannel = StartConumer();
             };
 
-            var consumer = new EventingBasicConsumer(channel);
+            var consumer = new AsyncEventingBasicConsumer(channel);
 
             consumer.Received += OnCommandReceived;
 
@@ -92,7 +92,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return channel;
         }
 
-        private void OnCommandReceived(object? model, BasicDeliverEventArgs ea)
+        private async Task OnCommandReceived(object? model, BasicDeliverEventArgs ea)
         {
             var messageString = Encoding.UTF8.GetString(ea.Body.Span);
 

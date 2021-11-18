@@ -62,31 +62,25 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return tcs.Task;
         }
 
-        private void OnMessageReceived(object? model, BasicDeliverEventArgs ea)
+        private async Task OnMessageReceived(object? model, BasicDeliverEventArgs ea)
         {
-            try
+            _logger.LogDebug($"Message received: '{Encoding.UTF8.GetString(ea.Body.Span)}'");
+
+            var queueItem = JsonSerializer.Deserialize<TData>(ea.Body.Span);
+
+            if (queueItem == null)
             {
-                _logger.LogDebug($"Message received: '{Encoding.UTF8.GetString(ea.Body.Span)}'");
-
-                var queueItem = JsonSerializer.Deserialize<TData>(ea.Body.Span);
-
-                if (queueItem == null)
-                {
-                    throw new JsonException("Failed to deserialize queue item");
-                }
-
-                TaskCompletionSource<TData> tcs;
-                while (!_taskQueue.TryDequeue(out tcs)) 
-                {
-                    _messageSemaphore.Wait();
-                }
-
-                tcs.SetResult(queueItem);
+                throw new JsonException("Failed to deserialize queue item");
             }
-            finally
+
+            TaskCompletionSource<TData> tcs;
+            while (!_taskQueue.TryDequeue(out tcs))
             {
-                _receiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
+                await _messageSemaphore.WaitAsync().ConfigureAwait(false);
             }
+
+            tcs.SetResult(queueItem);
+            _receiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
         }
 
         private IModel StartConumer()
@@ -111,16 +105,16 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
             channel.CallbackException += (sender, ea) =>
             {
-                _logger.LogWarning(ea.Exception, "Recreating RabbitMQ consumer channel");
+                _logger.LogError(ea.Exception, "Recreating RabbitMQ consumer channel");
 
                 _receiveChannel?.Dispose();
                 _receiveChannel = StartConumer();
             };
 
             // TODO: Add basic QOS here so that we only prefetch the number of items that we can simultaneously handle
-            //channel.BasicQos(0, 50, false);
+            //channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
 
-            var consumer = new EventingBasicConsumer(channel);
+            var consumer = new AsyncEventingBasicConsumer(channel);
 
             consumer.Received += OnMessageReceived;
 
@@ -146,16 +140,47 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 }
             }
 
+
+
             var body = JsonSerializer.SerializeToUtf8Bytes(data);
             using var channel = _connection.CreateModel();
+
+            channel.ConfirmSelect();
+
+            var outstandingConfirms = new ConcurrentDictionary<ulong, bool>();
+
+            void CleanOutstandingConfirms(ulong sequenceNumber, bool multiple)
+            {
+                if (multiple)
+                {
+                    var confirmed = outstandingConfirms.Where(k => k.Key <= sequenceNumber);
+                    foreach (var entry in confirmed)
+                        outstandingConfirms.TryRemove(entry.Key, out _);
+                }
+                else
+                    outstandingConfirms.TryRemove(sequenceNumber, out _);
+            }
+
+            channel.ExchangeDeclare(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, type: "direct");
             
+            channel.BasicAcks += (sender, ea) => CleanOutstandingConfirms(ea.DeliveryTag, ea.Multiple);
+            channel.BasicNacks += (sender, ea) =>
+            {
+                outstandingConfirms.TryGetValue(ea.DeliveryTag, out bool body);
+                _logger.LogInformation($"Message has been nack-ed. Sequence number: {ea.DeliveryTag}, multiple: {ea.Multiple}");
+                CleanOutstandingConfirms(ea.DeliveryTag, ea.Multiple);
+            };
+
             _retryPolicy.Execute(() =>
             {
+                outstandingConfirms.TryAdd(channel.NextPublishSeqNo, true);
                 channel.BasicPublish(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName,
                                      routingKey: QueueName,
                                      basicProperties: null,
+                                     mandatory: true,                                     
                                      body: body);
             });
         }
+
     }
 }

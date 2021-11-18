@@ -16,6 +16,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 var connectionFactory = new ConnectionFactory
                 {
                     AutomaticRecoveryEnabled = true,
+                    DispatchConsumersAsync = true
                 };
 
                 var rabbitMQHostname = configuration.GetValue<string>("RABBITMQ_HOSTNAME");
