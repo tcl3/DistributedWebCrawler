@@ -28,6 +28,7 @@ namespace DistributedWebCrawler.Console
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
+                loggingBuilder.SetMinimumLevel(LogLevel.Trace);
                 loggingBuilder.AddNLog();
             });
 
