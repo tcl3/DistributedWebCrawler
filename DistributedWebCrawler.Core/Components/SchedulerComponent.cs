@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Priority_Queue;
 using Nager.PublicSuffix;
+using DistributedWebCrawler.Core.Queue;
 
 namespace DistributedWebCrawler.Core.Components
 {
@@ -37,6 +38,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly ConcurrentDictionary<Uri, bool> _visitedUris;
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _visitedPathsLookup;
         private readonly ConcurrentDictionary<string, IEnumerable<Uri>> _queuedPathsLookup;
+        private readonly ConcurrentDictionary<Guid, SchedulerQueueEntry> _activeQueueEntries;
         private readonly SimplePriorityQueue<SchedulerQueueEntry, DateTimeOffset> _nextPathForHostQueue;
 
         private readonly IDomainParser _domainParser;
@@ -56,9 +58,12 @@ namespace DistributedWebCrawler.Core.Components
             _visitedUris = new();
             _visitedPathsLookup = new();
             _queuedPathsLookup = new();
+            _activeQueueEntries = new();
             _nextPathForHostQueue = new();
 
             _domainParser = new DomainParser(new WebTldRuleProvider());
+
+            ingestRequestProducer.OnCompleted += OnIngestCompleted;
         }
 
         protected override Task ComponentStartAsync()
@@ -78,7 +83,9 @@ namespace DistributedWebCrawler.Core.Components
         {
             while (Status != CrawlerComponentStatus.Completed)
             {
-                while (_nextPathForHostQueue.TryFirst(out var entry) && _nextPathForHostQueue.TryGetPriority(entry, out var notBefore) && notBefore <= DateTimeOffset.Now)
+                while (_nextPathForHostQueue.TryFirst(out var entry) 
+                    && _nextPathForHostQueue.TryGetPriority(entry, out var notBefore) 
+                    && notBefore <= DateTimeOffset.Now)
                 {
                     _ = _nextPathForHostQueue.Dequeue();
 
@@ -94,16 +101,31 @@ namespace DistributedWebCrawler.Core.Components
                             MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
                         };
 
+                        
+                        if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))
+                        {
+                            _logger.LogCritical($"Active queue item with ID: {ingestRequest.Id} already exists. This should never happen");
+                            continue;
+                        }
                         _ingestRequestProducer.Enqueue(ingestRequest);
                         _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
                     }
-
-                    AddNextUriToSchedulerQueue(entry.Domain, schedulerRequest);
                 }
 
-                // FIXME: This is currently here to avoid hammering the CPU. We should probably use a mutex/semaphore with an appropriate timeout.
-                
+                // FIXME: This is currently here to avoid hammering the CPU. We should probably use a mutex/semaphore with an appropriate timeout.                
                 await Task.Delay(1).ConfigureAwait(false);
+            }
+        }
+
+        private void OnIngestCompleted(object? sender, ItemCompletedEventArgs eventArgs)
+        {
+            if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
+            {
+                AddNextUriToSchedulerQueue(entry.Domain, entry.SchedulerRequest);
+            } 
+            else
+            {
+                _logger.LogCritical($"No queue entry found for ingest request ID: {eventArgs.Id}");
             }
         }
 
