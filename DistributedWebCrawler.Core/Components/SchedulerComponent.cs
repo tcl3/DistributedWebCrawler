@@ -16,6 +16,13 @@ namespace DistributedWebCrawler.Core.Components
 {
     public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest>
     {
+        private enum DomainStatus
+        {   
+            Inactive,
+            Queued,
+            Ingesting
+        }
+
         private class SchedulerQueueEntry
         {
             public Uri Uri { get;  }
@@ -39,6 +46,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _visitedPathsLookup;
         private readonly ConcurrentDictionary<string, IEnumerable<Uri>> _queuedPathsLookup;
         private readonly ConcurrentDictionary<Guid, SchedulerQueueEntry> _activeQueueEntries;
+        private readonly ConcurrentDictionary<string, DomainStatus> _activeDomains;
         private readonly SimplePriorityQueue<SchedulerQueueEntry, DateTimeOffset> _nextPathForHostQueue;
 
         private readonly IDomainParser _domainParser;
@@ -63,6 +71,7 @@ namespace DistributedWebCrawler.Core.Components
             _queuedPathsLookup = new();
             _activeQueueEntries = new();
             _nextPathForHostQueue = new();
+            _activeDomains = new();
 
             _domainParser = new DomainParser(new WebTldRuleProvider());
 
@@ -118,8 +127,13 @@ namespace DistributedWebCrawler.Core.Components
                             _logger.LogCritical($"Active queue item with ID: {ingestRequest.Id} already exists. This should never happen");
                             continue;
                         }
+                        _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
                         _ingestRequestProducer.Enqueue(ingestRequest);
                         _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
+                    } 
+                    else
+                    {
+                        AddNextUriToSchedulerQueue(entry.Domain, schedulerRequest, addCrawlDelay: true);
                     }
                 }
 
@@ -132,6 +146,13 @@ namespace DistributedWebCrawler.Core.Components
         {
             if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
             {
+                if (_activeDomains.TryUpdate(entry.Domain, DomainStatus.Inactive, DomainStatus.Ingesting))
+                {
+                    if (_activeDomains.TryRemove(entry.Domain, out var status) && status != DomainStatus.Inactive) 
+                    {
+                        _activeDomains.TryAdd(entry.Domain, status);
+                    }
+                }
                 AddNextUriToSchedulerQueue(entry.Domain, entry.SchedulerRequest);
             } 
             else
@@ -202,14 +223,9 @@ namespace DistributedWebCrawler.Core.Components
 
             var urisToVisit = pathsToVisit.Select(path => new Uri(schedulerRequest.Uri, path)).ToArray();
 
-            var alreadyQueued = false;
-            _queuedPathsLookup.AddOrUpdate(domain, urisToVisit, (key, oldValue) => 
-            {
-                alreadyQueued = true;
-                return oldValue.Union(urisToVisit);
-            });
+            _queuedPathsLookup.AddOrUpdate(domain, urisToVisit, (key, oldValue) => oldValue.Union(urisToVisit));
 
-            if (!alreadyQueued) 
+            if (!_activeDomains.TryGetValue(domain, out var status) || status == DomainStatus.Inactive)
             {
                 AddNextUriToSchedulerQueue(domain, schedulerRequest, firstTimeVisit);
             }                
@@ -250,10 +266,11 @@ namespace DistributedWebCrawler.Core.Components
             return validPaths;
         }
 
-        private void AddNextUriToSchedulerQueue(string domain, SchedulerRequest schedulerRequest, bool first = false)
+        private void AddNextUriToSchedulerQueue(string domain, SchedulerRequest schedulerRequest, bool addCrawlDelay = false)
         {
             if (!_queuedPathsLookup.TryGetValue(domain, out var urisToVisit) || !urisToVisit.Any())
             {
+                _queuedPathsLookup.TryRemove(domain, out _);
                 return;
             }
 
@@ -263,12 +280,14 @@ namespace DistributedWebCrawler.Core.Components
             var queueEntry = new SchedulerQueueEntry(nextUriToVisit, domain, schedulerRequest);
                 
             var notBefore = DateTimeOffset.Now;
-            if (!first)
+            if (!addCrawlDelay)
             {
                 notBefore = notBefore.AddMilliseconds(_schedulerSettings.SameDomainCrawlDelayMillis);
             }
 
-            _nextPathForHostQueue.Enqueue(queueEntry, notBefore);                
+            _nextPathForHostQueue.Enqueue(queueEntry, notBefore);
+
+            _activeDomains.AddOrUpdate(queueEntry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Queued);
             
             if (urisToVisit.Any())
             {
