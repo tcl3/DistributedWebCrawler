@@ -7,9 +7,9 @@ namespace DistributedWebCrawler.Core.Configuration
 {
     public class SeederSettings
     {
-        public IEnumerable<string>? UrisToCrawl { get; set; }
-        public SeederSource Source { get; set; }
-        public string FilePath { get; set; } = string.Empty;
+        public IEnumerable<string>? UrisToCrawl { get; init; }
+        public SeederSource Source { get; init; }
+        public string FilePath { get; init; } = string.Empty;
     }
 
     public enum SeederSource

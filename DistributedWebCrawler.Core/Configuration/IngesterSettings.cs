@@ -5,12 +5,12 @@ namespace DistributedWebCrawler.Core.Configuration
     public class IngesterSettings
     {
         [Range(1, int.MaxValue)]
-        public int MaxDomainsToCrawl { get; set; }
+        public int MaxDomainsToCrawl { get; init; }
 
         [Range(1, 100)]
-        public int MaxRedirects { get; set; }
+        public int MaxRedirects { get; init; }
 
         [Range(1, long.MaxValue)]
-        public long? MaxContentLengthBytes { get; set; }
+        public long? MaxContentLengthBytes { get; init; }
     }
 }
