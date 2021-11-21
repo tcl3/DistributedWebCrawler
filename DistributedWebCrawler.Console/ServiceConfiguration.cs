@@ -31,6 +31,8 @@ namespace DistributedWebCrawler.Console
                 loggingBuilder.AddNLog();
             });
 
+            services.AddSingleton<ISeeder, CompositeSeeder>();
+
             services.AddSeeder<SchedulerRequest>()
                 .WithComponent<SchedulerQueueSeeder>()
                 .WithSettings(configuration.GetSection("SeederSettings"));
