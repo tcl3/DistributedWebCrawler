@@ -22,14 +22,47 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         private readonly ILogger<RabbitMQProducerConsumer<TData>> _logger;
         private readonly RetryPolicy _retryPolicy;
 
-        private static readonly string QueueName = typeof(TData).Name;
+        private static readonly string ConsumerQueueName = typeof(TData).Name;
+        private static readonly string NotifierQueueName = ConsumerQueueName + "-Notifier";
 
-        private IModel? _receiveChannel;
+        private IModel? _producerReceiveChannel;
+        private IModel? _notifierReceiveChannel;
 
         private readonly ConcurrentQueue<TaskCompletionSource<TData>> _taskQueue;
         private readonly SemaphoreSlim _messageSemaphore;
+        private readonly ConcurrentDictionary<int, IModel> _publishChannels;
 
-        private static readonly object _syncRoot = new object();
+        private static readonly object _syncRoot = new();
+
+        private EventHandler<ItemCompletedEventArgs>? _onCompleted = (_, _) => { };
+
+        public event EventHandler<ItemCompletedEventArgs>? OnCompleted
+        {
+            add
+            {
+                if (_notifierReceiveChannel == null)
+                {
+                    lock (_syncRoot)
+                    {
+                        if (_notifierReceiveChannel == null)
+                        {
+                            if (!_connection.IsConnected)
+                            {
+                                _connection.TryConnect();
+                            }
+                            _notifierReceiveChannel = StartConumer(NotifierQueueName, OnNotificationReceived);
+                        }
+                    }
+                }
+
+                _onCompleted += value;
+            }
+
+            remove
+            {
+                _onCompleted -= value;
+            }
+        }
 
         public RabbitMQProducerConsumer(IPersistentConnection connection, ILogger<RabbitMQProducerConsumer<TData>> logger)
         {
@@ -45,16 +78,22 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                });
 
             _taskQueue = new();
-            _messageSemaphore = new SemaphoreSlim(0);            
+            _messageSemaphore = new SemaphoreSlim(0);
+            _publishChannels = new();            
         }
 
         public Task<TData> DequeueAsync()
         {
-            if (_receiveChannel == null)
+            if (!_connection.IsConnected)
             {
-                lock(_syncRoot)
+                _connection.TryConnect();
+            }
+
+            if (_producerReceiveChannel == null)
+            {
+                lock (_syncRoot)
                 {
-                    if (_receiveChannel == null) _receiveChannel = StartConumer();
+                    if (_producerReceiveChannel == null) _producerReceiveChannel = StartConumer(ConsumerQueueName, OnQueueItemReceived);
                 }
             }
 
@@ -64,8 +103,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
             return tcs.Task;
         }
-
-        private async Task OnMessageReceived(object? model, BasicDeliverEventArgs ea)
+        private async Task OnQueueItemReceived(object? model, BasicDeliverEventArgs ea)
         {
             _logger.LogDebug($"Message received: '{Encoding.UTF8.GetString(ea.Body.Span)}'");
 
@@ -83,35 +121,41 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
 
             tcs.SetResult(queueItem);
-            _receiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
+            _producerReceiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
         }
 
-        private IModel StartConumer()
+        private Task OnNotificationReceived(object? model, BasicDeliverEventArgs ea)
         {
-            if (!_connection.IsConnected)
-            {
-                _connection.TryConnect();
-            }
+            var id = JsonSerializer.Deserialize<Guid>(ea.Body.Span);
+            
+            _onCompleted?.Invoke(this, new ItemCompletedEventArgs(id));
 
+            _notifierReceiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
+            
+            return Task.CompletedTask;
+        }
+
+        private IModel StartConumer(string? queueName, AsyncEventHandler<BasicDeliverEventArgs> receiveCallback)
+        {
             var channel = _connection.CreateModel();
 
             channel.ExchangeDeclare(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, type: "direct");
-            channel.QueueDeclare(queue: QueueName,
+            channel.QueueDeclare(queue: queueName,
                                  durable: false,
                                  exclusive: false,
                                  autoDelete: false,
                                  arguments: null);
             
-            channel.QueueBind(queue: QueueName, 
+            channel.QueueBind(queue: queueName, 
                 exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, 
-                routingKey: QueueName);
+                routingKey: queueName);
 
             channel.CallbackException += (sender, ea) =>
             {
                 _logger.LogError(ea.Exception, "Recreating RabbitMQ consumer channel");
 
-                _receiveChannel?.Dispose();
-                _receiveChannel = StartConumer();
+                _producerReceiveChannel?.Dispose();
+                _producerReceiveChannel = StartConumer(queueName, receiveCallback);
             };
 
             // TODO: Add basic QOS here so that we only prefetch the number of items that we can simultaneously handle
@@ -119,9 +163,9 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
             var consumer = new AsyncEventingBasicConsumer(channel);
 
-            consumer.Received += OnMessageReceived;
+            consumer.Received += receiveCallback;
 
-            channel.BasicConsume(queue: QueueName,
+            channel.BasicConsume(queue: queueName,
                                 autoAck: false,
                                 consumer: consumer);
 
@@ -135,55 +179,42 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 _connection.TryConnect();
             }
 
-            if (_receiveChannel == null)
+            if (_producerReceiveChannel == null)
             {
                 lock (_syncRoot)
                 {
-                    if (_receiveChannel == null) _receiveChannel = StartConumer();
+                    if (_producerReceiveChannel == null) _producerReceiveChannel = StartConumer(ConsumerQueueName, OnQueueItemReceived);
                 }
             }
 
+            Publish(data, ConsumerQueueName);
+        }
 
+        public void NotifyCompleted(TData item)
+        {
+            if (!_connection.IsConnected)
+            {
+                _connection.TryConnect();
+            }        
 
+            Publish(item.Id, NotifierQueueName);
+        }
+
+        private void Publish(object data, string queueName)
+        {
             var body = JsonSerializer.SerializeToUtf8Bytes(data);
-            using var channel = _connection.CreateModel();
+            var channel = _publishChannels.GetOrAdd(Environment.CurrentManagedThreadId, key => _connection.CreateModel());
 
-            channel.ConfirmSelect();
-
-            var outstandingConfirms = new ConcurrentDictionary<ulong, bool>();
-
-            void CleanOutstandingConfirms(ulong sequenceNumber, bool multiple)
-            {
-                if (multiple)
-                {
-                    var confirmed = outstandingConfirms.Where(k => k.Key <= sequenceNumber);
-                    foreach (var entry in confirmed)
-                        outstandingConfirms.TryRemove(entry.Key, out _);
-                }
-                else
-                    outstandingConfirms.TryRemove(sequenceNumber, out _);
-            }
-
-            channel.ExchangeDeclare(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, type: "direct");
-            
-            channel.BasicAcks += (sender, ea) => CleanOutstandingConfirms(ea.DeliveryTag, ea.Multiple);
-            channel.BasicNacks += (sender, ea) =>
-            {
-                outstandingConfirms.TryGetValue(ea.DeliveryTag, out bool body);
-                _logger.LogInformation($"Message has been nack-ed. Sequence number: {ea.DeliveryTag}, multiple: {ea.Multiple}");
-                CleanOutstandingConfirms(ea.DeliveryTag, ea.Multiple);
-            };
+            channel.ExchangeDeclare(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, type: "direct");           
 
             _retryPolicy.Execute(() =>
             {
-                outstandingConfirms.TryAdd(channel.NextPublishSeqNo, true);
-                channel.BasicPublish(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName,
-                                     routingKey: QueueName,
+                 channel.BasicPublish(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName,
+                                     routingKey: queueName,
                                      basicProperties: null,
-                                     mandatory: true,                                     
+                                     mandatory: true,
                                      body: body);
             });
         }
-
     }
 }

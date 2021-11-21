@@ -27,11 +27,14 @@ namespace DistributedWebCrawler.Core.Interfaces
         where TData : RequestBase
     {
         void Enqueue(TData data);
+
+        event EventHandler<ItemCompletedEventArgs> OnCompleted;
     }
 
     public interface IConsumer<TData>
         where TData : RequestBase
     {       
         Task<TData> DequeueAsync();
+        void NotifyCompleted(TData item);
     }
 }

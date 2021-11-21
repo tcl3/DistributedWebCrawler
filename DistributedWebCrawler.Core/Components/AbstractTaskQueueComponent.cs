@@ -57,7 +57,16 @@ namespace DistributedWebCrawler.Core.Components
 
                 _ = task.ContinueWith(r =>
                 {
-                    _itemSemaphore.Release();
+                    try
+                    {
+                        // TODO: indicate whether task errored or not
+                        _consumer.NotifyCompleted(currentItem);
+                    }
+                    finally
+                    {
+                        _itemSemaphore.Release();
+                    }
+                    
                 }, TaskScheduler.Current);
 
                 _ = task.ContinueWith(r =>
@@ -80,7 +89,7 @@ namespace DistributedWebCrawler.Core.Components
                         _logger.LogError(exception, $"Uncaught exception in {Name}");
                     }
 
-                }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Current);                
+                }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Current);
             }
         }
 

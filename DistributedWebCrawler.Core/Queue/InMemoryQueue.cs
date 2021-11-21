@@ -1,5 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
@@ -10,6 +11,8 @@ namespace DistributedWebCrawler.Core.Queue
     {
         private readonly ConcurrentQueue<TData> _queue;
         private readonly ConcurrentQueue<TaskCompletionSource<TData>> _taskQueue;
+
+        public event EventHandler<ItemCompletedEventArgs> OnCompleted = (_, _) => { };
 
         public InMemoryQueue()
         {
@@ -43,6 +46,11 @@ namespace DistributedWebCrawler.Core.Queue
             _taskQueue.Enqueue(tcs);
 
             return tcs.Task;            
+        }
+
+        public void NotifyCompleted(TData item)
+        {
+            OnCompleted?.Invoke(this, new ItemCompletedEventArgs(item.Id));
         }
     }
 }
