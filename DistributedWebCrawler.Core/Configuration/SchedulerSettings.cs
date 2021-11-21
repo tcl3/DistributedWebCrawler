@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
@@ -18,7 +19,7 @@ namespace DistributedWebCrawler.Core.Configuration
         [Range(0, int.MaxValue, ErrorMessage = nameof(MaxCrawlDepth) + " must be a positive integer")]
         public int SameDomainCrawlDelayMillis { get; init; }
         
-        public IEnumerable<string> ExcludeUris { get; init; } = Enumerable.Empty<string>();
-        public IEnumerable<string> IncludeUris { get; init; } = Enumerable.Empty<string>();
+        public IEnumerable<string>? ExcludeDomains { get; init; } 
+        public IEnumerable<string>? IncludeDomains { get; init; }
     }
 }

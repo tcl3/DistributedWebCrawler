@@ -43,6 +43,9 @@ namespace DistributedWebCrawler.Core.Components
 
         private readonly IDomainParser _domainParser;
 
+        private readonly IEnumerable<DomainPattern> _domainsToInclude;
+        private readonly IEnumerable<DomainPattern> _domainsToExclude;
+
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest> consumer,
             ILogger<SchedulerComponent> logger,
@@ -62,6 +65,14 @@ namespace DistributedWebCrawler.Core.Components
             _nextPathForHostQueue = new();
 
             _domainParser = new DomainParser(new WebTldRuleProvider());
+
+            _domainsToInclude = _schedulerSettings.IncludeDomains != null 
+                ? _schedulerSettings.IncludeDomains.Select(str => new DomainPattern(str))
+                : Enumerable.Empty<DomainPattern>();
+
+            _domainsToExclude = _schedulerSettings.ExcludeDomains != null
+                ? _schedulerSettings.ExcludeDomains.Select(str => new DomainPattern(str))
+                : Enumerable.Empty<DomainPattern>();
 
             ingestRequestProducer.OnCompleted += OnIngestCompleted;
         }
@@ -152,6 +163,16 @@ namespace DistributedWebCrawler.Core.Components
 
             var pathsToVisit = schedulerRequest.Paths.Except(visitedPathsForHost);
 
+            if (pathsToVisit.Any() && _domainsToInclude.Any())
+            {
+                pathsToVisit = GetValidPaths(schedulerRequest.Uri, pathsToVisit, _domainsToInclude, PathCompareMode.Include);
+            }
+
+            if (pathsToVisit.Any() && _domainsToExclude.Any())
+            {
+                pathsToVisit = GetValidPaths(schedulerRequest.Uri, pathsToVisit, _domainsToExclude, PathCompareMode.Exclude);
+            }
+
             if (pathsToVisit.Any() && (_schedulerSettings.RespectsRobotsTxt ?? false))
             {
                 await _robotsCache.GetRobotsForHostAsync(schedulerRequest.Uri, robots => 
@@ -192,6 +213,41 @@ namespace DistributedWebCrawler.Core.Components
             {
                 AddNextUriToSchedulerQueue(domain, schedulerRequest, firstTimeVisit);
             }                
+        }
+
+        private enum PathCompareMode
+        {
+            Include,
+            Exclude,
+        }
+
+        private IEnumerable<string> GetValidPaths(Uri baseUri, IEnumerable<string> pathsToVisit, IEnumerable<DomainPattern> domainPatterns, PathCompareMode mode)
+        {
+            var validPaths = new List<string>();
+            foreach (var path in pathsToVisit)
+            {
+                var fullUri = new Uri(baseUri, path);
+                try
+                {
+                    var contains = domainPatterns.Any(pattern => pattern.Match(fullUri.Host));
+                    if (mode == PathCompareMode.Include)
+                    {
+                        if (contains) validPaths.Add(path);
+                        else _logger.LogDebug($"Excluding '{fullUri}'. Domain not in IncludeDomains list");
+                    }
+                    else if (mode == PathCompareMode.Exclude)
+                    {
+                        if (!contains) validPaths.Add(path);
+                        else _logger.LogDebug($"Excluding '{fullUri}'. Domain is in ExcludeDomains list");
+                    }
+                } 
+                catch (ParseException ex)
+                {
+                    _logger.LogError(ex, $"Unable to parse domain from {fullUri}");
+                }
+            }
+
+            return validPaths;
         }
 
         private void AddNextUriToSchedulerQueue(string domain, SchedulerRequest schedulerRequest, bool first = false)
