@@ -5,15 +5,15 @@ using System.Text.Json.Serialization;
 
 namespace DistributedWebCrawler.Core.Model
 {
-    public class SchedulerRequest
+    public class SchedulerRequest : RequestBase
     {
         [JsonConstructor]
-        public SchedulerRequest()
+        public SchedulerRequest() : base()
         {
             Uri = default!;
         }
 
-        public SchedulerRequest(Uri host)
+        public SchedulerRequest(Uri host) : base()
         {
             if (host == null || !host.IsAbsoluteUri)
             {

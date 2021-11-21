@@ -3,16 +3,16 @@ using System.Text.Json.Serialization;
 
 namespace DistributedWebCrawler.Core.Model
 {
-    public class ParseRequest
+    public class ParseRequest : RequestBase
     {
         [JsonConstructor]
-        public ParseRequest()
+        public ParseRequest() : base()
         {
             Uri = default!;
             IngestResult = default!;
         }
 
-        public ParseRequest(Uri uri, IngestResult ingestResult)
+        public ParseRequest(Uri uri, IngestResult ingestResult) : base()
         {
             if (!uri.IsAbsoluteUri)
             {

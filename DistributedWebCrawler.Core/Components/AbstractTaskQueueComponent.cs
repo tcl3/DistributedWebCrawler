@@ -1,6 +1,7 @@
 ﻿using DistributedWebCrawler.Core.Compontents;
 using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 namespace DistributedWebCrawler.Core.Components
 {
     public abstract class AbstractTaskQueueComponent<TData> : AbstractComponent 
-        where TData : class
+        where TData : RequestBase
     {
         private readonly IConsumer<TData> _consumer;
         private readonly ILogger _logger;        

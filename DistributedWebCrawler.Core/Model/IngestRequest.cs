@@ -3,15 +3,15 @@ using System.Text.Json.Serialization;
 
 namespace DistributedWebCrawler.Core.Model
 {
-    public class IngestRequest
+    public class IngestRequest : RequestBase
     {
         [JsonConstructor]
-        public IngestRequest()
+        public IngestRequest() : base()
         {
             Uri = default!;
         }
 
-        public IngestRequest(Uri host)
+        public IngestRequest(Uri host) : base()
         {
             if (host == null || !host.IsAbsoluteUri)
             {

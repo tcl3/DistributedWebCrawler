@@ -2,6 +2,7 @@
 using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,8 +57,8 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
     }
 
     public abstract class ComponentBuilder<TRequest, TResult, TSettings> : ComponentBuilder<TSettings>
-        where TRequest : class
-        where TResult : class
+        where TRequest : RequestBase
+        where TResult : RequestBase
         where TSettings : class
     {
         public ComponentBuilder(IServiceCollection services) : base(services)

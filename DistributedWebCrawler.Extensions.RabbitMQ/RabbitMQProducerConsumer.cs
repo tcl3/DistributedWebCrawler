@@ -1,4 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -14,7 +16,7 @@ using System.Text.Json;
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public class RabbitMQProducerConsumer<TData> : IProducerConsumer<TData>
-        where TData : class
+        where TData : RequestBase
     {
         private readonly IPersistentConnection _connection;
         private readonly ILogger<RabbitMQProducerConsumer<TData>> _logger;

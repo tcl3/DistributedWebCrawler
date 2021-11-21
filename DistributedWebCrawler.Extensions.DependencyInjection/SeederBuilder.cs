@@ -1,13 +1,13 @@
 ﻿using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Seeding;
+using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
     public class SeederBuilder<TData> : ComponentBuilder<SeederSettings>, ISeederBuilder 
-        where TData : class
+        where TData : RequestBase
     {
         public SeederBuilder(IServiceCollection services) : base(services)
         {

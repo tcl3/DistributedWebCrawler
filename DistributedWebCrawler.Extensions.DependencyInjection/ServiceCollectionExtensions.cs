@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
@@ -33,7 +34,8 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
             return services;
         }
 
-        public static ISeederBuilder AddSeeder<TData>(this IServiceCollection services) where TData : class
+        public static ISeederBuilder AddSeeder<TData>(this IServiceCollection services) 
+            where TData : RequestBase
         {
             return new SeederBuilder<TData>(services);
         }

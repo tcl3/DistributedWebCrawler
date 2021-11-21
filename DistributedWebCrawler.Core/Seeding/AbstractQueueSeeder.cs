@@ -1,10 +1,11 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Model;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Seeding
 {
     public abstract class AbstractQueueSeeder<TData> : ISeeder
-        where TData : class
+        where TData : RequestBase
     {
         private readonly IProducer<TData> _producer;
 
