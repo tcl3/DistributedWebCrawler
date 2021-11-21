@@ -14,12 +14,10 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private IModel? _receiveChannel;
 
-        private readonly string _queueName;
 
         public RabbitMQComponentDecorator(ICrawlerComponent inner, IPersistentConnection connection)
         {
             _inner = inner;
-            _queueName = inner.GetType().Name + RabbitMQConstants.CrawlerManager.CommandQueueSuffix;
             _connection = connection;
         }
 
@@ -65,13 +63,12 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
             channel.ExchangeDeclare(exchange: RabbitMQConstants.CrawlerManager.ExchangeName, type: "fanout");
             
-            channel.QueueDeclare(queue: _queueName,
-                                 durable: false,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
+            var queueName = channel.QueueDeclare(durable: false, 
+                exclusive: false, 
+                autoDelete: true, 
+                arguments: null).QueueName;
             
-            channel.QueueBind(queue: _queueName,
+            channel.QueueBind(queue: queueName,
                 exchange: RabbitMQConstants.CrawlerManager.ExchangeName,
                 routingKey: "");
 
@@ -85,14 +82,14 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
             consumer.Received += OnCommandReceived;
 
-            channel.BasicConsume(queue: _queueName,
+            channel.BasicConsume(queue: queueName,
                                 autoAck: true,
                                 consumer: consumer);
 
             return channel;
         }
 
-        private async Task OnCommandReceived(object? model, BasicDeliverEventArgs ea)
+        private Task OnCommandReceived(object? model, BasicDeliverEventArgs ea)
         {
             var messageString = Encoding.UTF8.GetString(ea.Body.Span);
 
@@ -112,6 +109,8 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 default:
                     throw new InvalidOperationException($"Command type not implemented: '{commandType}'");
             }
+
+            return Task.CompletedTask;
         }
     }
 }

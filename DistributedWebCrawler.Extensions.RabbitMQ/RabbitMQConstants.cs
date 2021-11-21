@@ -5,7 +5,6 @@
         internal static class CrawlerManager
         {
             internal const string ExchangeName = "CrawlerManager";
-            internal const string CommandQueueSuffix = "-Commands";
             internal const int RetryCount = 5;
         }
 
