@@ -54,6 +54,8 @@ namespace DistributedWebCrawler.Core.Components
         private readonly IEnumerable<DomainPattern> _domainsToInclude;
         private readonly IEnumerable<DomainPattern> _domainsToExclude;
 
+        private const int IngestQueueMaxItems = 50;
+
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest> consumer,
             ILogger<SchedulerComponent> logger,
@@ -103,38 +105,53 @@ namespace DistributedWebCrawler.Core.Components
         {
             while (Status != CrawlerComponentStatus.Completed)
             {
-                while (_nextPathForHostQueue.TryFirst(out var entry) 
-                    && _nextPathForHostQueue.TryGetPriority(entry, out var notBefore) 
-                    && notBefore <= DateTimeOffset.Now)
+                try
                 {
-                    _ = _nextPathForHostQueue.Dequeue();
-
-                    var schedulerRequest = entry.SchedulerRequest;
-
-                    if (!_visitedUris.ContainsKey(entry.Uri))
+                    while (_nextPathForHostQueue.TryFirst(out var entry)
+                        && _nextPathForHostQueue.TryGetPriority(entry, out var notBefore)
+                        && notBefore <= DateTimeOffset.Now)
                     {
-                        _logger.LogDebug($"Enqueueing URI: {entry.Uri} for ingestion");
 
-                        var ingestRequest = new IngestRequest(entry.Uri)
+                        if (_ingestRequestProducer.Count > IngestQueueMaxItems)
                         {
-                            CurrentCrawlDepth = schedulerRequest.CurrentCrawlDepth,
-                            MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
-                        };
-
-                        
-                        if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))
-                        {
-                            _logger.LogCritical($"Active queue item with ID: {ingestRequest.Id} already exists. This should never happen");
+                            // TODO: Replace this arbitrary delay with something better
+                            await Task.Delay(100).ConfigureAwait(false);
                             continue;
                         }
-                        _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
-                        _ingestRequestProducer.Enqueue(ingestRequest);
-                        _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
-                    } 
-                    else
-                    {
-                        AddNextUriToSchedulerQueue(entry.Domain, schedulerRequest, addCrawlDelay: true);
+
+                        _ = _nextPathForHostQueue.Dequeue();
+
+                        var schedulerRequest = entry.SchedulerRequest;
+
+                        if (!_visitedUris.ContainsKey(entry.Uri))
+                        {
+                            _logger.LogDebug($"Enqueueing URI: {entry.Uri} for ingestion");
+
+                            var ingestRequest = new IngestRequest(entry.Uri)
+                            {
+                                CurrentCrawlDepth = schedulerRequest.CurrentCrawlDepth,
+                                MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
+                            };
+
+
+                            if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))
+                            {
+                                _logger.LogCritical($"Active queue item with ID: {ingestRequest.Id} already exists. This should never happen");
+                                continue;
+                            }
+                            _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
+                            _ingestRequestProducer.Enqueue(ingestRequest);
+                            _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
+                        }
+                        else
+                        {
+                            AddNextUriToSchedulerQueue(entry.Domain, schedulerRequest, addCrawlDelay: true);
+                        }
                     }
+                } 
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unhandled exception in Scheduler thread");
                 }
 
                 // FIXME: This is currently here to avoid hammering the CPU. We should probably use a mutex/semaphore with an appropriate timeout.                
