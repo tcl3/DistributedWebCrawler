@@ -148,7 +148,7 @@ namespace DistributedWebCrawler.Core.Components
             {
                 if (_activeDomains.TryUpdate(entry.Domain, DomainStatus.Inactive, DomainStatus.Ingesting))
                 {
-                    if (_activeDomains.TryRemove(entry.Domain, out var status) && status != DomainStatus.Inactive) 
+                    if (!_activeDomains.TryRemove(entry.Domain, out var status) && status != DomainStatus.Inactive) 
                     {
                         _activeDomains.TryAdd(entry.Domain, status);
                     }
