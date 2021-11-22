@@ -19,6 +19,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly IngesterSettings _ingesterSettings;
         private readonly IProducer<ParseRequest> _parseRequestProducer;
         private readonly CrawlerClient _crawlerClient;
+        private readonly IContentStore _contentStore;
         private readonly ILogger<IngesterComponent> _logger;
 
         private static readonly HashSet<string> ParseableMediaTypes = new() { MediaTypeNames.Text.Html, MediaTypeNames.Text.Plain };
@@ -27,12 +28,14 @@ namespace DistributedWebCrawler.Core.Components
             IConsumer<IngestRequest> ingestRequestConsumer, 
             IProducer<ParseRequest> parseRequestProducer,
             CrawlerClient crawlerClient,
+            IContentStore contentStore,
             ILogger<IngesterComponent> logger) 
             : base(ingestRequestConsumer, logger, nameof(IngesterComponent), ingesterSettings.MaxDomainsToCrawl)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;
             _crawlerClient = crawlerClient;
+            _contentStore = contentStore;
             _logger = logger;
         }
 
@@ -54,7 +57,7 @@ namespace DistributedWebCrawler.Core.Components
             {
                 var ingestResult = await IngestCurrentPathAsync(item.Uri, allowRedirects: true).ConfigureAwait(false);
 
-                if (string.IsNullOrWhiteSpace(ingestResult.Content) || (!ParseableMediaTypes.Contains(ingestResult.MediaType)))
+                if (!ingestResult.ContentId.HasValue || (!ParseableMediaTypes.Contains(ingestResult.MediaType)))
                 {
                     _logger.LogWarning($"Not passing {ingestResult.Path} to parser. Non parseable content type");
                     return;
@@ -105,10 +108,12 @@ namespace DistributedWebCrawler.Core.Components
 
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
 
+            var contentId = await _contentStore.SaveContentAsync(urlContent).ConfigureAwait(false);
+
             return new IngestResult
             {
                 Path = currentUri.ToString(),
-                Content = urlContent,
+                ContentId = contentId,
                 MediaType = mediaType
             };            
         }

@@ -19,18 +19,21 @@ namespace DistributedWebCrawler.Core.Components
 
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly ILinkParser _linkParser;
+        private readonly IContentStore _contentStore;
         private readonly ILogger<ParserComponent> _logger;
 
         public ParserComponent(ParserSettings parserSettings,
             IConsumer<ParseRequest> parseRequestConsumer,
             IProducer<SchedulerRequest> schedulerRequestProducer,
             ILinkParser linkParser,
+            IContentStore contentStore,
             ILogger<ParserComponent> logger)
             : base(parseRequestConsumer, logger, nameof(ParserComponent), parserSettings.MaxConcurrentThreads)
         {
             _parseRequestConsumer = parseRequestConsumer;
             _schedulerRequestProducer = schedulerRequestProducer;
             _linkParser = linkParser;
+            _contentStore = contentStore;
             _logger = logger;
         }
 
@@ -43,7 +46,14 @@ namespace DistributedWebCrawler.Core.Components
         {
             var ingestResult = parseRequest.IngestResult;
 
-            var links = (await _linkParser.ParseLinksAsync(ingestResult).ConfigureAwait(false)).ToList();
+            if (!ingestResult.ContentId.HasValue)
+            {
+                return;
+            }
+
+            var content = await _contentStore.GetContentAsync(ingestResult.ContentId.Value).ConfigureAwait(false);
+
+            var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
             if (!links.Any())
             {

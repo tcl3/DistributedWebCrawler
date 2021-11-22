@@ -8,6 +8,7 @@ using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.Core.Robots;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Extensions.Redis;
 
 namespace DistributedWebCrawler.ComponentAPI
 {
@@ -50,6 +51,8 @@ namespace DistributedWebCrawler.ComponentAPI
                     .WithAngleSharpLinkParser()
                     .WithSettings(crawlerConfiguration.GetSection("ParserSettings"));
             }
+
+            services.AddRedisContentStore(configuration);
 
             services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
 

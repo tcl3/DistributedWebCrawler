@@ -35,11 +35,16 @@ services:
   #    #RABBITMQ_PORT: "5672"
   #    RABBITMQ_USERNAME: "crawler"
   #    RABBITMQ_PASSWORD: "test"
+  #    REDIS_CONNECTIONSTRING: "redis:6379"
   #  networks:
   #     - rabbitmq_net
+  #     - redis_net
   #  depends_on:
   #    rabbitmq:
   #      condition: service_healthy
+  #    redis:
+  #      condition: service_healthy
+
 
   scheduler:
     image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
@@ -71,10 +76,14 @@ services:
       #RABBITMQ_PORT: "5672"
       RABBITMQ_USERNAME: "crawler"
       RABBITMQ_PASSWORD: "test"
+      REDIS_CONNECTIONSTRING: "redis:6379"
     networks:
        - rabbitmq_net
+       - redis_net
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   parser:
@@ -89,10 +98,14 @@ services:
       #RABBITMQ_PORT: "5672"
       RABBITMQ_USERNAME: "crawler"
       RABBITMQ_PASSWORD: "test"
+      REDIS_CONNECTIONSTRING: "redis:6379"
     networks:
        - rabbitmq_net
+       - redis_net
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   rabbitmq:
@@ -100,7 +113,7 @@ services:
     container_name: 'rabbitmq'
     ports:
       #- 127.0.0.1:5672:5672
-      - 127.0.0.1:15672:15672
+      - 15672:15672
     environment:
         RABBITMQ_PID_FILE: "/var/lib/rabbitmq/mnesia/rabbitmq"
     volumes:
@@ -108,13 +121,44 @@ services:
       - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
       - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq/
     networks:
-        - rabbitmq_net
+      - rabbitmq_net
     healthcheck:
         test: ["CMD", "wget", "-nv -t1 --spider", "http://localhost:15672"]
         interval: 10s
         timeout: 10s
         retries: 10
 
+  redis:
+    image: "redis:alpine"
+    container_name: 'redis'
+    ports:
+     - 6379:6379
+    volumes:
+      - ~/.docker-conf/redis/data:/var/lib/redis
+      - ~/.docker-conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    networks:
+      - rabbitmq_net
+  
+  # Redis management GUI - for testing purposes
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    container_name: 'redisinsight'
+    ports:
+      - 8001:8001
+    networks:
+      - rabbitmq_net
+    volumes:
+      - ~/.docker-conf/redisinight:/db 
+
 networks:
   rabbitmq_net:
+    driver: bridge
+  redis_net:
     driver: bridge

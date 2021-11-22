@@ -1,4 +1,6 @@
-﻿namespace DistributedWebCrawler.Core.Model
+﻿using System;
+
+namespace DistributedWebCrawler.Core.Model
 {
     public class IngestResult : RequestBase
     {
@@ -7,8 +9,8 @@
 
         }
 
-        public string Path { get; set; } = string.Empty;
-        public string Content { get; set; } = string.Empty;
+        public string Path { get; init; } = string.Empty;
+        public Guid? ContentId { get; init; } 
         public string MediaType { get; set; } = string.Empty;
     }
 }

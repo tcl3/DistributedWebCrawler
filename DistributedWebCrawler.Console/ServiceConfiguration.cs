@@ -39,6 +39,7 @@ namespace DistributedWebCrawler.Console
                 .WithSettings(configuration.GetSection("SeederSettings"));
 
             services.AddInMemoryProducerConsumer();
+            services.AddInMemoryContentStore();
 
             services.AddScheduler()
                 .WithRobotsCache<InMemoryRobotsCache>(configuration.GetSection("RobotsTxtSettings"))
@@ -58,6 +59,6 @@ namespace DistributedWebCrawler.Console
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             return services.BuildServiceProvider();
-        }        
+        }
     }
 }

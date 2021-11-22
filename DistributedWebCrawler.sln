@@ -15,7 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.Exten
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{15FE459C-83B5-4DCA-B22F-D7C779697843}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedWebCrawler.ComponentAPI", "DistributedWebCrawler.ComponentAPI\DistributedWebCrawler.ComponentAPI.csproj", "{0519058B-A3C6-48E3-9F79-B2CF27241422}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.ComponentAPI", "DistributedWebCrawler.ComponentAPI\DistributedWebCrawler.ComponentAPI.csproj", "{0519058B-A3C6-48E3-9F79-B2CF27241422}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedWebCrawler.Extensions.Redis", "..\DistributedWebCrawler.Extensions.Redis\DistributedWebCrawler.Extensions.Redis.csproj", "{A5727176-957B-42DC-A21B-857CAC744CC1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{0519058B-A3C6-48E3-9F79-B2CF27241422}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0519058B-A3C6-48E3-9F79-B2CF27241422}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0519058B-A3C6-48E3-9F79-B2CF27241422}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5727176-957B-42DC-A21B-857CAC744CC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5727176-957B-42DC-A21B-857CAC744CC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5727176-957B-42DC-A21B-857CAC744CC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5727176-957B-42DC-A21B-857CAC744CC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

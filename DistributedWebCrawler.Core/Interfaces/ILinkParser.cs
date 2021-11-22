@@ -7,6 +7,6 @@ namespace DistributedWebCrawler.Core.Interfaces
 {
     public interface ILinkParser
     {
-        Task<IEnumerable<Hyperlink>> ParseLinksAsync(IngestResult ingesterResult);
+        Task<IEnumerable<Hyperlink>> ParseLinksAsync(string content);
     }
 }

@@ -34,6 +34,12 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
             return services;
         }
 
+        public static IServiceCollection AddInMemoryContentStore(this IServiceCollection services)
+        {
+            services.AddSingleton<IContentStore, InMemoryContentStore>();
+            return services;
+        }
+
         public static ISeederBuilder AddSeeder<TData>(this IServiceCollection services) 
             where TData : RequestBase
         {
