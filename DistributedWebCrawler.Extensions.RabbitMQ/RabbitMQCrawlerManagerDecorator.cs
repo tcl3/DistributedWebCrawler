@@ -65,7 +65,9 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             {
                 _connection.TryConnect();
             }            
+            
             using var channel = _connection.CreateModel();
+            channel.ConfirmSelect();
 
             channel.ExchangeDeclare(exchange: RabbitMQConstants.CrawlerManager.ExchangeName, type: "fanout");
             

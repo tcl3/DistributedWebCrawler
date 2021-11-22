@@ -30,11 +30,32 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private readonly ConcurrentQueue<TaskCompletionSource<TData>> _taskQueue;
         private readonly SemaphoreSlim _messageSemaphore;
-        private readonly ConcurrentDictionary<int, IModel> _publishChannels;
+        private readonly ConcurrentDictionary<int, IModel> _channelPool;
 
         private static readonly object _syncRoot = new();
 
         private EventHandler<ItemCompletedEventArgs>? _onCompleted = (_, _) => { };
+
+        public int Count
+        {
+            get
+            {
+                if (!_connection.IsConnected)
+                {
+                    _connection.TryConnect();
+                }
+
+                var channel = GetChannelFromPool();
+
+                var result = channel.QueueDeclare(queue: ConsumerQueueName,
+                                     durable: false,
+                                     exclusive: false,
+                                     autoDelete: false,
+                                     arguments: null);
+                
+                return result.MessageCount <= int.MaxValue ? (int)result.MessageCount : int.MaxValue;
+            }
+        }
 
         public event EventHandler<ItemCompletedEventArgs>? OnCompleted
         {
@@ -79,7 +100,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
             _taskQueue = new();
             _messageSemaphore = new SemaphoreSlim(0);
-            _publishChannels = new();            
+            _channelPool = new();            
         }
 
         public Task<TData> DequeueAsync()
@@ -140,7 +161,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             var channel = _connection.CreateModel();
 
             channel.ExchangeDeclare(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, type: "direct");
-            channel.QueueDeclare(queue: queueName,
+            var x = channel.QueueDeclare(queue: queueName,
                                  durable: false,
                                  exclusive: false,
                                  autoDelete: false,
@@ -159,7 +180,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             };
 
             // TODO: Add basic QOS here so that we only prefetch the number of items that we can simultaneously handle
-            //channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+            channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
 
             var consumer = new AsyncEventingBasicConsumer(channel);
 
@@ -203,7 +224,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         private void Publish(object data, string queueName)
         {
             var body = JsonSerializer.SerializeToUtf8Bytes(data);
-            var channel = _publishChannels.GetOrAdd(Environment.CurrentManagedThreadId, key => _connection.CreateModel());
+            var channel = GetChannelFromPool();            
 
             channel.ExchangeDeclare(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, type: "direct");           
 
@@ -214,6 +235,26 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                                      basicProperties: null,
                                      mandatory: true,
                                      body: body);
+            });
+        }
+
+        private IModel GetChannelFromPool()
+        {
+            return _channelPool.GetOrAdd(Environment.CurrentManagedThreadId, key =>
+            {
+                var channel = _connection.CreateModel();
+                channel.ConfirmSelect();
+
+                channel.CallbackException += (_, _) =>
+                {
+                    channel?.Dispose();
+                    if (_channelPool.TryRemove(Environment.CurrentManagedThreadId, out _))
+                    {
+                        channel = _channelPool.GetOrAdd(Environment.CurrentManagedThreadId, key => _connection.CreateModel());
+                    }
+                };
+
+                return channel;
             });
         }
     }
