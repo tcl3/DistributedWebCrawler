@@ -5,37 +5,26 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
-    public interface IProducerConsumer<TRequest> : IProducer<TRequest>, IConsumer<TRequest>
+    public interface IProducerConsumer<TRequest, TResult>
+        : IProducer<TRequest, TResult>, IConsumer<TRequest, TResult>
         where TRequest : RequestBase
     {
 
     }
 
-    public interface IProducerConsumer<TRequest, TPriority> : IProducer<TRequest, TPriority>, IConsumer<TRequest>
-        where TRequest : RequestBase
-    {
-
-    }
-
-    public interface IProducer<TRequest, TPriority> : IProducerConsumer
-        where TRequest : RequestBase
-    {
-        void Enqueue(TRequest data, TPriority priority);
-    }
-
-    public interface IProducer<TRequest> : IProducerConsumer
+    public interface IProducer<TRequest, TResult> : IProducerConsumer
         where TRequest : RequestBase
     {
         void Enqueue(TRequest data);
 
-        event EventHandler<ItemCompletedEventArgs> OnCompleted;
+        event EventHandler<ItemCompletedEventArgs<TResult>> OnCompleted;
     }
 
-    public interface IConsumer<TRequest> : IProducerConsumer
+    public interface IConsumer<TRequest, TResult> : IProducerConsumer
         where TRequest : RequestBase
-    {       
+    {
         Task<TRequest> DequeueAsync();
-        void NotifyCompleted(TRequest item);
+        void NotifyCompleted(TRequest item, TaskStatus status, TResult? result);
     }
 
     public interface IProducerConsumer

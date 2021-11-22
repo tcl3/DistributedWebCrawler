@@ -7,14 +7,14 @@ namespace DistributedWebCrawler.Core.Seeding
     public abstract class AbstractQueueSeeder<TData> : ISeeder
         where TData : RequestBase
     {
-        private readonly IProducer<TData> _producer;
+        private readonly IProducer<TData, bool> _producer;
 
-        protected AbstractQueueSeeder(IProducer<TData> producer)
+        protected AbstractQueueSeeder(IProducer<TData, bool> producer)
         {
             _producer = producer;
         }
 
-        protected abstract Task SeedQueueAsync(IProducer<TData> producer);
+        protected abstract Task SeedQueueAsync(IProducer<TData, bool> producer);
 
         public async Task SeedAsync()
         {

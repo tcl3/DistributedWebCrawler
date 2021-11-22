@@ -30,7 +30,7 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 
         public static IServiceCollection AddInMemoryProducerConsumer(this IServiceCollection services)
         {
-            services.AddSingleton(typeof(IProducerConsumer<>), typeof(InMemoryQueue<>));
+            services.AddSingleton(typeof(IProducerConsumer<,>), typeof(InMemoryQueue<,>));
             return services;
         }
 

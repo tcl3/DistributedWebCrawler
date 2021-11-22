@@ -63,8 +63,8 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
     {
         public ComponentBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<IProducer<TResult>>(x => x.GetRequiredService<IProducerConsumer<TResult>>());
-            services.AddSingleton<IConsumer<TRequest>>(x => x.GetRequiredService<IProducerConsumer<TRequest>>());
+            services.AddSingleton<IProducer<TResult, bool>>(x => x.GetRequiredService<IProducerConsumer<TResult, bool >> ());
+            services.AddSingleton<IConsumer<TRequest, bool>>(x => x.GetRequiredService<IProducerConsumer<TRequest, bool>>());
         }
     }
 }

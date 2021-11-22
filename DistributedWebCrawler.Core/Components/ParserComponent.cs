@@ -15,16 +15,16 @@ namespace DistributedWebCrawler.Core.Components
 {
     public class ParserComponent : AbstractTaskQueueComponent<ParseRequest>
     {
-        private readonly IConsumer<ParseRequest> _parseRequestConsumer;
+        private readonly IConsumer<ParseRequest, bool> _parseRequestConsumer;
 
-        private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
+        private readonly IProducer<SchedulerRequest, bool> _schedulerRequestProducer;
         private readonly ILinkParser _linkParser;
         private readonly IContentStore _contentStore;
         private readonly ILogger<ParserComponent> _logger;
 
         public ParserComponent(ParserSettings parserSettings,
-            IConsumer<ParseRequest> parseRequestConsumer,
-            IProducer<SchedulerRequest> schedulerRequestProducer,
+            IConsumer<ParseRequest, bool> parseRequestConsumer,
+            IProducer<SchedulerRequest, bool> schedulerRequestProducer,
             ILinkParser linkParser,
             IContentStore contentStore,
             ILogger<ParserComponent> logger)
@@ -37,18 +37,18 @@ namespace DistributedWebCrawler.Core.Components
             _logger = logger;
         }
 
-        protected override Task ProcessItemAsync(ParseRequest parseRequest)
+        protected override Task<bool> ProcessItemAsync(ParseRequest parseRequest)
         {
             return Task.Run(async () => await ProcessItemInternalAsync(parseRequest).ConfigureAwait(false));
         }
 
-        private async Task ProcessItemInternalAsync(ParseRequest parseRequest)
+        private async Task<bool> ProcessItemInternalAsync(ParseRequest parseRequest)
         {
             var ingestResult = parseRequest.IngestResult;
 
             if (!ingestResult.ContentId.HasValue)
             {
-                return;
+                return false;
             }
 
             var content = await _contentStore.GetContentAsync(ingestResult.ContentId.Value).ConfigureAwait(false);
@@ -57,7 +57,7 @@ namespace DistributedWebCrawler.Core.Components
 
             if (!links.Any())
             {
-                return;
+                return false;
             }
 
             _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri} path {ingestResult.Path}");
@@ -83,6 +83,8 @@ namespace DistributedWebCrawler.Core.Components
 
                 _schedulerRequestProducer.Enqueue(schedulerRequest);
             }
+
+            return true;
         }
 
 

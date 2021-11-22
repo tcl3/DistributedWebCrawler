@@ -15,26 +15,26 @@ using System.Text.Json;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
-    public class RabbitMQProducerConsumer<TData> : IProducerConsumer<TData>
-        where TData : RequestBase
+    public class RabbitMQProducerConsumer<TRequest, TResult> : IProducerConsumer<TRequest, TResult>
+        where TRequest : RequestBase
     {
         private readonly IPersistentConnection _connection;
-        private readonly ILogger<RabbitMQProducerConsumer<TData>> _logger;
+        private readonly ILogger<RabbitMQProducerConsumer<TRequest, TResult>> _logger;
         private readonly RetryPolicy _retryPolicy;
 
-        private static readonly string ConsumerQueueName = typeof(TData).Name;
+        private static readonly string ConsumerQueueName = typeof(TRequest).Name;
         private static readonly string NotifierQueueName = ConsumerQueueName + "-Notifier";
 
         private IModel? _producerReceiveChannel;
         private IModel? _notifierReceiveChannel;
 
-        private readonly ConcurrentQueue<TaskCompletionSource<TData>> _taskQueue;
+        private readonly ConcurrentQueue<TaskCompletionSource<TRequest>> _taskQueue;
         private readonly SemaphoreSlim _messageSemaphore;
         private readonly ConcurrentDictionary<int, IModel> _channelPool;
 
         private static readonly object _syncRoot = new();
 
-        private EventHandler<ItemCompletedEventArgs>? _onCompleted = (_, _) => { };
+        private EventHandler<ItemCompletedEventArgs<TResult>>? _onCompleted = (_, _) => { };
 
         public int Count
         {
@@ -57,7 +57,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
         }
 
-        public event EventHandler<ItemCompletedEventArgs>? OnCompleted
+        public event EventHandler<ItemCompletedEventArgs<TResult>>? OnCompleted
         {
             add
             {
@@ -85,7 +85,8 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
         }
 
-        public RabbitMQProducerConsumer(IPersistentConnection connection, ILogger<RabbitMQProducerConsumer<TData>> logger)
+        public RabbitMQProducerConsumer(IPersistentConnection connection, 
+            ILogger<RabbitMQProducerConsumer<TRequest, TResult>> logger)
         {
             _connection = connection;
             _logger = logger;
@@ -103,7 +104,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             _channelPool = new();            
         }
 
-        public Task<TData> DequeueAsync()
+        public Task<TRequest> DequeueAsync()
         {
             if (!_connection.IsConnected)
             {
@@ -118,7 +119,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 }
             }
 
-            var tcs = new TaskCompletionSource<TData>();
+            var tcs = new TaskCompletionSource<TRequest>();
             _taskQueue.Enqueue(tcs);
             _messageSemaphore.Release();
 
@@ -128,14 +129,14 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         {
             _logger.LogDebug($"Message received: '{Encoding.UTF8.GetString(ea.Body.Span)}'");
 
-            var queueItem = JsonSerializer.Deserialize<TData>(ea.Body.Span);
+            var queueItem = JsonSerializer.Deserialize<TRequest>(ea.Body.Span);
 
             if (queueItem == null)
             {
                 throw new JsonException("Failed to deserialize queue item");
             }
 
-            TaskCompletionSource<TData> tcs;
+            TaskCompletionSource<TRequest> tcs;
             while (!_taskQueue.TryDequeue(out tcs))
             {
                 await _messageSemaphore.WaitAsync().ConfigureAwait(false);
@@ -147,9 +148,14 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private Task OnNotificationReceived(object? model, BasicDeliverEventArgs ea)
         {
-            var id = JsonSerializer.Deserialize<Guid>(ea.Body.Span);
+            var eventArgs = JsonSerializer.Deserialize<ItemCompletedEventArgs<TResult>>(ea.Body.Span);
+
+            if (eventArgs == null)
+            {
+                throw new JsonException("Failed to deserialize OnCompleted event data");
+            }
             
-            _onCompleted?.Invoke(this, new ItemCompletedEventArgs(id));
+            _onCompleted?.Invoke(this, eventArgs);
 
             _notifierReceiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
             
@@ -193,7 +199,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return channel;
         }
 
-        public void Enqueue(TData data)
+        public void Enqueue(TRequest data)
         {
             if (!_connection.IsConnected)
             {
@@ -211,14 +217,16 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             Publish(data, ConsumerQueueName);
         }
 
-        public void NotifyCompleted(TData item)
+        public void NotifyCompleted(TRequest item, TaskStatus status, TResult? result)
         {
             if (!_connection.IsConnected)
             {
                 _connection.TryConnect();
-            }        
+            }
 
-            Publish(item.Id, NotifierQueueName);
+            var eventArgs = new ItemCompletedEventArgs<TResult>(item.Id, status) { Result = result };
+
+            Publish(eventArgs, NotifierQueueName);
         }
 
         private void Publish(object data, string queueName)

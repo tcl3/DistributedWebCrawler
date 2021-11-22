@@ -6,13 +6,22 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class InMemoryQueue<TData> : IProducerConsumer<TData>
-        where TData : RequestBase
+    public class InMemoryQueue<TRequest> : InMemoryQueue<TRequest, bool>
+        where TRequest : RequestBase
     {
-        private readonly ConcurrentQueue<TData> _queue;
-        private readonly ConcurrentQueue<TaskCompletionSource<TData>> _taskQueue;
+        public InMemoryQueue() : base()
+        {
 
-        public event EventHandler<ItemCompletedEventArgs> OnCompleted = (_, _) => { };
+        }
+    }
+
+    public class InMemoryQueue<TRequest, TResult> : IProducerConsumer<TRequest, TResult>
+        where TRequest : RequestBase
+    {
+        private readonly ConcurrentQueue<TRequest> _queue;
+        private readonly ConcurrentQueue<TaskCompletionSource<TRequest>> _taskQueue;
+
+        public event EventHandler<ItemCompletedEventArgs<TResult>> OnCompleted = (_, _) => { };
 
         public InMemoryQueue()
         {
@@ -22,7 +31,7 @@ namespace DistributedWebCrawler.Core.Queue
 
         public int Count => _queue.Count;
 
-        public void Enqueue(TData data)
+        public void Enqueue(TRequest data)
         {
             if (_taskQueue.TryDequeue(out var taskCompletionSource))
             {
@@ -34,23 +43,23 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public Task<TData> DequeueAsync()
+        public Task<TRequest> DequeueAsync()
         {
             if (_queue.TryDequeue(out var data))
             {
                 return Task.FromResult(data);
             }
 
-            var tcs = new TaskCompletionSource<TData>();
+            var tcs = new TaskCompletionSource<TRequest>();
 
             _taskQueue.Enqueue(tcs);
 
             return tcs.Task;            
         }
 
-        public void NotifyCompleted(TData item)
+        public void NotifyCompleted(TRequest item, TaskStatus status, TResult? result)
         {
-            OnCompleted?.Invoke(this, new ItemCompletedEventArgs(item.Id));
+            OnCompleted?.Invoke(this, new ItemCompletedEventArgs<TResult>(item.Id, status) { Result = result});
         }
     }
 }

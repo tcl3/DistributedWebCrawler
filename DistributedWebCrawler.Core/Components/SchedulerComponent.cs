@@ -40,7 +40,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly SchedulerSettings _schedulerSettings;
         private readonly ILogger<SchedulerComponent> _logger;
         private readonly IRobotsCache _robotsCache;
-        private readonly IProducer<IngestRequest> _ingestRequestProducer;
+        private readonly IProducer<IngestRequest, bool> _ingestRequestProducer;
 
         private readonly ConcurrentDictionary<Uri, bool> _visitedUris;
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _visitedPathsLookup;
@@ -57,10 +57,10 @@ namespace DistributedWebCrawler.Core.Components
         private const int IngestQueueMaxItems = 50;
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
-            IConsumer<SchedulerRequest> consumer,
+            IConsumer<SchedulerRequest, bool> consumer,
             ILogger<SchedulerComponent> logger,
             IRobotsCache robotsCache,
-            IProducer<IngestRequest> ingestRequestProducer)
+            IProducer<IngestRequest, bool> ingestRequestProducer)
             : base(consumer, logger, nameof(SchedulerComponent), schedulerSettings.MaxConcurrentRobotsRequests)
         {
             _schedulerSettings = schedulerSettings;
@@ -159,7 +159,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        private void OnIngestCompleted(object? sender, ItemCompletedEventArgs eventArgs)
+        private void OnIngestCompleted(object? sender, ItemCompletedEventArgs<bool> eventArgs)
         {
             if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
             {
@@ -178,12 +178,12 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        protected async override Task ProcessItemAsync(SchedulerRequest schedulerRequest)
+        protected async override Task<bool> ProcessItemAsync(SchedulerRequest schedulerRequest)
         {
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
             {
                 _logger.LogError($"Not processing {schedulerRequest.Uri}. Maximum crawl depth exceeded (curremt: {schedulerRequest.CurrentCrawlDepth}, max: {_schedulerSettings.MaxCrawlDepth})");
-                return;
+                return false;
             }
 
             var visitedPathsForHost = Enumerable.Empty<string>();
@@ -233,7 +233,7 @@ namespace DistributedWebCrawler.Core.Components
             if (!pathsToVisit.Any())
             {
                 _logger.LogDebug($"Not processing request for host: {schedulerRequest.Uri}. No unvisited paths");
-                return;
+                return false;
             }
 
             schedulerRequest.Paths = pathsToVisit;
@@ -245,7 +245,9 @@ namespace DistributedWebCrawler.Core.Components
             if (!_activeDomains.TryGetValue(domain, out var status) || status == DomainStatus.Inactive)
             {
                 AddNextUriToSchedulerQueue(domain, schedulerRequest, firstTimeVisit);
-            }                
+            }
+
+            return true;
         }
 
         private enum PathCompareMode

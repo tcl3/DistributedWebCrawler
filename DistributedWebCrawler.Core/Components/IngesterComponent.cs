@@ -17,7 +17,7 @@ namespace DistributedWebCrawler.Core.Components
     public class IngesterComponent : AbstractTaskQueueComponent<IngestRequest>
     {
         private readonly IngesterSettings _ingesterSettings;
-        private readonly IProducer<ParseRequest> _parseRequestProducer;
+        private readonly IProducer<ParseRequest, bool> _parseRequestProducer;
         private readonly CrawlerClient _crawlerClient;
         private readonly IContentStore _contentStore;
         private readonly ILogger<IngesterComponent> _logger;
@@ -25,8 +25,8 @@ namespace DistributedWebCrawler.Core.Components
         private static readonly HashSet<string> ParseableMediaTypes = new() { MediaTypeNames.Text.Html, MediaTypeNames.Text.Plain };
         
         public IngesterComponent(IngesterSettings ingesterSettings,
-            IConsumer<IngestRequest> ingestRequestConsumer, 
-            IProducer<ParseRequest> parseRequestProducer,
+            IConsumer<IngestRequest, bool> ingestRequestConsumer, 
+            IProducer<ParseRequest, bool> parseRequestProducer,
             CrawlerClient crawlerClient,
             IContentStore contentStore,
             ILogger<IngesterComponent> logger) 
@@ -45,12 +45,12 @@ namespace DistributedWebCrawler.Core.Components
             return CrawlerComponentStatus.Busy;
         }
 
-        protected async override Task ProcessItemAsync(IngestRequest item)
+        protected async override Task<bool> ProcessItemAsync(IngestRequest item)
         {
             if (item.MaxDepthReached)
             {
                 _logger.LogDebug($"Not sending request to parser for {item.Uri}");
-                return;
+                return false;
             }
 
             try
@@ -60,7 +60,7 @@ namespace DistributedWebCrawler.Core.Components
                 if (!ingestResult.ContentId.HasValue || (!ParseableMediaTypes.Contains(ingestResult.MediaType)))
                 {
                     _logger.LogWarning($"Not passing {ingestResult.Path} to parser. Non parseable content type");
-                    return;
+                    return false;
                 }
 
                 var parseRequest = new ParseRequest(item.Uri, ingestResult)
@@ -73,19 +73,25 @@ namespace DistributedWebCrawler.Core.Components
             catch (IngesterException ex)
             {
                 _logger.LogInformation(ex.Message);
+                return false;
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, $"Error when getting for URI {item.Uri}. {ex.Message}");
+                return false;
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, $"Error processing URL for URI {item.Uri}. {ex.Message}");
+                return false;
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError($"Timeout while getting URL for URI {item.Uri}. {ex.Message}");
+                return false;
             }
+
+            return true;
         }
 
         private async Task<IngestResult> IngestCurrentPathAsync(Uri currentUri, bool allowRedirects)

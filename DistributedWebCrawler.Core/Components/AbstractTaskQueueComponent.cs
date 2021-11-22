@@ -8,10 +8,19 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public abstract class AbstractTaskQueueComponent<TData> : AbstractComponent 
-        where TData : RequestBase
+    public abstract class AbstractTaskQueueComponent<TRequest> : AbstractTaskQueueComponent<TRequest, bool>
+        where TRequest : RequestBase
     {
-        private readonly IConsumer<TData> _consumer;
+        protected AbstractTaskQueueComponent(IConsumer<TRequest, bool> consumer, ILogger logger, string name, int maxConcurrentItems) 
+            : base(consumer, logger, name, maxConcurrentItems)
+        {
+        }
+    }
+
+    public abstract class AbstractTaskQueueComponent<TRequest, TResult> : AbstractComponent 
+        where TRequest : RequestBase
+    {
+        private readonly IConsumer<TRequest, TResult> _consumer;
         private readonly ILogger _logger;        
         private readonly SemaphoreSlim _itemSemaphore;
 
@@ -19,7 +28,7 @@ namespace DistributedWebCrawler.Core.Components
         
         private readonly SemaphoreSlim _pauseSemaphore;
 
-        protected AbstractTaskQueueComponent(IConsumer<TData> consumer, ILogger logger,
+        protected AbstractTaskQueueComponent(IConsumer<TRequest, TResult> consumer, ILogger logger,
             string name, int maxConcurrentItems) : base(logger, name)
         {
             _consumer = consumer;
@@ -59,8 +68,10 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     try
                     {
+                        var result = task.Status == TaskStatus.RanToCompletion ? task.Result : default;
+
                         // TODO: indicate whether task errored or not
-                        _consumer.NotifyCompleted(currentItem);
+                        _consumer.NotifyCompleted(currentItem, task.Status, result);
                     }
                     finally
                     {
@@ -111,6 +122,6 @@ namespace DistributedWebCrawler.Core.Components
             return Task.CompletedTask;
         }
 
-        protected abstract Task ProcessItemAsync(TData item);
+        protected abstract Task<TResult> ProcessItemAsync(TRequest item);
     }
 }

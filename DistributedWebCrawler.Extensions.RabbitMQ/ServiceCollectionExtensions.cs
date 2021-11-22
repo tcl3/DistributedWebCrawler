@@ -55,7 +55,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         {
             services.AddRabbitMQConnection(configuration);
 
-            services.AddSingleton(typeof(IProducerConsumer<>), typeof(RabbitMQProducerConsumer<>));
+            services.AddSingleton(typeof(IProducerConsumer<,>), typeof(RabbitMQProducerConsumer<,>));
            
             services.Decorate<ICrawlerComponent, RabbitMQComponentDecorator>();
 
