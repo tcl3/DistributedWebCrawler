@@ -6,6 +6,7 @@ using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
 using System.Net.Http.Headers;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
@@ -36,9 +37,19 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
         IComponentBuilder<TSettings> IComponentBuilder<TSettings>.WithClient<TClient>(IConfiguration configuration)
         {
             Services.AddSettings<CrawlerClientSettings>(configuration);
-            Services.AddSingleton<CrawlerHttpClientHandler>();
             Services.AddHttpClientWithSettings<TClient, CrawlerClientSettings>(ConfigureClient)
-                .ConfigurePrimaryHttpMessageHandler<CrawlerHttpClientHandler>();
+                .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
+                {
+                    var clientSettings = serviceProvider.GetRequiredService<CrawlerClientSettings>();
+                    return new SocketsHttpHandler
+                    {
+                        AllowAutoRedirect = false,
+                        AutomaticDecompression = DecompressionMethods.All,
+                        ConnectTimeout = TimeSpan.FromSeconds(clientSettings.ConnectTimeoutSeconds),
+                        ResponseDrainTimeout = TimeSpan.FromSeconds(clientSettings.ResponseDrainTimeoutSeconds),
+                        MaxConnectionsPerServer = clientSettings.MaxConnectionsPerServer,
+                    };
+                });
 
             return this;
         }
@@ -52,7 +63,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
             client.DefaultRequestHeaders.Add("User-Agent", settings.UserAgentString);
             client.DefaultRequestHeaders.Add("Accept", "*/*");
             client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
+            client.Timeout = TimeSpan.FromSeconds(settings.RequestTimeoutSeconds);
         }
     }
 

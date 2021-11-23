@@ -4,11 +4,6 @@ namespace DistributedWebCrawler.ComponentAPI
 {
     class Program
     {
-        static Program()
-        {
-            //ServicePointManager.DefaultConnectionLimit = 1000;
-        }
-
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);

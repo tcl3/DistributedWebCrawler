@@ -1,18 +1,12 @@
 ﻿using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Core.Enums;
 using Microsoft.Extensions.Configuration;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Console
 {
     static class Program
     {
-        static Program() 
-        {
-            ServicePointManager.DefaultConnectionLimit = 1000;
-        }
-
         static async Task Main(string[] args)
         {
             var configuration = new ConfigurationBuilder()
