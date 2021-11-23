@@ -48,14 +48,8 @@ namespace DistributedWebCrawler.Core.Compontents
             IsStarted = true;
 
             _logger.LogInformation($"{Name} component started");
-            
-            if (startState == CrawlerStartState.Paused)
-            {
-                var pauseTask = PauseAsync();
-                pauseTask.Wait();
-            }
 
-            _ = ComponentStartAsync()
+            _ = ComponentStartAsync(startState)
                 .ContinueWith(t => 
                 {
                     if (t.IsCanceled) _taskCompletionSource.SetCanceled();
@@ -66,7 +60,7 @@ namespace DistributedWebCrawler.Core.Compontents
             return Task.CompletedTask;
         }
 
-        protected abstract Task ComponentStartAsync();
+        protected abstract Task ComponentStartAsync(CrawlerStartState startState);
 
         public virtual Task PauseAsync()
         {

@@ -44,8 +44,13 @@ namespace DistributedWebCrawler.Core.Components
             return CrawlerComponentStatus.Busy;
         }
 
-        protected override async Task ComponentStartAsync()
+        protected override async Task ComponentStartAsync(CrawlerStartState startState)
         {
+            if (startState == CrawlerStartState.Paused)
+            {
+                await PauseAsync().ConfigureAwait(false);
+            }
+
             await Task.Run(QueueLoop).ConfigureAwait(false);            
         }
         

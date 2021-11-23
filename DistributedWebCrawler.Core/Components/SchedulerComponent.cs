@@ -88,9 +88,9 @@ namespace DistributedWebCrawler.Core.Components
             ingestRequestProducer.OnCompleted += OnIngestCompleted;
         }
 
-        protected override Task ComponentStartAsync()
+        protected override Task ComponentStartAsync(CrawlerStartState startState)
         {
-            var queueLoopTask = base.ComponentStartAsync();
+            var queueLoopTask = base.ComponentStartAsync(startState);
             var schedulerLoopTask = Task.Run(SchedulerLoop);
             return Task.WhenAll(new[] { queueLoopTask, schedulerLoopTask });
         }
