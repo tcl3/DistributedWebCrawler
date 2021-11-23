@@ -2,7 +2,6 @@
 using DistributedWebCrawler.Core.Seeding;
 using NLog.Extensions.Logging;
 using System.Text;
-using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Extensions.RabbitMQ;
 
 namespace DistributedWebCrawler.ManagerAPI
@@ -19,10 +18,7 @@ namespace DistributedWebCrawler.ManagerAPI
                 loggingBuilder.AddNLog();
             });
 
-            services.AddSingleton<ISeeder, CompositeSeeder>();
-            services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
-
-            services.AddRabbitMQManager(configuration);
+            services.AddRabbitMQCrawlerManager(configuration);
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             return services.BuildServiceProvider();

@@ -1,6 +1,7 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Queue;
+using DistributedWebCrawler.Core.Seeding;
 using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,13 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
         public static IServiceCollection AddInMemoryProducerConsumer(this IServiceCollection services)
         {
             services.AddSingleton(typeof(IProducerConsumer<,>), typeof(InMemoryQueue<,>));
+            return services;
+        }
+
+        public static IServiceCollection AddInMemoryCrawlerManager(this IServiceCollection services)
+        {
+            services.AddSingleton<ISeeder, CompositeSeeder>();
+            services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
             return services;
         }
 

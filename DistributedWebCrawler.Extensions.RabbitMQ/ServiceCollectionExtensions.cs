@@ -1,4 +1,7 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
+﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Extensions.DependencyInjection;
+using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Seeding;
 using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,20 +56,16 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         public static IServiceCollection AddRabbitMQProducerConsumer(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddRabbitMQConnection(configuration);
-
-            services.AddSingleton(typeof(IProducerConsumer<,>), typeof(RabbitMQProducerConsumer<,>));
-           
-            services.Decorate<ICrawlerComponent, RabbitMQComponentDecorator>();
-
-            return services;
+            return services.AddRabbitMQConnection(configuration)
+                .AddSingleton(typeof(IProducerConsumer<,>), typeof(RabbitMQProducerConsumer<,>))
+                .Decorate<ICrawlerComponent, RabbitMQComponentDecorator>();
         }
 
-        public static IServiceCollection AddRabbitMQManager(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddRabbitMQCrawlerManager(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddRabbitMQConnection(configuration);
-            services.Decorate<ICrawlerManager, RabbitMQCrawlerManagerDecorator>();
-            return services;
+            return services.AddRabbitMQConnection(configuration)
+                .AddInMemoryCrawlerManager()
+                .Decorate<ICrawlerManager, RabbitMQCrawlerManagerDecorator>();
         }
     }
 }

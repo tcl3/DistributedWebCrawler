@@ -57,7 +57,7 @@ namespace DistributedWebCrawler.ComponentAPI
             services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
 
             services.AddRabbitMQProducerConsumer(configuration);
-            services.AddRabbitMQManager(configuration);
+            services.AddRabbitMQCrawlerManager(configuration);
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 

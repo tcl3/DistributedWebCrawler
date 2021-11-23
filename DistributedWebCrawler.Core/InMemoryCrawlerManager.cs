@@ -11,17 +11,14 @@ namespace DistributedWebCrawler.Core
     {
         private readonly IEnumerable<ICrawlerComponent> _crawlerComponents;
         private readonly ISeeder _seeder;
-        private readonly ILogger<InMemoryCrawlerManager> _logger;
 
         private bool _isSeeded;
         private bool _isStarted;
-        public InMemoryCrawlerManager(IEnumerable<ICrawlerComponent> crawlerComponents,
-            ISeeder seeder, ILogger<InMemoryCrawlerManager> logger)
+        public InMemoryCrawlerManager(IEnumerable<ICrawlerComponent> crawlerComponents, ISeeder seeder)
         {
             _crawlerComponents = crawlerComponents;
             
             _seeder = seeder;
-            _logger = logger;
         }
 
         public async Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
