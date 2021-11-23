@@ -188,7 +188,10 @@ namespace DistributedWebCrawler.Core.Components
 
             var visitedPathsForHost = Enumerable.Empty<string>();
             
-            var domain = _domainParser.Parse(schedulerRequest.Uri).RegistrableDomain;
+            var domain = _domainParser.IsValidDomain(schedulerRequest.Uri.Host) 
+                ? _domainParser.Parse(schedulerRequest.Uri).RegistrableDomain
+                : schedulerRequest.Uri.Host;
+
             var firstTimeVisit = !_visitedPathsLookup.Any(x => x.Key.EndsWith(domain, StringComparison.OrdinalIgnoreCase));
 
             _visitedPathsLookup.AddOrUpdate(schedulerRequest.Uri.Authority, schedulerRequest.Paths,
