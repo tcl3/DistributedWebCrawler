@@ -7,6 +7,7 @@ using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
@@ -21,6 +22,9 @@ namespace DistributedWebCrawler.Core.Components
         private readonly CrawlerClient _crawlerClient;
         private readonly IContentStore _contentStore;
         private readonly ILogger<IngesterComponent> _logger;
+
+        private readonly IEnumerable<MediaTypePattern> _mediaTypesToInclude;
+        private readonly IEnumerable<MediaTypePattern> _mediaTypesToExclude;
 
         private static readonly HashSet<string> ParseableMediaTypes = new() { MediaTypeNames.Text.Html, MediaTypeNames.Text.Plain };
         
@@ -37,6 +41,33 @@ namespace DistributedWebCrawler.Core.Components
             _crawlerClient = crawlerClient;
             _contentStore = contentStore;
             _logger = logger;
+
+            _mediaTypesToInclude = GetMediaTypes(ingesterSettings.IncludeMediaTypes);
+            _mediaTypesToExclude = GetMediaTypes(ingesterSettings.ExcludeMediaTypes);
+        }
+
+        // TODO - move this to a custom configuration validator
+        private static IEnumerable<MediaTypePattern> GetMediaTypes(IEnumerable<string>? patternStrings)
+        {
+            if (patternStrings == null || !patternStrings.Any())
+            {
+                return Enumerable.Empty<MediaTypePattern>();
+            }
+
+            var mediaTypePatterns = new List<MediaTypePattern>();
+            foreach (var pattern in patternStrings)
+            {
+                if (MediaTypePattern.TryCreate(pattern, out var mediaTypePattern))
+                {
+                    mediaTypePatterns.Add(mediaTypePattern);
+                }
+                else
+                {
+                    throw new ArgumentException($"'{pattern}' is not a valid media type pattern");
+                }                
+            }
+
+            return mediaTypePatterns;
         }
 
         protected override CrawlerComponentStatus GetStatus()
@@ -106,6 +137,23 @@ namespace DistributedWebCrawler.Core.Components
             if (response.Content.Headers.ContentLength > _ingesterSettings.MaxContentLengthBytes)
             {
                 throw new IngesterException($"Content length for {currentUri} ({response.Content.Headers.ContentLength} bytes) is longer than the maximum allowed ({_ingesterSettings.MaxContentLengthBytes} bytes)");
+            }
+
+            var contentTypeHeader = response.Content.Headers.ContentType;
+            if (contentTypeHeader?.MediaType != null)
+            {                
+                if (contentTypeHeader.MediaType.Contains('*') || !MediaTypePattern.TryCreate(contentTypeHeader.MediaType, out var contentType))
+                {
+                    _logger.LogWarning($"Invalid Content-Type header for '{currentUri}' - {contentTypeHeader.MediaType}");
+                }                
+                else if (_mediaTypesToInclude.Any() && !_mediaTypesToInclude.Any(x => x.Match(contentType)))
+                {
+                    throw new IngesterException($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) not present in include list");
+                }
+                else if (_mediaTypesToExclude.Any() && _mediaTypesToExclude.Any(x => x.Match(contentType)))
+                {
+                    throw new IngesterException($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) present in exclude list");
+                }
             }
 
             var urlContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);

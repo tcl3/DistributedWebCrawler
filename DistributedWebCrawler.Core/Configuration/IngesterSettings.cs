@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace DistributedWebCrawler.Core.Configuration
 {
@@ -12,5 +13,8 @@ namespace DistributedWebCrawler.Core.Configuration
 
         [Range(1, long.MaxValue)]
         public long? MaxContentLengthBytes { get; init; }
+
+        public IEnumerable<string>? IncludeMediaTypes { get; init; }
+        public IEnumerable<string>? ExcludeMediaTypes { get; init; }
     }
 }
