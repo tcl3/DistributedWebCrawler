@@ -21,7 +21,7 @@ namespace DistributedWebCrawler.Core.Queue
         private readonly ConcurrentQueue<TRequest> _queue;
         private readonly ConcurrentQueue<TaskCompletionSource<TRequest>> _taskQueue;
 
-        public event EventHandler<ItemCompletedEventArgs<TResult>> OnCompleted = (_, _) => { };
+        public event ItemCompletedEventHandler<TResult> OnCompletedAsync = (_, _) => Task.CompletedTask;
 
         public InMemoryQueue()
         {
@@ -57,9 +57,12 @@ namespace DistributedWebCrawler.Core.Queue
             return tcs.Task;            
         }
 
-        public void NotifyCompleted(TRequest item, TaskStatus status, TResult? result)
+        public async Task NotifyCompletedAsync(TRequest item, TaskStatus status, TResult? result)
         {
-            OnCompleted?.Invoke(this, new ItemCompletedEventArgs<TResult>(item.Id, status) { Result = result});
+            if (OnCompletedAsync != null)
+            {
+                await OnCompletedAsync.Invoke(this, new ItemCompletedEventArgs<TResult>(item.Id, status) { Result = result }).ConfigureAwait(false);
+            }
         }
     }
 }

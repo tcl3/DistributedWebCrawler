@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
+    public delegate Task ItemCompletedEventHandler<TResult>(object? sender, ItemCompletedEventArgs<TResult> e);
+
     public interface IProducerConsumer<TRequest, TResult>
         : IProducer<TRequest, TResult>, IConsumer<TRequest, TResult>
         where TRequest : RequestBase
@@ -17,14 +19,14 @@ namespace DistributedWebCrawler.Core.Interfaces
     {
         void Enqueue(TRequest data);
 
-        event EventHandler<ItemCompletedEventArgs<TResult>> OnCompleted;
+        event ItemCompletedEventHandler<TResult> OnCompletedAsync;
     }
 
     public interface IConsumer<TRequest, TResult> : IProducerConsumer
         where TRequest : RequestBase
     {
         Task<TRequest> DequeueAsync();
-        void NotifyCompleted(TRequest item, TaskStatus status, TResult? result);
+        Task NotifyCompletedAsync(TRequest item, TaskStatus status, TResult? result);
     }
 
     public interface IProducerConsumer

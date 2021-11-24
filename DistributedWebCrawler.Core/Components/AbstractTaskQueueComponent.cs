@@ -76,7 +76,7 @@ namespace DistributedWebCrawler.Core.Components
                         var result = task.Status == TaskStatus.RanToCompletion ? task.Result : default;
 
                         // TODO: indicate whether task errored or not
-                        _consumer.NotifyCompleted(currentItem, task.Status, result);
+                        _consumer.NotifyCompletedAsync(currentItem, task.Status, result);
                     }
                     finally
                     {

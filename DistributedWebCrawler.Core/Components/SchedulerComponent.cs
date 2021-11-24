@@ -85,7 +85,7 @@ namespace DistributedWebCrawler.Core.Components
                 ? _schedulerSettings.ExcludeDomains.Select(str => new DomainPattern(str))
                 : Enumerable.Empty<DomainPattern>();
 
-            ingestRequestProducer.OnCompleted += OnIngestCompleted;
+            ingestRequestProducer.OnCompletedAsync += OnIngestCompletedAsync;
         }
 
         protected override Task ComponentStartAsync(CrawlerStartState startState)
@@ -159,7 +159,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        private void OnIngestCompleted(object? sender, ItemCompletedEventArgs<bool> eventArgs)
+        private Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<bool> eventArgs)
         {
             if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
             {
@@ -176,6 +176,8 @@ namespace DistributedWebCrawler.Core.Components
             {
                 _logger.LogCritical($"No queue entry found for ingest request ID: {eventArgs.Id}");
             }
+
+            return Task.CompletedTask;
         }
 
         protected async override Task<bool> ProcessItemAsync(SchedulerRequest schedulerRequest)

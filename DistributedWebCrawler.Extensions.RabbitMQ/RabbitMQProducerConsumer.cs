@@ -34,7 +34,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private static readonly object _syncRoot = new();
 
-        private EventHandler<ItemCompletedEventArgs<TResult>>? _onCompleted = (_, _) => { };
+        private ItemCompletedEventHandler<TResult>? _onCompletedAsync = (_, _) => Task.CompletedTask;
 
         public int Count
         {
@@ -57,7 +57,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
         }
 
-        public event EventHandler<ItemCompletedEventArgs<TResult>>? OnCompleted
+        public event ItemCompletedEventHandler<TResult>? OnCompletedAsync
         {
             add
             {
@@ -76,12 +76,12 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                     }
                 }
 
-                _onCompleted += value;
+                _onCompletedAsync += value;
             }
 
             remove
             {
-                _onCompleted -= value;
+                _onCompletedAsync -= value;
             }
         }
 
@@ -146,7 +146,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             _producerReceiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
         }
 
-        private Task OnNotificationReceived(object? model, BasicDeliverEventArgs ea)
+        private async Task OnNotificationReceived(object? model, BasicDeliverEventArgs ea)
         {
             var eventArgs = JsonSerializer.Deserialize<ItemCompletedEventArgs<TResult>>(ea.Body.Span);
 
@@ -155,11 +155,12 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 throw new JsonException("Failed to deserialize OnCompleted event data");
             }
             
-            _onCompleted?.Invoke(this, eventArgs);
+            if (_onCompletedAsync != null)
+            {
+                await _onCompletedAsync.Invoke(this, eventArgs).ConfigureAwait(false);
+            }
 
             _notifierReceiveChannel?.BasicAck(ea.DeliveryTag, multiple: false);
-            
-            return Task.CompletedTask;
         }
 
         private IModel StartConumer(string? queueName, AsyncEventHandler<BasicDeliverEventArgs> receiveCallback)
@@ -217,7 +218,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             Publish(data, ConsumerQueueName);
         }
 
-        public void NotifyCompleted(TRequest item, TaskStatus status, TResult? result)
+        public Task NotifyCompletedAsync(TRequest item, TaskStatus status, TResult? result)
         {
             if (!_connection.IsConnected)
             {
@@ -227,6 +228,8 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             var eventArgs = new ItemCompletedEventArgs<TResult>(item.Id, status) { Result = result };
 
             Publish(eventArgs, NotifierQueueName);
+
+            return Task.CompletedTask;
         }
 
         private void Publish(object data, string queueName)
