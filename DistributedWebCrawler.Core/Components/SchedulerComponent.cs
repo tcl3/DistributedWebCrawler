@@ -47,14 +47,14 @@ namespace DistributedWebCrawler.Core.Components
         private readonly ConcurrentDictionary<string, IEnumerable<Uri>> _queuedPathsLookup;
         private readonly ConcurrentDictionary<Guid, SchedulerQueueEntry> _activeQueueEntries;
         private readonly ConcurrentDictionary<string, DomainStatus> _activeDomains;
-        private readonly SimplePriorityQueue<SchedulerQueueEntry, DateTimeOffset> _nextPathForHostQueue;
+        private readonly InMemoryDateTimePriorityQueue<SchedulerQueueEntry> _nextPathForHostQueue;
 
         private readonly IDomainParser _domainParser;
 
         private readonly IEnumerable<DomainPattern> _domainsToInclude;
         private readonly IEnumerable<DomainPattern> _domainsToExclude;
 
-        private const int IngestQueueMaxItems = 50;
+        private const int IngestQueueMaxItems = 500;
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest, bool> consumer,
@@ -107,59 +107,50 @@ namespace DistributedWebCrawler.Core.Components
             {
                 try
                 {
-                    while (_nextPathForHostQueue.TryFirst(out var entry)
-                        && _nextPathForHostQueue.TryGetPriority(entry, out var notBefore)
-                        && notBefore <= DateTimeOffset.Now)
+                    if (_ingestRequestProducer.Count > IngestQueueMaxItems)
                     {
+                        // TODO: Replace this arbitrary delay with something better
+                        await Task.Delay(100).ConfigureAwait(false);
+                        continue;
+                    }
 
-                        if (_ingestRequestProducer.Count > IngestQueueMaxItems)
+                    var entry = await _nextPathForHostQueue.DequeueAsync().ConfigureAwait(false);
+
+                    var schedulerRequest = entry.SchedulerRequest;
+
+                    if (!_visitedUris.ContainsKey(entry.Uri))
+                    {
+                        _logger.LogDebug($"Enqueueing URI: {entry.Uri} for ingestion");
+
+                        var ingestRequest = new IngestRequest(entry.Uri)
                         {
-                            // TODO: Replace this arbitrary delay with something better
-                            await Task.Delay(100).ConfigureAwait(false);
+                            CurrentCrawlDepth = schedulerRequest.CurrentCrawlDepth,
+                            MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
+                        };
+
+
+                        if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))
+                        {
+                            _logger.LogCritical($"Active queue item with ID: {ingestRequest.Id} already exists. This should never happen");
                             continue;
                         }
-
-                        _ = _nextPathForHostQueue.Dequeue();
-
-                        var schedulerRequest = entry.SchedulerRequest;
-
-                        if (!_visitedUris.ContainsKey(entry.Uri))
-                        {
-                            _logger.LogDebug($"Enqueueing URI: {entry.Uri} for ingestion");
-
-                            var ingestRequest = new IngestRequest(entry.Uri)
-                            {
-                                CurrentCrawlDepth = schedulerRequest.CurrentCrawlDepth,
-                                MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
-                            };
-
-
-                            if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))
-                            {
-                                _logger.LogCritical($"Active queue item with ID: {ingestRequest.Id} already exists. This should never happen");
-                                continue;
-                            }
-                            _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
-                            _ingestRequestProducer.Enqueue(ingestRequest);
-                            _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
-                        }
-                        else
-                        {
-                            AddNextUriToSchedulerQueue(entry.Domain, schedulerRequest, addCrawlDelay: true);
-                        }
+                        _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
+                        _ingestRequestProducer.Enqueue(ingestRequest);
+                        _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
+                    }
+                    else
+                    {
+                        await AddNextUriToSchedulerQueueAsync(entry.Domain, schedulerRequest, addCrawlDelay: true).ConfigureAwait(false);
                     }
                 } 
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unhandled exception in Scheduler thread");
                 }
-
-                // FIXME: This is currently here to avoid hammering the CPU. We should probably use a mutex/semaphore with an appropriate timeout.                
-                await Task.Delay(1).ConfigureAwait(false);
             }
         }
 
-        private Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<bool> eventArgs)
+        private async Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<bool> eventArgs)
         {
             if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
             {
@@ -170,14 +161,12 @@ namespace DistributedWebCrawler.Core.Components
                         _activeDomains.TryAdd(entry.Domain, status);
                     }
                 }
-                AddNextUriToSchedulerQueue(entry.Domain, entry.SchedulerRequest);
+                await AddNextUriToSchedulerQueueAsync(entry.Domain, entry.SchedulerRequest).ConfigureAwait(false);
             } 
             else
             {
                 _logger.LogCritical($"No queue entry found for ingest request ID: {eventArgs.Id}");
             }
-
-            return Task.CompletedTask;
         }
 
         protected async override Task<bool> ProcessItemAsync(SchedulerRequest schedulerRequest)
@@ -249,7 +238,7 @@ namespace DistributedWebCrawler.Core.Components
 
             if (!_activeDomains.TryGetValue(domain, out var status) || status == DomainStatus.Inactive)
             {
-                AddNextUriToSchedulerQueue(domain, schedulerRequest, firstTimeVisit);
+                await AddNextUriToSchedulerQueueAsync(domain, schedulerRequest, firstTimeVisit).ConfigureAwait(false);
             }
 
             return true;
@@ -290,7 +279,7 @@ namespace DistributedWebCrawler.Core.Components
             return validPaths;
         }
 
-        private void AddNextUriToSchedulerQueue(string domain, SchedulerRequest schedulerRequest, bool addCrawlDelay = false)
+        private async Task AddNextUriToSchedulerQueueAsync(string domain, SchedulerRequest schedulerRequest, bool addCrawlDelay = false)
         {
             if (!_queuedPathsLookup.TryGetValue(domain, out var urisToVisit) || !urisToVisit.Any())
             {
@@ -309,7 +298,7 @@ namespace DistributedWebCrawler.Core.Components
                 notBefore = notBefore.AddMilliseconds(_schedulerSettings.SameDomainCrawlDelayMillis);
             }
 
-            _nextPathForHostQueue.Enqueue(queueEntry, notBefore);
+            await _nextPathForHostQueue.EnqueueAsync(queueEntry, notBefore).ConfigureAwait(false);
 
             _activeDomains.AddOrUpdate(queueEntry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Queued);
             
