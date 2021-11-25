@@ -97,11 +97,7 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     if (ParseableMediaTypes.Contains(ingestResult.MediaType))
                     {
-                        var parseRequest = new ParseRequest(item.Uri, ingestResult)
-                        {
-                            CurrentCrawlDepth = item.CurrentCrawlDepth
-                        };
-
+                        var parseRequest = new ParseRequest(item.Uri, ingestResult.ContentId.Value, item.CurrentCrawlDepth);
                         _parseRequestProducer.Enqueue(parseRequest);
                     }
                     else

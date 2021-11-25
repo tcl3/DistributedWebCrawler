@@ -44,14 +44,7 @@ namespace DistributedWebCrawler.Core.Components
 
         private async Task<bool> ProcessItemInternalAsync(ParseRequest parseRequest)
         {
-            var ingestResult = parseRequest.IngestResult;
-
-            if (!ingestResult.ContentId.HasValue)
-            {
-                return false;
-            }
-
-            var content = await _contentStore.GetContentAsync(ingestResult.ContentId.Value).ConfigureAwait(false);
+            var content = await _contentStore.GetContentAsync(parseRequest.ContentId).ConfigureAwait(false);
 
             var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
@@ -60,7 +53,7 @@ namespace DistributedWebCrawler.Core.Components
                 return false;
             }
 
-            _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri} path {ingestResult.Uri}");
+            _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri}");
 
             var linksGroupedByHost = links.ToLookup(k => GetHostFromHref(k.Href, parseRequest.Uri), v => v.Href);
 

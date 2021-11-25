@@ -1,18 +1,10 @@
 ﻿using System;
-using System.Text.Json.Serialization;
 
 namespace DistributedWebCrawler.Core.Model
 {
     public class ParseRequest : RequestBase
     {
-        [JsonConstructor]
-        public ParseRequest() : base()
-        {
-            Uri = default!;
-            IngestResult = default!;
-        }
-
-        public ParseRequest(Uri uri, IngestResult ingestResult) : base()
+        public ParseRequest(Uri uri, Guid contentId, int currentCrawlDepth) : base()
         {
             if (!uri.IsAbsoluteUri)
             {
@@ -20,11 +12,13 @@ namespace DistributedWebCrawler.Core.Model
             }
 
             Uri = uri;
-            IngestResult = ingestResult;
+            ContentId = contentId;
+            CurrentCrawlDepth = currentCrawlDepth;
+            
         }
 
-        public Uri Uri { get; set; }
-        public IngestResult IngestResult { get; set; }
-        public int CurrentCrawlDepth { get; set; }
+        public Uri Uri { get; init; }
+        public Guid ContentId { get; init; }
+        public int CurrentCrawlDepth { get; init; }
     }
 }
