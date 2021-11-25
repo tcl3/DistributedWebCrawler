@@ -33,7 +33,7 @@ namespace DistributedWebCrawler.Console
             });
 
             services.AddInMemoryProducerConsumer();
-            services.AddInMemoryContentStore();
+            services.AddInMemoryKeyValueStore();
 
             services.AddCrawler(crawler => crawler
                 .WithSeeder<SchedulerRequest>(seeder => seeder

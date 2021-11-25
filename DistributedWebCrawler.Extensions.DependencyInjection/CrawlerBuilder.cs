@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Components;
+﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
@@ -19,6 +20,13 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
             _ingesterBuilder = new IngesterBuilder(services);
             _parserBuilder = new ParserBuilder(services);
             _services = services;
+
+            RegisterCommonDependencies(services);
+        }
+
+        private static void RegisterCommonDependencies(IServiceCollection services)
+        {
+            services.AddSingleton<IContentStore, ContentStore>();
         }
 
         public ICrawlerBuilder WithSeeder<TRequest>(Action<ISeederBuilder> seederBuilderAction)

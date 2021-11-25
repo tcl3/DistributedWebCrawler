@@ -28,7 +28,7 @@ namespace DistributedWebCrawler.ComponentAPI
             var crawlerAction = BuildCrawler(roles, crawlerConfiguration);
             services.AddCrawler(crawlerAction);
 
-            services.AddRedisContentStore(configuration);
+            services.AddRedisKeyValueStore(configuration);
             
             services.AddRabbitMQProducerConsumer(configuration);
             services.AddRabbitMQCrawlerManager(configuration);

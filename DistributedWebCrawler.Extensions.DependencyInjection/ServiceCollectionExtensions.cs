@@ -33,9 +33,9 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddInMemoryContentStore(this IServiceCollection services)
+        public static IServiceCollection AddInMemoryKeyValueStore(this IServiceCollection services)
         {
-            services.AddSingleton<IContentStore, InMemoryContentStore>();
+            services.AddSingleton<IKeyValueStore, InMemoryKeyValueStore>();
             return services;
         }
 
