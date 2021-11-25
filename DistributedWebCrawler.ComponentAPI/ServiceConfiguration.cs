@@ -9,6 +9,7 @@ using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.Core.Robots;
 using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Extensions.Redis;
+using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 
 namespace DistributedWebCrawler.ComponentAPI
 {
@@ -16,52 +17,56 @@ namespace DistributedWebCrawler.ComponentAPI
     {
         public static IServiceProvider ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
-            var roles = GetRoles(configuration);
-
-            var crawlerConfiguration = configuration.GetSection("CrawlerSettings");
-
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
                 loggingBuilder.AddNLog();
             });
 
-            services.AddSingleton<ISeeder, CompositeSeeder>();
-            if (roles.Contains(ComponentApiRole.Scheduler))
-            {
-                services.AddSeeder<SchedulerRequest>()
-                    .WithComponent<SchedulerQueueSeeder>()
-                    .WithSettings(crawlerConfiguration.GetSection("SeederSettings"));
-
-                services.AddScheduler()
-                    .WithRobotsCache<InMemoryRobotsCache>(crawlerConfiguration.GetSection("RobotsTxtSettings"))
-                    .WithSettings(crawlerConfiguration.GetSection("SchedulerSettings"))
-                    .WithClient<RobotsClient>(crawlerConfiguration.GetSection("CrawlerClientSettings"));
-            }
-            if (roles.Contains(ComponentApiRole.Ingester))
-            {
-                services.AddIngester()
-                    .WithSettings(crawlerConfiguration.GetSection("IngesterSettings"))
-                    .WithClient<CrawlerClient>(crawlerConfiguration.GetSection("CrawlerClientSettings"));
-            }
-
-            if (roles.Contains(ComponentApiRole.Parser))
-            {
-                services.AddParser()
-                    .WithAngleSharpLinkParser()
-                    .WithSettings(crawlerConfiguration.GetSection("ParserSettings"));
-            }
+            var roles = GetRoles(configuration);
+            var crawlerConfiguration = configuration.GetSection("CrawlerSettings");
+            var crawlerAction = BuildCrawler(roles, crawlerConfiguration);
+            services.AddCrawler(crawlerAction);
 
             services.AddRedisContentStore(configuration);
-
-            services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
-
+            
             services.AddRabbitMQProducerConsumer(configuration);
             services.AddRabbitMQCrawlerManager(configuration);
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             return services.BuildServiceProvider();
+        }
+
+        private static Action<ICrawlerBuilder> BuildCrawler(IEnumerable<ComponentApiRole> roles, IConfiguration crawlerConfiguration)
+        {
+            return crawler =>
+            {
+                if (roles.Contains(ComponentApiRole.Scheduler))
+                {
+                    crawler.WithSeeder<SchedulerRequest>(seeder => seeder
+                        .WithComponent<SchedulerQueueSeeder>()
+                        .WithSettings(crawlerConfiguration.GetSection("SeederSettings")));
+
+                    crawler.WithScheduler(scheduler => scheduler
+                        .WithRobotsCache<InMemoryRobotsCache>(crawlerConfiguration.GetSection("RobotsTxtSettings"))
+                        .WithSettings(crawlerConfiguration.GetSection("SchedulerSettings"))
+                        .WithClient<RobotsClient>(crawlerConfiguration.GetSection("CrawlerClientSettings")));
+                }
+                if (roles.Contains(ComponentApiRole.Ingester))
+                {
+                    crawler.WithIngester(ingester => ingester
+                        .WithSettings(crawlerConfiguration.GetSection("IngesterSettings"))
+                        .WithClient<CrawlerClient>(crawlerConfiguration.GetSection("CrawlerClientSettings")));
+                }
+
+                if (roles.Contains(ComponentApiRole.Parser))
+                {
+                    crawler.WithParser(parser => parser
+                        .WithAngleSharpLinkParser()
+                        .WithSettings(crawlerConfiguration.GetSection("ParserSettings")));
+                }
+            };            
         }
 
         private enum ComponentApiRole

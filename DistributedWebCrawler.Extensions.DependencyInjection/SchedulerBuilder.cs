@@ -1,5 +1,4 @@
 ﻿using DistributedWebCrawler.Core;
-using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
@@ -10,11 +9,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
-    public class SchedulerBuilder : ComponentBuilder<SchedulerRequest, IngestRequest, SchedulerSettings>, ISchedulerBuilder
+    internal class SchedulerBuilder : ComponentBuilder<SchedulerRequest, bool, SchedulerSettings>, ISchedulerBuilder
     {
         public SchedulerBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<ICrawlerComponent, SchedulerComponent>();
         }
 
         ISchedulerBuilder ISchedulerBuilder.WithRobotsCache<TCache>(IConfiguration robotsTxtConfiguration)

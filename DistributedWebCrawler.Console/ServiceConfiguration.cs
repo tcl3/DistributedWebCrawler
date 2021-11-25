@@ -32,25 +32,23 @@ namespace DistributedWebCrawler.Console
                 loggingBuilder.AddNLog();
             });
 
-            services.AddSeeder<SchedulerRequest>()
-                .WithComponent<SchedulerQueueSeeder>()
-                .WithSettings(configuration.GetSection("SeederSettings"));
-
             services.AddInMemoryProducerConsumer();
             services.AddInMemoryContentStore();
 
-            services.AddScheduler()
-                .WithRobotsCache<InMemoryRobotsCache>(configuration.GetSection("RobotsTxtSettings"))
-                .WithSettings(configuration.GetSection("SchedulerSettings"))
-                .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings"));
-
-            services.AddIngester()
-                .WithSettings(configuration.GetSection("IngesterSettings"))
-                .WithClient<CrawlerClient>(configuration.GetSection("CrawlerClientSettings"));
-
-            services.AddParser()
-                .WithAngleSharpLinkParser()
-                .WithSettings(configuration.GetSection("ParserSettings"));
+            services.AddCrawler(crawler => crawler
+                .WithSeeder<SchedulerRequest>(seeder => seeder
+                    .WithComponent<SchedulerQueueSeeder>()
+                    .WithSettings(configuration.GetSection("SeederSettings")))
+                .WithScheduler(scheduler => scheduler
+                    .WithRobotsCache<InMemoryRobotsCache>(configuration.GetSection("RobotsTxtSettings"))
+                    .WithSettings(configuration.GetSection("SchedulerSettings"))
+                    .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings")))
+                .WithIngester(ingester => ingester
+                    .WithSettings(configuration.GetSection("IngesterSettings"))
+                    .WithClient<CrawlerClient>(configuration.GetSection("CrawlerClientSettings")))
+                .WithParser(parser => parser
+                    .WithAngleSharpLinkParser()
+                    .WithSettings(configuration.GetSection("ParserSettings"))));
 
             services.AddInMemoryCrawlerManager();
 

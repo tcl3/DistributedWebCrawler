@@ -6,12 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
-    public class SeederBuilder<TData> : ComponentBuilder<SeederSettings>, ISeederBuilder 
-        where TData : RequestBase
+    public class SeederBuilder<TRequest> : ComponentBuilder<SeederSettings>, ISeederBuilder 
+        where TRequest : RequestBase
     {
         public SeederBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<IProducer<TData, bool>>(x => x.GetRequiredService<IProducerConsumer<TData, bool>>());
+            services.AddSingleton<IProducer<TRequest, bool>>(x => x.GetRequiredService<IProducerConsumer<TRequest, bool>>());
         }
 
         ISeederBuilder ISeederBuilder.WithComponent<TComnponent>()

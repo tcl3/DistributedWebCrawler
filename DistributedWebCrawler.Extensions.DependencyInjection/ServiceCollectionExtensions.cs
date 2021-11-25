@@ -13,20 +13,11 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-
-        public static ISchedulerBuilder AddScheduler(this IServiceCollection services)
+        public static IServiceCollection AddCrawler(this IServiceCollection services, Action<ICrawlerBuilder> crawlerAction)
         {
-            return new SchedulerBuilder(services);
-        }
-
-        public static IIngesterBuilder AddIngester(this IServiceCollection services)
-        {
-            return new IngesterBuilder(services);
-        }
-
-        public static IParserBuilder AddParser(this IServiceCollection services)
-        {
-            return new ParserBuilder(services);
+            var crawlerBuilder = new CrawlerBuilder(services);
+            crawlerAction?.Invoke(crawlerBuilder);
+            return services;
         }
 
         public static IServiceCollection AddInMemoryProducerConsumer(this IServiceCollection services)
@@ -46,12 +37,6 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
         {
             services.AddSingleton<IContentStore, InMemoryContentStore>();
             return services;
-        }
-
-        public static ISeederBuilder AddSeeder<TData>(this IServiceCollection services) 
-            where TData : RequestBase
-        {
-            return new SeederBuilder<TData>(services);
         }
 
         public static IServiceCollection AddSettings<TSettings>(this IServiceCollection services,
