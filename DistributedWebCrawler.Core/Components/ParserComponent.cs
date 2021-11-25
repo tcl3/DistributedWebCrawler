@@ -60,7 +60,7 @@ namespace DistributedWebCrawler.Core.Components
                 return false;
             }
 
-            _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri} path {ingestResult.Path}");
+            _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri} path {ingestResult.Uri}");
 
             var linksGroupedByHost = links.ToLookup(k => GetHostFromHref(k.Href, parseRequest.Uri), v => v.Href);
 
@@ -104,8 +104,6 @@ namespace DistributedWebCrawler.Core.Components
 
             return new(absoluteUri.GetLeftPart(UriPartial.Authority));
         }
-
-
 
         protected override CrawlerComponentStatus GetStatus()
         {

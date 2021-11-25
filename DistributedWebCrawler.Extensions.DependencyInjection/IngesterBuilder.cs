@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
-    internal class IngesterBuilder : ComponentBuilder<IngestRequest, bool, IngesterSettings>, IIngesterBuilder
+    internal class IngesterBuilder : ComponentBuilder<IngestRequest, IngestResult, IngesterSettings>, IIngesterBuilder
     {
         public IngesterBuilder(IServiceCollection services) : base(services)
         {

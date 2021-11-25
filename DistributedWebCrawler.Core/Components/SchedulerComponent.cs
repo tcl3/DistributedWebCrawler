@@ -40,7 +40,8 @@ namespace DistributedWebCrawler.Core.Components
         private readonly SchedulerSettings _schedulerSettings;
         private readonly ILogger<SchedulerComponent> _logger;
         private readonly IRobotsCache _robotsCache;
-        private readonly IProducer<IngestRequest, bool> _ingestRequestProducer;
+
+        private readonly IProducer<IngestRequest, IngestResult> _ingestRequestProducer;
 
         private readonly ConcurrentDictionary<Uri, bool> _visitedUris;
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _visitedPathsLookup;
@@ -60,7 +61,7 @@ namespace DistributedWebCrawler.Core.Components
             IConsumer<SchedulerRequest, bool> consumer,
             ILogger<SchedulerComponent> logger,
             IRobotsCache robotsCache,
-            IProducer<IngestRequest, bool> ingestRequestProducer)
+            IProducer<IngestRequest, IngestResult> ingestRequestProducer)
             : base(consumer, logger, nameof(SchedulerComponent), schedulerSettings.MaxConcurrentRobotsRequests)
         {
             _schedulerSettings = schedulerSettings;
@@ -150,7 +151,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        private async Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<bool> eventArgs)
+        private async Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<IngestResult> eventArgs)
         {
             if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
             {
