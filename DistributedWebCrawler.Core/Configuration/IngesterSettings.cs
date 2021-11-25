@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DistributedWebCrawler.Core.Configuration
 {
-    public class IngesterSettings
+    public class IngesterSettings : TaskQueueSettings
     {
         [Range(1, int.MaxValue)]
         public int MaxDomainsToCrawl { get; init; }
@@ -16,5 +16,7 @@ namespace DistributedWebCrawler.Core.Configuration
 
         public IEnumerable<string>? IncludeMediaTypes { get; init; }
         public IEnumerable<string>? ExcludeMediaTypes { get; init; }
+
+        internal override int MaxConcurrentItems => MaxDomainsToCrawl;
     }
 }

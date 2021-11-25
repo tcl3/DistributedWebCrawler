@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 
 namespace DistributedWebCrawler.Core.Configuration
 {
-    public class SchedulerSettings
+    public class SchedulerSettings : TaskQueueSettings
     {
         [Range(1, int.MaxValue)]
         public int MaxConcurrentRobotsRequests { get; init; }
@@ -21,5 +20,7 @@ namespace DistributedWebCrawler.Core.Configuration
         
         public IEnumerable<string>? ExcludeDomains { get; init; } 
         public IEnumerable<string>? IncludeDomains { get; init; }
+
+        internal override int MaxConcurrentItems => MaxConcurrentRobotsRequests;
     }
 }

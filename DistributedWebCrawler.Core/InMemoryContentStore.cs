@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core
@@ -15,7 +16,7 @@ namespace DistributedWebCrawler.Core
             _contentLookup = new();
         }
 
-        public Task<string> GetContentAsync(Guid id)
+        public Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken)
         {
             if (!_contentLookup.TryGetValue(id, out var content) || content == null)
             {
@@ -25,7 +26,7 @@ namespace DistributedWebCrawler.Core
             return Task.FromResult(content);
         }
 
-        public Task RemoveAsync(Guid id)
+        public Task RemoveAsync(Guid id, CancellationToken cancellationToken)
         {
             if (!_contentLookup.TryRemove(id, out _))
             {
@@ -35,7 +36,7 @@ namespace DistributedWebCrawler.Core
             return Task.CompletedTask;
         }
 
-        public Task<Guid> SaveContentAsync(string content)
+        public Task<Guid> SaveContentAsync(string content, CancellationToken cancellationToken)
         {
             var id = Guid.NewGuid();
             if (!_contentLookup.TryAdd(id, content))

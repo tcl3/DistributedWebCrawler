@@ -8,9 +8,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Priority_Queue;
 using Nager.PublicSuffix;
 using DistributedWebCrawler.Core.Queue;
+using System.Threading;
 
 namespace DistributedWebCrawler.Core.Components
 {
@@ -62,7 +62,7 @@ namespace DistributedWebCrawler.Core.Components
             ILogger<SchedulerComponent> logger,
             IRobotsCache robotsCache,
             IProducer<IngestRequest, IngestResult> ingestRequestProducer)
-            : base(consumer, logger, nameof(SchedulerComponent), schedulerSettings.MaxConcurrentRobotsRequests)
+            : base(consumer, logger, nameof(SchedulerComponent), schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
             _logger = logger;
@@ -170,7 +170,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        protected async override Task<bool> ProcessItemAsync(SchedulerRequest schedulerRequest)
+        protected async override Task<bool> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
         {
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
             {
@@ -239,7 +239,7 @@ namespace DistributedWebCrawler.Core.Components
 
             if (!_activeDomains.TryGetValue(domain, out var status) || status == DomainStatus.Inactive)
             {
-                await AddNextUriToSchedulerQueueAsync(domain, schedulerRequest, firstTimeVisit).ConfigureAwait(false);
+                await AddNextUriToSchedulerQueueAsync(domain, schedulerRequest, cancellationToken, firstTimeVisit).ConfigureAwait(false);
             }
 
             return true;
@@ -280,7 +280,7 @@ namespace DistributedWebCrawler.Core.Components
             return validPaths;
         }
 
-        private async Task AddNextUriToSchedulerQueueAsync(string domain, SchedulerRequest schedulerRequest, bool addCrawlDelay = false)
+        private async Task AddNextUriToSchedulerQueueAsync(string domain, SchedulerRequest schedulerRequest, CancellationToken cancellationToken = default, bool addCrawlDelay = false)
         {
             if (!_queuedPathsLookup.TryGetValue(domain, out var urisToVisit) || !urisToVisit.Any())
             {
@@ -299,7 +299,7 @@ namespace DistributedWebCrawler.Core.Components
                 notBefore = notBefore.AddMilliseconds(_schedulerSettings.SameDomainCrawlDelayMillis);
             }
 
-            await _nextPathForHostQueue.EnqueueAsync(queueEntry, notBefore).ConfigureAwait(false);
+            await _nextPathForHostQueue.EnqueueAsync(queueEntry, notBefore, cancellationToken).ConfigureAwait(false);
 
             _activeDomains.AddOrUpdate(queueEntry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Queued);
             

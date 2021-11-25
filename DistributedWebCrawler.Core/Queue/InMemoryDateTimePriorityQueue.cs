@@ -61,7 +61,7 @@ namespace DistributedWebCrawler.Core.Queue
             return false;
         }
 
-        private Task<TData> GetQueueItemAndAwait(SemaphoreSlim semaphore, CancellationToken cancellationToken)
+        private Task<TData> GetQueueItemAndAwait(SemaphoreSlim semaphore, CancellationToken cancellationToken = default)
         {
             Task<TData>? t1 = null;
              
@@ -81,7 +81,7 @@ namespace DistributedWebCrawler.Core.Queue
             return Task.WhenAny(t1, t2).Unwrap();
         }
 
-        public async Task<TData> DequeueAsync()
+        public async Task<TData> DequeueAsync(CancellationToken cancellationToken = default)
         {
             var semaphore = new SemaphoreSlim(1);
             _enqueueSemaphoreList.Add(semaphore);
@@ -93,7 +93,7 @@ namespace DistributedWebCrawler.Core.Queue
                     return entry.Item;
                 }
 
-                CancellationTokenSource cts = new();
+                var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
                 TData item;
                 try
@@ -117,7 +117,7 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public Task<bool> EnqueueAsync(TData item, DateTimeOffset priority)
+        public Task<bool> EnqueueAsync(TData item, DateTimeOffset priority, CancellationToken cancellationToken)
         {
             var success = _priorityQueue.EnqueueWithoutDuplicates(item, priority);
 

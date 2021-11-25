@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core
@@ -13,9 +14,9 @@ namespace DistributedWebCrawler.Core
             _client = client;
         }
 
-        public Task<HttpResponseMessage> GetAsync(Uri uri)
+        public Task<HttpResponseMessage> GetAsync(Uri uri, CancellationToken cancellationToken)
         {
-            return _client.GetAsync(uri);
+            return _client.GetAsync(uri, cancellationToken);
         }
     }
 }

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Mime;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
@@ -39,7 +40,7 @@ namespace DistributedWebCrawler.Core.Components
             CrawlerClient crawlerClient,
             IContentStore contentStore,
             ILogger<IngesterComponent> logger) 
-            : base(ingestRequestConsumer, logger, nameof(IngesterComponent), ingesterSettings.MaxDomainsToCrawl)
+            : base(ingestRequestConsumer, logger, nameof(IngesterComponent), ingesterSettings)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;
@@ -81,7 +82,7 @@ namespace DistributedWebCrawler.Core.Components
             return CrawlerComponentStatus.Busy;
         }
 
-        protected async override Task<IngestResult> ProcessItemAsync(IngestRequest item)
+        protected async override Task<IngestResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
         {
             if (item.MaxDepthReached)
             {
@@ -91,7 +92,7 @@ namespace DistributedWebCrawler.Core.Components
 
             try
             {
-                var ingestResult = await IngestCurrentPathAsync(item.Uri).ConfigureAwait(false);
+                var ingestResult = await IngestCurrentPathAsync(item.Uri, cancellationToken).ConfigureAwait(false);
 
                 if (ingestResult.ContentId.HasValue && ingestResult.MediaType != null)
                 {
@@ -125,9 +126,9 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        private async Task<IngestResult> IngestCurrentPathAsync(Uri currentUri)
+        private async Task<IngestResult> IngestCurrentPathAsync(Uri currentUri, CancellationToken cancellationToken)
         {   
-            var handleRedirectsResult = await GetAndHandleRedirectsAsync(currentUri).ConfigureAwait(false);
+            var handleRedirectsResult = await GetAndHandleRedirectsAsync(currentUri, cancellationToken).ConfigureAwait(false);
 
             if (handleRedirectsResult.FailureReason.HasValue)
             {
@@ -172,20 +173,20 @@ namespace DistributedWebCrawler.Core.Components
                 }
             }
 
-            var urlContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var urlContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
             _logger.LogDebug($"Successfully retrieved content for URI {currentUri}");
 
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
 
-            var contentId = await _contentStore.SaveContentAsync(urlContent).ConfigureAwait(false);
+            var contentId = await _contentStore.SaveContentAsync(urlContent, cancellationToken).ConfigureAwait(false);
 
             return IngestResult.Success(currentUri, contentId, mediaType, handleRedirectsResult.Redirects);
         }
 
-        private async Task<HandleRedirectResult> GetAndHandleRedirectsAsync(Uri uri)
+        private async Task<HandleRedirectResult> GetAndHandleRedirectsAsync(Uri uri, CancellationToken cancellationToken)
         {
-            var response = await _crawlerClient.GetAsync(uri).ConfigureAwait(false);
+            var response = await _crawlerClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
 
             var currentRedirectDepth = 0;
             var redirects = new List<RedirectResult>();
@@ -208,7 +209,7 @@ namespace DistributedWebCrawler.Core.Components
 
                 redirects.Add(new RedirectResult(redirectUriAbsolute, response.StatusCode));
 
-                response = await _crawlerClient.GetAsync(redirectUriAbsolute).ConfigureAwait(false);
+                response = await _crawlerClient.GetAsync(redirectUriAbsolute, cancellationToken).ConfigureAwait(false);
                 uri = redirectUriAbsolute;
             }
 

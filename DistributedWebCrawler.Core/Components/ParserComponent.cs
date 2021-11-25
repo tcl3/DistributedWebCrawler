@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
@@ -28,7 +29,7 @@ namespace DistributedWebCrawler.Core.Components
             ILinkParser linkParser,
             IContentStore contentStore,
             ILogger<ParserComponent> logger)
-            : base(parseRequestConsumer, logger, nameof(ParserComponent), parserSettings.MaxConcurrentThreads)
+            : base(parseRequestConsumer, logger, nameof(ParserComponent), parserSettings)
         {
             _parseRequestConsumer = parseRequestConsumer;
             _schedulerRequestProducer = schedulerRequestProducer;
@@ -37,14 +38,14 @@ namespace DistributedWebCrawler.Core.Components
             _logger = logger;
         }
 
-        protected override Task<bool> ProcessItemAsync(ParseRequest parseRequest)
+        protected override Task<bool> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
         {
-            return Task.Run(async () => await ProcessItemInternalAsync(parseRequest).ConfigureAwait(false));
+            return Task.Run(async () => await ProcessItemInternalAsync(parseRequest, cancellationToken).ConfigureAwait(false), cancellationToken);
         }
 
-        private async Task<bool> ProcessItemInternalAsync(ParseRequest parseRequest)
+        private async Task<bool> ProcessItemInternalAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
         {
-            var content = await _contentStore.GetContentAsync(parseRequest.ContentId).ConfigureAwait(false);
+            var content = await _contentStore.GetContentAsync(parseRequest.ContentId, cancellationToken).ConfigureAwait(false);
 
             var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
