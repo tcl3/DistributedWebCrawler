@@ -16,6 +16,8 @@ namespace DistributedWebCrawler.Core.Queue
         private readonly IComparer<DateTimeOffset> _priorityComparer;
         private readonly HashSet<SemaphoreSlim> _enqueueSemaphoreList;
 
+        private readonly SemaphoreSlim _asyncLock = new SemaphoreSlim(1, 1);
+
         private class QueueEntry
         {
             public TData Item { get; }
@@ -112,7 +114,6 @@ namespace DistributedWebCrawler.Core.Queue
             finally
             {
                 _enqueueSemaphoreList.Remove(semaphore);
-
             }
         }
 
@@ -122,7 +123,7 @@ namespace DistributedWebCrawler.Core.Queue
 
             if (success)
             {
-                _enqueueSemaphoreList.ToList().ForEach(semaphore => semaphore.Release());
+                _enqueueSemaphoreList.ToList().ForEach(semaphore => semaphore?.Release());
             }
 
             return Task.FromResult(success);
