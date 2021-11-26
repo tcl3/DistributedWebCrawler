@@ -17,7 +17,7 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedWebCrawler.ComponentAPI", "DistributedWebCrawler.ComponentAPI\DistributedWebCrawler.ComponentAPI.csproj", "{0519058B-A3C6-48E3-9F79-B2CF27241422}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedWebCrawler.Extensions.Redis", "..\DistributedWebCrawler.Extensions.Redis\DistributedWebCrawler.Extensions.Redis.csproj", "{A5727176-957B-42DC-A21B-857CAC744CC1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedWebCrawler.Extensions.Redis", "DistributedWebCrawler.Extensions.Redis\DistributedWebCrawler.Extensions.Redis.csproj", "{A5727176-957B-42DC-A21B-857CAC744CC1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

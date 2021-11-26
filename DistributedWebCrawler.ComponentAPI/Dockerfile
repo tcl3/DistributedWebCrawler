@@ -10,6 +10,7 @@ COPY ["DistributedWebCrawler.ComponentAPI/DistributedWebCrawler.ComponentAPI.csp
 COPY ["DistributedWebCrawler.Extensions.RabbitMQ/DistributedWebCrawler.Extensions.RabbitMQ.csproj", "DistributedWebCrawler.Extensions.RabbitMQ/"]
 COPY ["DistributedWebCrawler.Core/DistributedWebCrawler.Core.csproj", "DistributedWebCrawler.Core/"]
 COPY ["DistributedWebCrawler.Extensions.DependencyInjection/DistributedWebCrawler.Extensions.DependencyInjection.csproj", "DistributedWebCrawler.Extensions.DependencyInjection/"]
+COPY ["DistributedWebCrawler.Extensions.Redis/DistributedWebCrawler.Extensions.Redis.csproj", "DistributedWebCrawler.Extensions.Redis/"]
 RUN dotnet restore "DistributedWebCrawler.ComponentAPI/DistributedWebCrawler.ComponentAPI.csproj"
 COPY . .
 WORKDIR "/src/DistributedWebCrawler.ComponentAPI"
