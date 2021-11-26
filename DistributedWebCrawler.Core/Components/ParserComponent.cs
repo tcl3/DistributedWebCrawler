@@ -47,6 +47,12 @@ namespace DistributedWebCrawler.Core.Components
         {
             var content = await _contentStore.GetContentAsync(parseRequest.ContentId, cancellationToken).ConfigureAwait(false);
 
+            if (string.IsNullOrEmpty(content)) 
+            {
+                _logger.LogError($"Item with ID: '{parseRequest.ContentId}', not found in ContentStore");
+                return false;
+            }
+
             var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
             if (!links.Any())

@@ -9,21 +9,45 @@ namespace DistributedWebCrawler.Core
 {
     public class InMemoryKeyValueStore : IKeyValueStore
     {
-        private readonly ConcurrentDictionary<string, string> _contentLookup;
+        private class CacheEntry
+        {
+            public string Content { get; }
+            public DateTimeOffset CreatedAt { get; }
+            public TimeSpan? ExpireAfter { get; }
+
+            public CacheEntry(string content, TimeSpan? expireAfter = null, DateTimeOffset? createdAt = null)
+            {
+                Content = content;
+                ExpireAfter = expireAfter;
+                CreatedAt = createdAt ?? DateTimeOffset.Now;
+            }
+
+            public bool Expired()
+            {                
+                return ExpireAfter.HasValue && (CreatedAt + ExpireAfter) < DateTimeOffset.Now;
+            }
+        }
+
+        private readonly ConcurrentDictionary<string, CacheEntry> _contentLookup;
 
         public InMemoryKeyValueStore()
         {
             _contentLookup = new();
         }
 
-        public Task<string> GetAsync(string key, CancellationToken cancellationToken)
+        public Task<string?> GetAsync(string key, CancellationToken cancellationToken)
         {
-            if (!_contentLookup.TryGetValue(key, out var content) || content == null)
+            if (!_contentLookup.TryGetValue(key, out var entry) || entry?.Content == null)
             {
-                throw new KeyNotFoundException($"Key {key} not found in KeyValueStore");
+                return Task.FromResult<string?>(null);
+            }
+            else if (entry.Expired())
+            {
+                _contentLookup.TryRemove(key, out _);
+                return Task.FromResult<string?>(string.Empty);
             }
 
-            return Task.FromResult(content);
+            return Task.FromResult<string?>(entry.Content);
         }
 
         public Task RemoveAsync(string key, CancellationToken cancellationToken)
@@ -36,9 +60,9 @@ namespace DistributedWebCrawler.Core
             return Task.CompletedTask;
         }
 
-        public Task PutAsync(string key, string content, CancellationToken cancellationToken)
+        public Task PutAsync(string key, string content, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
         {
-            if (!_contentLookup.TryAdd(key, content))
+            if (!_contentLookup.TryAdd(key, new CacheEntry(content, expireAfter)))
             {
                 throw new InvalidOperationException($"Failed to add key {key} to KeyValueStore");
             }

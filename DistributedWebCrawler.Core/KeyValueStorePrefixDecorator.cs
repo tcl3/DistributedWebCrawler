@@ -10,6 +10,8 @@ namespace DistributedWebCrawler.Core
         private readonly IKeyValueStore _inner;
         private readonly string _prefix;
 
+        private const string PrefixSeperator = ":";
+
         public KeyValueStorePrefixDecorator(IKeyValueStore inner, string prefix)
         {
             if (string.IsNullOrEmpty(prefix))
@@ -18,17 +20,17 @@ namespace DistributedWebCrawler.Core
             }
 
             _inner = inner;
-            _prefix = prefix;
+            _prefix = prefix + PrefixSeperator;
         }
 
-        public Task<string> GetAsync(string key, CancellationToken cancellationToken)
+        public Task<string?> GetAsync(string key, CancellationToken cancellationToken)
         {
             return _inner.GetAsync(_prefix + key, cancellationToken);
         }
 
-        public Task PutAsync(string key, string value, CancellationToken cancellationToken)
+        public Task PutAsync(string key, string value, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
         {
-            return _inner.PutAsync(_prefix + key, value, cancellationToken);
+            return _inner.PutAsync(_prefix + key, value, cancellationToken, expireAfter);
         }
 
         public Task RemoveAsync(string key, CancellationToken cancellationToken)

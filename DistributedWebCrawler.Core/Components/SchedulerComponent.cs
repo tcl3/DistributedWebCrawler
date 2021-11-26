@@ -208,7 +208,8 @@ namespace DistributedWebCrawler.Core.Components
 
             if (pathsToVisit.Any() && (_schedulerSettings.RespectsRobotsTxt ?? false))
             {
-                await _robotsCache.GetRobotsForHostAsync(schedulerRequest.Uri, robots => 
+                // Doing 2 calls to GetRobotsTxtAsync is a hack that will be removed when downloading robots.txt is moved to a separate component.
+                void IfRobotsExists(IRobots robots)
                 {
                     pathsToVisit = pathsToVisit.Where(path =>
                     {
@@ -222,7 +223,13 @@ namespace DistributedWebCrawler.Core.Components
 
                         return allowed;
                     });
-                }).ConfigureAwait(false);
+                }
+                var exists = await _robotsCache.GetRobotsTxtAsync(schedulerRequest.Uri, IfRobotsExists, cancellationToken).ConfigureAwait(false);
+                if (!exists)
+                {
+                    await _robotsCache.AddOrUpdateRobotsForHostAsync(schedulerRequest.Uri, cancellationToken).ConfigureAwait(false);
+                    await _robotsCache.GetRobotsTxtAsync(schedulerRequest.Uri, IfRobotsExists, cancellationToken).ConfigureAwait(false);
+                }
             }
 
             if (!pathsToVisit.Any())

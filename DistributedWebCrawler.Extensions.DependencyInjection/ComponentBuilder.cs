@@ -34,7 +34,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
             return this;
         }
 
-        IComponentBuilder<TSettings> IComponentBuilder<TSettings>.WithClient<TClient>(IConfiguration configuration)
+        IComponentBuilder<TSettings> IComponentBuilder<TSettings>.WithClient<TClient>(IConfiguration configuration, bool allowAutoRedirect)
         {
             Services.AddSettings<CrawlerClientSettings>(configuration);
             Services.AddHttpClientWithSettings<TClient, CrawlerClientSettings>(ConfigureClient)
@@ -43,7 +43,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
                     var clientSettings = serviceProvider.GetRequiredService<CrawlerClientSettings>();
                     return new SocketsHttpHandler
                     {
-                        AllowAutoRedirect = false,
+                        AllowAutoRedirect = allowAutoRedirect,
                         AutomaticDecompression = DecompressionMethods.All,
                         ConnectTimeout = TimeSpan.FromSeconds(clientSettings.ConnectTimeoutSeconds),
                         ResponseDrainTimeout = TimeSpan.FromSeconds(clientSettings.ResponseDrainTimeoutSeconds),

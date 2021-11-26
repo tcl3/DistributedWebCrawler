@@ -49,9 +49,9 @@ namespace DistributedWebCrawler.ComponentAPI
                         .WithSettings(crawlerConfiguration.GetSection("SeederSettings")));
 
                     crawler.WithScheduler(scheduler => scheduler
-                        .WithRobotsCache<InMemoryRobotsCache>(crawlerConfiguration.GetSection("RobotsTxtSettings"))
+                        .WithRobotsCache<RobotsCache>(crawlerConfiguration.GetSection("RobotsTxtSettings"))
                         .WithSettings(crawlerConfiguration.GetSection("SchedulerSettings"))
-                        .WithClient<RobotsClient>(crawlerConfiguration.GetSection("CrawlerClientSettings")));
+                        .WithClient<RobotsClient>(crawlerConfiguration.GetSection("CrawlerClientSettings"), allowAutoRedirect: true));
                 }
                 if (roles.Contains(ComponentApiRole.Ingester))
                 {

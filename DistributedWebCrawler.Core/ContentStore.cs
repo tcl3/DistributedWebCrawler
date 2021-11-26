@@ -10,16 +10,16 @@ namespace DistributedWebCrawler.Core
     {
         private readonly IKeyValueStore _keyValueStore;
 
-        private const string KeyPrefix = "ContentStore:";
+        private const string KeyPrefix = "ContentStore";
 
         public ContentStore(IKeyValueStore keyValueStore)
         {
             _keyValueStore = keyValueStore.WithKeyPrefix(KeyPrefix);
         }
 
-        public Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken)
+        public async Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken)
         {
-            return _keyValueStore.GetAsync(id.ToString("N"), cancellationToken);
+            return await _keyValueStore.GetAsync(id.ToString("N"), cancellationToken).ConfigureAwait(false) ?? string.Empty;
         }
 
         public Task RemoveAsync(Guid id, CancellationToken cancellationToken)

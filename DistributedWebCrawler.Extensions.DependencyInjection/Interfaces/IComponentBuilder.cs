@@ -9,7 +9,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection.Interfaces
     {
         IComponentBuilder<TSettings> WithSettings(TSettings settings);
         IComponentBuilder<TSettings> WithSettings(IConfiguration configuration);
-        IComponentBuilder<TSettings> WithClient<TClient>(IConfiguration configuration) 
+        IComponentBuilder<TSettings> WithClient<TClient>(IConfiguration configuration, bool allowAutoRedirect = false) 
             where TClient : class;
         IServiceCollection Services { get; }
     }
