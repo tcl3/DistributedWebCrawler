@@ -52,20 +52,14 @@ namespace DistributedWebCrawler.Core
 
         public Task RemoveAsync(string key, CancellationToken cancellationToken)
         {
-            if (!_contentLookup.TryRemove(key, out _))
-            {
-                throw new KeyNotFoundException($"Key {key} could not be removed from KeyValueStore");
-            }
+            _contentLookup.TryRemove(key, out _);
 
             return Task.CompletedTask;
         }
 
         public Task PutAsync(string key, string content, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
         {
-            if (!_contentLookup.TryAdd(key, new CacheEntry(content, expireAfter)))
-            {
-                throw new InvalidOperationException($"Failed to add key {key} to KeyValueStore");
-            }
+            _contentLookup.AddOrUpdate(key, _ => new CacheEntry(content, expireAfter), (_, _) => new CacheEntry(content, expireAfter));
 
             return Task.FromResult(key);
         }

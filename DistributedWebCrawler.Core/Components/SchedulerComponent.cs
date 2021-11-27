@@ -39,8 +39,8 @@ namespace DistributedWebCrawler.Core.Components
 
         private readonly SchedulerSettings _schedulerSettings;
         private readonly ILogger<SchedulerComponent> _logger;
-        private readonly IRobotsCache _robotsCache;
-
+        private readonly IRobotsCacheReader _robotsCacheReader;
+        private readonly IProducer<RobotsRequest, bool> _robotsRequestProducer;
         private readonly IProducer<IngestRequest, IngestResult> _ingestRequestProducer;
 
         private readonly ConcurrentDictionary<Uri, bool> _visitedUris;
@@ -60,13 +60,15 @@ namespace DistributedWebCrawler.Core.Components
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest, bool> consumer,
             ILogger<SchedulerComponent> logger,
-            IRobotsCache robotsCache,
+            IRobotsCacheReader robotsCacheReader,
+            IProducer<RobotsRequest, bool> robotsRequestProducer,
             IProducer<IngestRequest, IngestResult> ingestRequestProducer)
             : base(consumer, logger, nameof(SchedulerComponent), schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
             _logger = logger;
-            _robotsCache = robotsCache;
+            _robotsCacheReader = robotsCacheReader;
+            _robotsRequestProducer = robotsRequestProducer;
             _ingestRequestProducer = ingestRequestProducer;
 
             _visitedUris = new();
@@ -186,15 +188,7 @@ namespace DistributedWebCrawler.Core.Components
 
             var firstTimeVisit = !_visitedPathsLookup.Any(x => x.Key.EndsWith(domain, StringComparison.OrdinalIgnoreCase));
 
-            _visitedPathsLookup.AddOrUpdate(schedulerRequest.Uri.Authority, schedulerRequest.Paths,
-                (key, oldValue) =>
-                {
-                    visitedPathsForHost = oldValue;
-                    var union = oldValue.Union(schedulerRequest.Paths);
-                    return union;
-                });
-
-            var pathsToVisit = schedulerRequest.Paths.Except(visitedPathsForHost);
+            var pathsToVisit = schedulerRequest.Paths;
 
             if (pathsToVisit.Any() && _domainsToInclude.Any())
             {
@@ -208,7 +202,6 @@ namespace DistributedWebCrawler.Core.Components
 
             if (pathsToVisit.Any() && (_schedulerSettings.RespectsRobotsTxt ?? false))
             {
-                // Doing 2 calls to GetRobotsTxtAsync is a hack that will be removed when downloading robots.txt is moved to a separate component.
                 void IfRobotsExists(IRobots robots)
                 {
                     pathsToVisit = pathsToVisit.Where(path =>
@@ -224,13 +217,25 @@ namespace DistributedWebCrawler.Core.Components
                         return allowed;
                     });
                 }
-                var exists = await _robotsCache.GetRobotsTxtAsync(schedulerRequest.Uri, IfRobotsExists, cancellationToken).ConfigureAwait(false);
+
+                var exists = await _robotsCacheReader.GetRobotsTxtAsync(schedulerRequest.Uri, IfRobotsExists, cancellationToken).ConfigureAwait(false);
                 if (!exists)
                 {
-                    await _robotsCache.AddOrUpdateRobotsForHostAsync(schedulerRequest.Uri, cancellationToken).ConfigureAwait(false);
-                    await _robotsCache.GetRobotsTxtAsync(schedulerRequest.Uri, IfRobotsExists, cancellationToken).ConfigureAwait(false);
+                    var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest);
+                    _robotsRequestProducer.Enqueue(robotsRequest);
+                    return false;
                 }
             }
+
+            _visitedPathsLookup.AddOrUpdate(schedulerRequest.Uri.Authority, schedulerRequest.Paths,
+                (key, oldValue) =>
+                {
+                    visitedPathsForHost = oldValue;
+                    var union = oldValue.Union(schedulerRequest.Paths);
+                    return union;
+                });
+
+            pathsToVisit = pathsToVisit.Except(visitedPathsForHost);
 
             if (!pathsToVisit.Any())
             {

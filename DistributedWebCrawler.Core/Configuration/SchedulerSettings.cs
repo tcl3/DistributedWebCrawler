@@ -7,7 +7,7 @@ namespace DistributedWebCrawler.Core.Configuration
     public class SchedulerSettings : TaskQueueSettings
     {
         [Range(1, int.MaxValue)]
-        public int MaxConcurrentRobotsRequests { get; init; }
+        public int MaxConcurrentSchedulerRequests { get; init; }
 
         [Required]
         public bool? RespectsRobotsTxt { get; init; }
@@ -21,6 +21,6 @@ namespace DistributedWebCrawler.Core.Configuration
         public IEnumerable<string>? ExcludeDomains { get; init; } 
         public IEnumerable<string>? IncludeDomains { get; init; }
 
-        internal override int MaxConcurrentItems => MaxConcurrentRobotsRequests;
+        internal override int MaxConcurrentItems => MaxConcurrentSchedulerRequests;
     }
 }

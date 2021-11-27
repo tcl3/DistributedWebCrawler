@@ -4,9 +4,13 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
-    public interface IRobotsCache
+    public interface IRobotsCacheWriter
     {
-        Task<bool> GetRobotsTxtAsync(Uri uri, Action<IRobots> ifExistsAction, CancellationToken cancellationToken);
-        Task AddOrUpdateRobotsForHostAsync(Uri host, CancellationToken cancellationToken);
+        Task AddOrUpdateRobotsForHostAsync(Uri host, TimeSpan expirationTimeSpan, CancellationToken cancellationToken);
+    }
+
+    public interface IRobotsCacheReader
+    {
+        Task<bool> GetRobotsTxtAsync(Uri uri, Action<IRobots>? ifExistsAction, CancellationToken cancellationToken);
     }
 }

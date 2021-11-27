@@ -30,7 +30,7 @@ services:
   #    context: .
   #    dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
   #  environment:
-  #    COMPONENTAPI_ROLE: "scheduler,ingester,parser" 
+  #    COMPONENTAPI_ROLE: "scheduler,ingester,parser,robotsdownloader"
   #    RABBITMQ_HOSTNAME: "rabbitmq"
   #    #RABBITMQ_PORT: "5672"
   #    RABBITMQ_USERNAME: "crawler"
@@ -45,7 +45,6 @@ services:
   #    redis:
   #      condition: service_healthy
 
-
   scheduler:
     image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
     container_name: 'scheduler'
@@ -58,8 +57,10 @@ services:
       #RABBITMQ_PORT: "5672"
       RABBITMQ_USERNAME: "crawler"
       RABBITMQ_PASSWORD: "test"
+      REDIS_CONNECTIONSTRING: "redis:6379"
     networks:
-       - rabbitmq_net
+        - redis_net
+        - rabbitmq_net
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -94,6 +95,28 @@ services:
       dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
     environment:
       COMPONENTAPI_ROLE: "parser"
+      RABBITMQ_HOSTNAME: "rabbitmq"
+      #RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "crawler"
+      RABBITMQ_PASSWORD: "test"
+      REDIS_CONNECTIONSTRING: "redis:6379"
+    networks:
+       - rabbitmq_net
+       - redis_net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  robotsdownloader:
+    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+    container_name: 'robotsdownloader'
+    build:
+      context: .
+      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+    environment:
+      COMPONENTAPI_ROLE: "robotsdownloader"
       RABBITMQ_HOSTNAME: "rabbitmq"
       #RABBITMQ_PORT: "5672"
       RABBITMQ_USERNAME: "crawler"

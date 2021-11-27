@@ -9,5 +9,6 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection.Interfaces
         ICrawlerBuilder WithScheduler(Action<ISchedulerBuilder> schedulerBuilderAction);
         ICrawlerBuilder WithIngester(Action<IIngesterBuilder> ingesterBuilderAction);
         ICrawlerBuilder WithParser(Action<IParserBuilder> parserBuilderAction);
+        ICrawlerBuilder WithRobotsDownloader(Action<IRobotsDownloaderBuilder> robotsBuilderAction);
     }
 }

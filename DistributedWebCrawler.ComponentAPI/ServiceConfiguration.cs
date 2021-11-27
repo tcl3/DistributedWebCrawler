@@ -49,9 +49,7 @@ namespace DistributedWebCrawler.ComponentAPI
                         .WithSettings(crawlerConfiguration.GetSection("SeederSettings")));
 
                     crawler.WithScheduler(scheduler => scheduler
-                        .WithRobotsCache<RobotsCache>(crawlerConfiguration.GetSection("RobotsTxtSettings"))
-                        .WithSettings(crawlerConfiguration.GetSection("SchedulerSettings"))
-                        .WithClient<RobotsClient>(crawlerConfiguration.GetSection("CrawlerClientSettings"), allowAutoRedirect: true));
+                        .WithSettings(crawlerConfiguration.GetSection("SchedulerSettings")));
                 }
                 if (roles.Contains(ComponentApiRole.Ingester))
                 {
@@ -66,6 +64,13 @@ namespace DistributedWebCrawler.ComponentAPI
                         .WithAngleSharpLinkParser()
                         .WithSettings(crawlerConfiguration.GetSection("ParserSettings")));
                 }
+
+                if (roles.Contains(ComponentApiRole.RobotsDownloader))
+                {
+                    crawler.WithRobotsDownloader(robots => robots
+                        .WithSettings(crawlerConfiguration.GetSection("RobotsTxtSettings"))
+                        .WithClient<RobotsClient>(crawlerConfiguration.GetSection("CrawlerClientSettings"), allowAutoRedirect: true));
+                }
             };            
         }
 
@@ -74,6 +79,7 @@ namespace DistributedWebCrawler.ComponentAPI
             Scheduler,
             Ingester,
             Parser,
+            RobotsDownloader
         }
 
         private static IEnumerable<ComponentApiRole> GetRoles(IConfiguration configuration)

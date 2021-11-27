@@ -40,15 +40,16 @@ namespace DistributedWebCrawler.Console
                     .WithComponent<SchedulerQueueSeeder>()
                     .WithSettings(configuration.GetSection("SeederSettings")))
                 .WithScheduler(scheduler => scheduler
-                    .WithRobotsCache<RobotsCache>(configuration.GetSection("RobotsTxtSettings"))
-                    .WithSettings(configuration.GetSection("SchedulerSettings"))
-                    .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings"), allowAutoRedirect: true))
+                    .WithSettings(configuration.GetSection("SchedulerSettings")))
                 .WithIngester(ingester => ingester
                     .WithSettings(configuration.GetSection("IngesterSettings"))
                     .WithClient<CrawlerClient>(configuration.GetSection("CrawlerClientSettings")))
                 .WithParser(parser => parser
                     .WithAngleSharpLinkParser()
-                    .WithSettings(configuration.GetSection("ParserSettings"))));
+                    .WithSettings(configuration.GetSection("ParserSettings")))
+                .WithRobotsDownloader(robots => robots
+                    .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings"), allowAutoRedirect: true)
+                    .WithSettings(configuration.GetSection("RobotsTxtSettings"))));
 
             services.AddInMemoryCrawlerManager();
 
