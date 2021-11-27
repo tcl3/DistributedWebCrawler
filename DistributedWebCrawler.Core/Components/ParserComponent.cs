@@ -38,26 +38,26 @@ namespace DistributedWebCrawler.Core.Components
             _logger = logger;
         }
 
-        protected override Task<bool> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
+        protected override Task<QueuedItemResult<bool>> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
         {
             return Task.Run(async () => await ProcessItemInternalAsync(parseRequest, cancellationToken).ConfigureAwait(false), cancellationToken);
         }
 
-        private async Task<bool> ProcessItemInternalAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
+        private async Task<QueuedItemResult<bool>> ProcessItemInternalAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
         {
             var content = await _contentStore.GetContentAsync(parseRequest.ContentId, cancellationToken).ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(content)) 
             {
                 _logger.LogError($"Item with ID: '{parseRequest.ContentId}', not found in ContentStore");
-                return false;
+                return parseRequest.Completed(false);
             }
 
             var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
             if (!links.Any())
             {
-                return false;
+                return parseRequest.Completed(false);
             }
 
             _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri}");
@@ -84,7 +84,7 @@ namespace DistributedWebCrawler.Core.Components
                 _schedulerRequestProducer.Enqueue(schedulerRequest);
             }
 
-            return true;
+            return parseRequest.Completed(true);
         }
 
 

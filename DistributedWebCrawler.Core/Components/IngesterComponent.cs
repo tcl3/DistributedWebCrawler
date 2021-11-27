@@ -82,12 +82,12 @@ namespace DistributedWebCrawler.Core.Components
             return CrawlerComponentStatus.Busy;
         }
 
-        protected async override Task<IngestResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
+        protected async override Task<QueuedItemResult<IngestResult>> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
         {
             if (item.MaxDepthReached)
             {
                 _logger.LogDebug($"Not sending request to parser for {item.Uri}");
-                return IngestResult.Failure(item.Uri, IngestFailureReason.MaxDepthReached);
+                return item.Completed(IngestResult.Failure(item.Uri, IngestFailureReason.MaxDepthReached));
             }
 
             try
@@ -107,22 +107,22 @@ namespace DistributedWebCrawler.Core.Components
                     }
                 }
 
-                return ingestResult;
+                return item.Completed(ingestResult);
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, $"Error when getting for URI {item.Uri}. {ex.Message}");
-                return IngestResult.Failure(item.Uri, IngestFailureReason.NetworkConnectivityError, httpStatusCode: ex.StatusCode);
+                return item.Completed(IngestResult.Failure(item.Uri, IngestFailureReason.NetworkConnectivityError, httpStatusCode: ex.StatusCode));
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, $"Error processing URL for URI {item.Uri}. {ex.Message}");
-                return IngestResult.Failure(item.Uri, IngestFailureReason.UriFormatError);
+                return item.Completed(IngestResult.Failure(item.Uri, IngestFailureReason.UriFormatError));
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError($"Timeout while getting URL for URI {item.Uri}. {ex.Message}");
-                return IngestResult.Failure(item.Uri, IngestFailureReason.UriFormatError);
+                return item.Completed(IngestResult.Failure(item.Uri, IngestFailureReason.UriFormatError));
             }
         }
 

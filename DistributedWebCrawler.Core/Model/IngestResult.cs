@@ -21,7 +21,7 @@ namespace DistributedWebCrawler.Core.Model
 
     }
 
-    public class IngestResult : RequestBase
+    public class IngestResult
     {
         public IngestResult(Uri uri) : base()
         {

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Nager.PublicSuffix;
 using DistributedWebCrawler.Core.Queue;
 using System.Threading;
+using DistributedWebCrawler.Core.Extensions;
 
 namespace DistributedWebCrawler.Core.Components
 {
@@ -172,12 +173,12 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        protected async override Task<bool> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
+        protected async override Task<QueuedItemResult<bool>> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
         {
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
             {
                 _logger.LogError($"Not processing {schedulerRequest.Uri}. Maximum crawl depth exceeded (curremt: {schedulerRequest.CurrentCrawlDepth}, max: {_schedulerSettings.MaxCrawlDepth})");
-                return false;
+                return schedulerRequest.Completed(false);
             }
 
             var visitedPathsForHost = Enumerable.Empty<string>();
@@ -223,7 +224,7 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest);
                     _robotsRequestProducer.Enqueue(robotsRequest);
-                    return false;
+                    return schedulerRequest.Waiting();
                 }
             }
 
@@ -240,7 +241,7 @@ namespace DistributedWebCrawler.Core.Components
             if (!pathsToVisit.Any())
             {
                 _logger.LogDebug($"Not processing request for host: {schedulerRequest.Uri}. No unvisited paths");
-                return false;
+                return schedulerRequest.Completed(false);
             }
 
             schedulerRequest.Paths = pathsToVisit;
@@ -254,7 +255,7 @@ namespace DistributedWebCrawler.Core.Components
                 await AddNextUriToSchedulerQueueAsync(domain, schedulerRequest, cancellationToken, firstTimeVisit).ConfigureAwait(false);
             }
 
-            return true;
+            return schedulerRequest.Completed(true);
         }
 
         private enum PathCompareMode

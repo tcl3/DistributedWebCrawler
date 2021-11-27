@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Configuration;
+using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
@@ -29,7 +30,7 @@ namespace DistributedWebCrawler.Core.Components
             _expirationTimeSpan = TimeSpan.FromSeconds(settings.CacheIntervalSeconds);
         }
 
-        protected override async Task<bool> ProcessItemAsync(RobotsRequest item, CancellationToken cancellationToken)
+        protected override async Task<QueuedItemResult<bool>> ProcessItemAsync(RobotsRequest item, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Processing robots.txt request for {item.Uri}");
 
@@ -37,7 +38,7 @@ namespace DistributedWebCrawler.Core.Components
             
             _schedulerRequestProducer.Enqueue(item.SchedulerRequest);
 
-            return true;
+            return item.Completed(true);
         }
     }
 }

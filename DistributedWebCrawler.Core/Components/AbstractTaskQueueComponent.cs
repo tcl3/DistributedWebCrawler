@@ -83,8 +83,12 @@ namespace DistributedWebCrawler.Core.Components
 
                 _ = task.ContinueWith(r =>
                 {
-                    // TODO: indicate whether task errored or not
-                    _consumer.NotifyCompletedAsync(currentItem, task.Status, task.Result);
+                    var queuedItemResult = task.Result;
+
+                    if (queuedItemResult.Status == QueuedItemStatus.Completed)
+                    {
+                        _consumer.NotifyCompletedAsync(currentItem, task.Status, queuedItemResult.Result);
+                    }
                 }, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
 
                 _ = task.ContinueWith(r =>
@@ -129,6 +133,6 @@ namespace DistributedWebCrawler.Core.Components
             return Task.CompletedTask;
         }
 
-        protected abstract Task<TResult> ProcessItemAsync(TRequest item, CancellationToken cancellationToken);
+        protected abstract Task<QueuedItemResult<TResult>> ProcessItemAsync(TRequest item, CancellationToken cancellationToken);
     }
 }
