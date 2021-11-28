@@ -39,8 +39,9 @@ namespace DistributedWebCrawler.Core.Components
             IProducer<ParseRequest, bool> parseRequestProducer,
             CrawlerClient crawlerClient,
             IContentStore contentStore,
+            IKeyValueStore keyValueStore,
             ILogger<IngesterComponent> logger) 
-            : base(ingestRequestConsumer, logger, nameof(IngesterComponent), ingesterSettings)
+            : base(ingestRequestConsumer, keyValueStore, logger, nameof(IngesterComponent), ingesterSettings)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;

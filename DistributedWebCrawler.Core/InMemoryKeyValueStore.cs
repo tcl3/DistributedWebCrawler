@@ -11,11 +11,11 @@ namespace DistributedWebCrawler.Core
     {
         private class CacheEntry
         {
-            public string Content { get; }
+            public object Content { get; }
             public DateTimeOffset CreatedAt { get; }
             public TimeSpan? ExpireAfter { get; }
 
-            public CacheEntry(string content, TimeSpan? expireAfter = null, DateTimeOffset? createdAt = null)
+            public CacheEntry(object content, TimeSpan? expireAfter = null, DateTimeOffset? createdAt = null)
             {
                 Content = content;
                 ExpireAfter = expireAfter;
@@ -37,17 +37,7 @@ namespace DistributedWebCrawler.Core
 
         public Task<string?> GetAsync(string key, CancellationToken cancellationToken)
         {
-            if (!_contentLookup.TryGetValue(key, out var entry) || entry?.Content == null)
-            {
-                return Task.FromResult<string?>(null);
-            }
-            else if (entry.Expired())
-            {
-                _contentLookup.TryRemove(key, out _);
-                return Task.FromResult<string?>(string.Empty);
-            }
-
-            return Task.FromResult<string?>(entry.Content);
+            return GetAsync<string>(key, valueIfExpired: string.Empty, cancellationToken);
         }
 
         public Task RemoveAsync(string key, CancellationToken cancellationToken)
@@ -59,9 +49,40 @@ namespace DistributedWebCrawler.Core
 
         public Task PutAsync(string key, string content, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
         {
-            _contentLookup.AddOrUpdate(key, _ => new CacheEntry(content, expireAfter), (_, _) => new CacheEntry(content, expireAfter));
+            return PutAsync<string>(key, content, cancellationToken, expireAfter);
+        }
+
+        public Task PutAsync<TData>(string key, TData value, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
+            where TData : notnull
+        {
+            _contentLookup.AddOrUpdate(key, _ => new CacheEntry(value, expireAfter), (_, _) => new CacheEntry(value, expireAfter));
 
             return Task.FromResult(key);
+        }
+
+        public Task<TData?> GetAsync<TData>(string key, CancellationToken cancellationToken)
+        {
+            return GetAsync<TData>(key, valueIfExpired: default, cancellationToken);
+        }
+
+        private Task<TData?> GetAsync<TData>(string key, TData? valueIfExpired, CancellationToken cancellationToken)
+        {
+            if (!_contentLookup.TryGetValue(key, out var entry) || entry?.Content == null)
+            {
+                return Task.FromResult<TData?>(default);
+            }
+            else if (entry.Expired())
+            {
+                _contentLookup.TryRemove(key, out _);
+                return Task.FromResult(valueIfExpired);
+            }
+
+            if (entry.Content is not TData entyData)
+            {
+                throw new InvalidOperationException($"Entry with key: '{key}' could not be converted to type: {typeof(TData).Name}");
+            }
+
+            return Task.FromResult<TData?>(entyData);
         }
     }
 }

@@ -37,5 +37,16 @@ namespace DistributedWebCrawler.Core
         {
             return _inner.RemoveAsync(_prefix + key, cancellationToken);
         }
+
+        public Task PutAsync<TData>(string key, TData value, CancellationToken cancellationToken, TimeSpan? expireAfter = null) 
+            where TData : notnull
+        {
+            return _inner.PutAsync(_prefix + key, value, cancellationToken, expireAfter);
+        }
+
+        public Task<TData?> GetAsync<TData>(string key, CancellationToken cancellationToken)
+        {
+            return _inner.GetAsync<TData>(_prefix + key, cancellationToken);
+        }
     }
 }

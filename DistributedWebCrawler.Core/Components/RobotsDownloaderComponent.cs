@@ -18,10 +18,11 @@ namespace DistributedWebCrawler.Core.Components
         private readonly TimeSpan _expirationTimeSpan;
 
         public RobotsDownloaderComponent(IConsumer<RobotsRequest, bool> consumer,
+            IKeyValueStore keyValueStore,
             ILogger<RobotsDownloaderComponent> logger,
             IProducer<SchedulerRequest, bool> schedulerRequestProducer,
             IRobotsCacheWriter robotsCacheWriter,
-            RobotsTxtSettings settings) : base(consumer, logger, nameof(RobotsDownloaderComponent), settings)
+            RobotsTxtSettings settings) : base(consumer, keyValueStore, logger, nameof(RobotsDownloaderComponent), settings)
         {
             _logger = logger;
             _schedulerRequestProducer = schedulerRequestProducer;
@@ -34,9 +35,9 @@ namespace DistributedWebCrawler.Core.Components
         {
             _logger.LogInformation($"Processing robots.txt request for {item.Uri}");
 
-            await _robotsCache.AddOrUpdateRobotsForHostAsync(item.Uri, _expirationTimeSpan, cancellationToken).ConfigureAwait(false); ;
-            
-            _schedulerRequestProducer.Enqueue(item.SchedulerRequest);
+            await _robotsCache.AddOrUpdateRobotsForHostAsync(item.Uri, _expirationTimeSpan, cancellationToken).ConfigureAwait(false);
+
+            await RequeueAsync(item.SchedulerRequestId, _schedulerRequestProducer, cancellationToken).ConfigureAwait(false);
 
             return item.Completed(true);
         }

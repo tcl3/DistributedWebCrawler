@@ -4,15 +4,14 @@ namespace DistributedWebCrawler.Core.Model
 {
     public class RobotsRequest : RequestBase
     {
-        public RobotsRequest(Uri uri, SchedulerRequest schedulerRequest) : base()
+        public RobotsRequest(Uri uri, Guid schedulerRequestId) : base()
         {
             Uri = uri;
-            SchedulerRequest = schedulerRequest;
+            SchedulerRequestId = schedulerRequestId;
         }
 
         public Uri Uri { get; init; }
 
-        // TODO: Pause / Resume functionality for queued tasks, so we don't have to pass an entire request here
-        public SchedulerRequest SchedulerRequest { get; init; }
+        public Guid SchedulerRequestId { get; init; }
     }
 }

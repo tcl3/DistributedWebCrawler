@@ -60,11 +60,12 @@ namespace DistributedWebCrawler.Core.Components
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest, bool> consumer,
+            IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest, bool> robotsRequestProducer,
             IProducer<IngestRequest, IngestResult> ingestRequestProducer)
-            : base(consumer, logger, nameof(SchedulerComponent), schedulerSettings)
+            : base(consumer, keyValueStore, logger, nameof(SchedulerComponent), schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
             _logger = logger;
@@ -222,7 +223,7 @@ namespace DistributedWebCrawler.Core.Components
                 var exists = await _robotsCacheReader.GetRobotsTxtAsync(schedulerRequest.Uri, IfRobotsExists, cancellationToken).ConfigureAwait(false);
                 if (!exists)
                 {
-                    var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest);
+                    var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest.Id);
                     _robotsRequestProducer.Enqueue(robotsRequest);
                     return schedulerRequest.Waiting();
                 }
