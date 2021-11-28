@@ -19,6 +19,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         where TRequest : RequestBase
     {
         private readonly IPersistentConnection _connection;
+        private readonly ISerializer _serializer;
         private readonly ILogger<RabbitMQProducerConsumer<TRequest, TResult>> _logger;
         private readonly RetryPolicy _retryPolicy;
 
@@ -85,10 +86,12 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
         }
 
-        public RabbitMQProducerConsumer(IPersistentConnection connection, 
+        public RabbitMQProducerConsumer(IPersistentConnection connection,
+            ISerializer serializer,
             ILogger<RabbitMQProducerConsumer<TRequest, TResult>> logger)
         {
             _connection = connection;
+            _serializer = serializer;
             _logger = logger;
 
             _retryPolicy = Policy.Handle<BrokerUnreachableException>()
@@ -129,7 +132,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         {
             _logger.LogDebug($"Message received: '{Encoding.UTF8.GetString(ea.Body.Span)}'");
 
-            var queueItem = JsonSerializer.Deserialize<TRequest>(ea.Body.Span);
+            var queueItem = _serializer.Deserialize<TRequest>(ea.Body.Span);
 
             if (queueItem == null)
             {
@@ -148,7 +151,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private async Task OnNotificationReceived(object? model, BasicDeliverEventArgs ea)
         {
-            var eventArgs = JsonSerializer.Deserialize<ItemCompletedEventArgs<TResult>>(ea.Body.Span);
+            var eventArgs = _serializer.Deserialize<ItemCompletedEventArgs<TResult>>(ea.Body.Span);
 
             if (eventArgs == null)
             {
@@ -234,7 +237,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private void Publish(object data, string queueName)
         {
-            var body = JsonSerializer.SerializeToUtf8Bytes(data);
+            var body = _serializer.Serialize(data);
             var channel = GetChannelFromPool();            
 
             channel.ExchangeDeclare(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName, type: "direct");           

@@ -5,6 +5,7 @@ using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Robots;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
@@ -25,14 +26,14 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
             _services = services;
 
-            RegisterCommonDependencies(services);
+            RegisterCommonDefaultDependencies(services);
         }
 
-        private static void RegisterCommonDependencies(IServiceCollection services)
+        private static void RegisterCommonDefaultDependencies(IServiceCollection services)
         {
-            services.AddSingleton<IContentStore, ContentStore>();
-            services.AddSingleton<IRobotsCacheReader, RobotsCacheReader>();
-            services.AddSingleton<RobotsCacheSettings>(serviceProvider =>
+            services.TryAddSingleton<IContentStore, ContentStore>();
+            services.TryAddSingleton<IRobotsCacheReader, RobotsCacheReader>();
+            services.TryAddSingleton<RobotsCacheSettings>(serviceProvider =>
             {
                 var robotsClient = serviceProvider.GetService<RobotsClient>();
                 var settings = new RobotsCacheSettings 
@@ -42,6 +43,8 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
                 return settings;
             });
+
+            services.TryAddSingleton<ISerializer, JsonSerializerAdaptor>();
         }
 
         public ICrawlerBuilder WithSeeder<TRequest>(Action<ISeederBuilder> seederBuilderAction)
