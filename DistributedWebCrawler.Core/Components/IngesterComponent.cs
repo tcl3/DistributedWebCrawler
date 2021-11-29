@@ -77,12 +77,6 @@ namespace DistributedWebCrawler.Core.Components
             return mediaTypePatterns;
         }
 
-        protected override CrawlerComponentStatus GetStatus()
-        {
-            // TODO: Implement the correct status here to allow us to exit when done
-            return CrawlerComponentStatus.Busy;
-        }
-
         protected async override Task<QueuedItemResult<IngestResult>> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
         {
             if (item.MaxDepthReached)

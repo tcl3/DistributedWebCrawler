@@ -1,5 +1,4 @@
-﻿using DistributedWebCrawler.Core.Compontents;
-using DistributedWebCrawler.Core.Configuration;
+﻿using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
@@ -24,7 +23,7 @@ namespace DistributedWebCrawler.Core.Components
         }
     }
 
-    public abstract class AbstractTaskQueueComponent<TRequest, TResult> : AbstractComponent 
+    public abstract class AbstractTaskQueueComponent<TRequest, TResult> : ICrawlerComponent
         where TRequest : RequestBase
     {
         private readonly IConsumer<TRequest, TResult> _consumer;
@@ -37,26 +36,75 @@ namespace DistributedWebCrawler.Core.Components
         
         private readonly SemaphoreSlim _pauseSemaphore;
 
+        protected bool IsStarted { get; private set; }
+
+        private readonly TaskCompletionSource _taskCompletionSource;
+
+
         protected AbstractTaskQueueComponent(IConsumer<TRequest, TResult> consumer, 
             IKeyValueStore keyValueStore,
             ILogger logger,
-            string name, TaskQueueSettings taskQueueSettings) : base(logger, name)
+            string name, TaskQueueSettings taskQueueSettings)
         {
             _consumer = consumer;
             _outstandingItemsStore = keyValueStore.WithKeyPrefix("TaskQueueOutstandingItems");
             _logger = logger;
+            Name = name;
             _taskQueueSettings = taskQueueSettings;
             _itemSemaphore = new SemaphoreSlim(taskQueueSettings.MaxConcurrentItems, taskQueueSettings.MaxConcurrentItems);
             _pauseSemaphore = new SemaphoreSlim(0);
+            _taskCompletionSource = new();
         }
 
-        protected override CrawlerComponentStatus GetStatus()
+        public CrawlerComponentStatus Status
+        {
+            get
+            {
+                if (!IsStarted)
+                {
+                    return CrawlerComponentStatus.NotStarted;
+                }
+
+                return GetStatus();
+            }
+        }
+
+        public string Name { get; }
+
+        public Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
+        {
+            if (IsStarted)
+            {
+                throw new InvalidOperationException($"Cannot start {Name} when already started");
+            }
+
+            IsStarted = true;
+
+            _logger.LogInformation($"{Name} component started");
+
+            _ = ComponentStartAsync(startState)
+                .ContinueWith(t =>
+                {
+                    if (t.IsCanceled) _taskCompletionSource.SetCanceled();
+                    else if (t.Exception != null) _taskCompletionSource.SetException(t.Exception);
+                    else _taskCompletionSource.SetResult();
+                }, TaskScheduler.Current);
+
+            return Task.CompletedTask;
+        }
+
+        public async Task WaitUntilCompletedAsync()
+        {
+            await _taskCompletionSource.Task.ConfigureAwait(false);
+        }
+
+        protected virtual CrawlerComponentStatus GetStatus()
         {
             // TODO: Implement the correct status here to allow us to exit when done
             return CrawlerComponentStatus.Busy;
         }
 
-        protected override async Task ComponentStartAsync(CrawlerStartState startState)
+        protected virtual async Task ComponentStartAsync(CrawlerStartState startState)
         {
             if (startState == CrawlerStartState.Paused)
             {
@@ -142,17 +190,25 @@ namespace DistributedWebCrawler.Core.Components
             await _outstandingItemsStore.RemoveAsync(requestKey, cancellationToken).ConfigureAwait(false);
         }
 
-        public override Task PauseAsync()
+        public Task PauseAsync()
         {
-            base.PauseAsync();
+            if (!IsStarted)
+            {
+                throw new InvalidOperationException($"Cannot call {nameof(PauseAsync)} before {nameof(StartAsync)}");
+            }
+
             _logger.LogInformation("Pausing...");
             _isPaused = true;
             return Task.CompletedTask; 
         }
 
-        public override Task ResumeAsync()
+        public Task ResumeAsync()
         {
-            base.ResumeAsync();
+            if (!IsStarted)
+            {
+                throw new InvalidOperationException($"Cannot call {nameof(ResumeAsync)} before {nameof(StartAsync)}");
+            }
+
             _logger.LogInformation("Resuming...");
             _isPaused = false;
             _pauseSemaphore.Release();

@@ -105,11 +105,5 @@ namespace DistributedWebCrawler.Core.Components
 
             return new(absoluteUri.GetLeftPart(UriPartial.Authority));
         }
-
-        protected override CrawlerComponentStatus GetStatus()
-        {
-            // FIXME: Implement the correct status here to allow us to exit when done
-            return CrawlerComponentStatus.Busy;
-        }
     }
 }
