@@ -15,7 +15,7 @@ namespace DistributedWebCrawler.Console
 
             var crawlerManager = ServiceConfiguration.CreateCrawler(configuration);
 
-           await crawlerManager.StartAsync(CrawlerStartState.Paused);
+           await crawlerManager.StartAsync(CrawlerStartState.Running);
 
             // For testing pause / resume functionality
             //await Task.Delay(5000);
