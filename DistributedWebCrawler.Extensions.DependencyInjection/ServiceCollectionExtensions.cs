@@ -69,7 +69,7 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
             {
                 var settings = serviceProvider.GetRequiredService<TSettings>();
                 clientConfigurationAction(client, settings);
-            }).AddHttpMessageHandler(() => new FallackEncodingHandler(Encoding.UTF8));
+            }).AddHttpMessageHandler(() => new FallbackEncodingHandler(Encoding.UTF8));
         }
     }
 }

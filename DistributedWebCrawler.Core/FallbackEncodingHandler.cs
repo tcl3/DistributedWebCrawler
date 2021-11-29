@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core
 {
-    public class FallackEncodingHandler : DelegatingHandler
+    public class FallbackEncodingHandler : DelegatingHandler
     {
         private readonly Encoding _fallbackEncoding;
         
-        public FallackEncodingHandler(Encoding fallbackEncoding)
+        public FallbackEncodingHandler(Encoding fallbackEncoding)
         {
             _fallbackEncoding = fallbackEncoding;
         }
