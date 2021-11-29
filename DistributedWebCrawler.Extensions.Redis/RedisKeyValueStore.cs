@@ -65,6 +65,12 @@ namespace DistributedWebCrawler.Extensions.Redis
         public async Task<TData?> GetAsync<TData>(string key, CancellationToken cancellationToken)
         {
             var bytes = await _cache.GetAsync(key, cancellationToken).ConfigureAwait(false);
+
+            if (bytes == null)
+            {
+                return default;
+            }
+
             return _serializer.Deserialize<TData?>(bytes);
         }
     }
