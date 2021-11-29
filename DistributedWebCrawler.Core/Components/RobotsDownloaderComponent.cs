@@ -18,11 +18,13 @@ namespace DistributedWebCrawler.Core.Components
         private readonly TimeSpan _expirationTimeSpan;
 
         public RobotsDownloaderComponent(IConsumer<RobotsRequest, bool> consumer,
+            IEventDispatcher<RobotsRequest, bool> eventDispatcher,
             IKeyValueStore keyValueStore,
             ILogger<RobotsDownloaderComponent> logger,
             IProducer<SchedulerRequest, bool> schedulerRequestProducer,
             IRobotsCacheWriter robotsCacheWriter,
-            RobotsTxtSettings settings) : base(consumer, keyValueStore, logger, nameof(RobotsDownloaderComponent), settings)
+            RobotsTxtSettings settings) 
+            : base(consumer, eventDispatcher, keyValueStore, logger, nameof(RobotsDownloaderComponent), settings)
         {
             _logger = logger;
             _schedulerRequestProducer = schedulerRequestProducer;

@@ -35,13 +35,14 @@ namespace DistributedWebCrawler.Core.Components
         }
         
         public IngesterComponent(IngesterSettings ingesterSettings,
-            IConsumer<IngestRequest, IngestResult> ingestRequestConsumer, 
+            IConsumer<IngestRequest, IngestResult> ingestRequestConsumer,
+            IEventDispatcher<IngestRequest, IngestResult> eventDispatcher,
             IProducer<ParseRequest, bool> parseRequestProducer,
             CrawlerClient crawlerClient,
             IContentStore contentStore,
             IKeyValueStore keyValueStore,
             ILogger<IngesterComponent> logger) 
-            : base(ingestRequestConsumer, keyValueStore, logger, nameof(IngesterComponent), ingesterSettings)
+            : base(ingestRequestConsumer, eventDispatcher, keyValueStore, logger, nameof(IngesterComponent), ingesterSettings)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;

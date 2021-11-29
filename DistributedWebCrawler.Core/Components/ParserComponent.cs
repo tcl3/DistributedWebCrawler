@@ -25,12 +25,13 @@ namespace DistributedWebCrawler.Core.Components
 
         public ParserComponent(ParserSettings parserSettings,
             IConsumer<ParseRequest, bool> parseRequestConsumer,
+            IEventDispatcher<ParseRequest, bool> eventDispatcher,
             IProducer<SchedulerRequest, bool> schedulerRequestProducer,
             ILinkParser linkParser,
             IContentStore contentStore,
             IKeyValueStore keyValueStore,
             ILogger<ParserComponent> logger)
-            : base(parseRequestConsumer, keyValueStore, logger, nameof(ParserComponent), parserSettings)
+            : base(parseRequestConsumer, eventDispatcher, keyValueStore, logger, nameof(ParserComponent), parserSettings)
         {
             _parseRequestConsumer = parseRequestConsumer;
             _schedulerRequestProducer = schedulerRequestProducer;

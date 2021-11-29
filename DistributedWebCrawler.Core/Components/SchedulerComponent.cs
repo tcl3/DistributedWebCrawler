@@ -60,12 +60,14 @@ namespace DistributedWebCrawler.Core.Components
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest, bool> consumer,
+            IEventDispatcher<SchedulerRequest, bool> eventDispatcher,
+            IEventReceiver<IngestRequest, IngestResult> ingestEventReceiver,
             IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest, bool> robotsRequestProducer,
             IProducer<IngestRequest, IngestResult> ingestRequestProducer)
-            : base(consumer, keyValueStore, logger, nameof(SchedulerComponent), schedulerSettings)
+            : base(consumer, eventDispatcher, keyValueStore, logger, nameof(SchedulerComponent), schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
             _logger = logger;
@@ -90,7 +92,7 @@ namespace DistributedWebCrawler.Core.Components
                 ? _schedulerSettings.ExcludeDomains.Select(str => new DomainPattern(str))
                 : Enumerable.Empty<DomainPattern>();
 
-            ingestRequestProducer.OnCompletedAsync += OnIngestCompletedAsync;
+            ingestEventReceiver.OnCompletedAsync += OnIngestCompletedAsync;
         }
 
         protected override Task ComponentStartAsync(CrawlerStartState startState)

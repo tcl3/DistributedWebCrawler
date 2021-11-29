@@ -15,10 +15,11 @@ namespace DistributedWebCrawler.Core.Components
         where TRequest : RequestBase
     {
         protected AbstractTaskQueueComponent(IConsumer<TRequest, bool> consumer, 
+            IEventDispatcher<TRequest, bool> eventDispatcher,
             IKeyValueStore keyValueStore,
             ILogger logger, 
             string name, TaskQueueSettings settings) 
-            : base(consumer, keyValueStore, logger, name, settings)
+            : base(consumer, eventDispatcher, keyValueStore, logger, name, settings)
         {
         }
     }
@@ -27,6 +28,7 @@ namespace DistributedWebCrawler.Core.Components
         where TRequest : RequestBase
     {
         private readonly IConsumer<TRequest, TResult> _consumer;
+        private readonly IEventDispatcher<TRequest, TResult> _eventDispatcher;
         private readonly IKeyValueStore _outstandingItemsStore;
         private readonly ILogger _logger;
         private readonly TaskQueueSettings _taskQueueSettings;
@@ -41,12 +43,14 @@ namespace DistributedWebCrawler.Core.Components
         private readonly TaskCompletionSource _taskCompletionSource;
 
 
-        protected AbstractTaskQueueComponent(IConsumer<TRequest, TResult> consumer, 
+        protected AbstractTaskQueueComponent(IConsumer<TRequest, TResult> consumer,
+            IEventDispatcher<TRequest, TResult> eventReceiver,
             IKeyValueStore keyValueStore,
             ILogger logger,
             string name, TaskQueueSettings taskQueueSettings)
         {
             _consumer = consumer;
+            _eventDispatcher = eventReceiver;
             _outstandingItemsStore = keyValueStore.WithKeyPrefix("TaskQueueOutstandingItems");
             _logger = logger;
             Name = name;
@@ -144,7 +148,7 @@ namespace DistributedWebCrawler.Core.Components
 
                     if (queuedItemResult.Status == QueuedItemStatus.Completed)
                     {
-                        _consumer.NotifyCompletedAsync(currentItem, task.Status, queuedItemResult.Result);
+                        _eventDispatcher.NotifyCompletedAsync(currentItem, task.Status, queuedItemResult.Result);
                     }
                     else if (queuedItemResult.Status == QueuedItemStatus.Waiting)
                     {
