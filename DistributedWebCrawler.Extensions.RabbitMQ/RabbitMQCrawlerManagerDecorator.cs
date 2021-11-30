@@ -1,5 +1,7 @@
-﻿using DistributedWebCrawler.Core.Enums;
+﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -30,6 +32,31 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                {
                    _logger.LogWarning(ex, "Could not publish event {Timeout}s ({ExceptionMessage})", $"{time.TotalSeconds:n1}", ex.Message);
                });
+        }
+
+        public event AsyncEventHandler<PageCrawlSuccess> OnPageCrawlSuccess
+        {
+            add
+            {
+                _inner.OnPageCrawlSuccess += value;
+            }
+            remove
+            {
+                _inner.OnPageCrawlSuccess -= value;
+            }
+        }
+
+        public event AsyncEventHandler<PageCrawlFailure> OnPageCrawlFailure
+        {
+
+            add
+            {
+                _inner.OnPageCrawlFailure += value;
+            }
+            remove
+            {
+                _inner.OnPageCrawlFailure -= value;
+            }
         }
 
         public Task PauseAsync()

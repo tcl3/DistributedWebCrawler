@@ -6,8 +6,11 @@ using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 {
@@ -34,6 +37,8 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
         {
             services.AddSingleton<ISeeder, CompositeSeeder>();
             services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
+            services.AddDefaultSerializer();
+
             return services;
         }
 
@@ -70,6 +75,17 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
                 var settings = serviceProvider.GetRequiredService<TSettings>();
                 clientConfigurationAction(client, settings);
             }).AddHttpMessageHandler(() => new FallbackEncodingHandler(Encoding.UTF8));
+        }
+
+        public static IServiceCollection AddDefaultSerializer(this IServiceCollection services)
+        {
+            services.TryAddSingleton<ISerializer, JsonSerializerAdaptor>();
+            services.TryAddSingleton<JsonSerializerOptions>(_ => new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            });
+
+            return services;
         }
     }
 }

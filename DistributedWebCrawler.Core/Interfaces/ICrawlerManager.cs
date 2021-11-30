@@ -1,4 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Enums;
+using DistributedWebCrawler.Core.Model;
+using System;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
@@ -9,5 +11,9 @@ namespace DistributedWebCrawler.Core.Interfaces
         Task WaitUntilCompletedAsync();
         Task PauseAsync();
         Task ResumeAsync();
+
+        event AsyncEventHandler<PageCrawlSuccess> OnPageCrawlSuccess;
+        
+        event AsyncEventHandler<PageCrawlFailure> OnPageCrawlFailure;
     }
 }

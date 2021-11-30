@@ -1,11 +1,14 @@
 ﻿using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Robots;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
@@ -44,7 +47,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
                 return settings;
             });
 
-            services.TryAddSingleton<ISerializer, JsonSerializerAdaptor>();
+            services.AddDefaultSerializer();
         }
 
         public ICrawlerBuilder WithSeeder<TRequest>(Action<ISeederBuilder> seederBuilderAction)

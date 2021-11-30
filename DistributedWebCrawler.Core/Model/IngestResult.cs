@@ -23,35 +23,42 @@ namespace DistributedWebCrawler.Core.Model
 
     public class IngestResult
     {
-        public IngestResult(Uri uri) : base()
+        public IngestResult(Uri uri, DateTimeOffset requestStartTime) : base()
         {
             Uri = uri;
+            RequestStartTime = requestStartTime;
+            TimeTaken = DateTimeOffset.Now - requestStartTime;
         }
 
-        public IngestFailureReason? IngestFailureReason { get; init; }
+        public IngestFailureReason? FailureReason { get; init; }
         public HttpStatusCode? HttpStatusCode { get; init; }
 
         public Uri Uri { get; init; }
+        public DateTimeOffset RequestStartTime { get; init; }
+        public TimeSpan TimeTaken { get; init; }
         public Guid? ContentId { get; init; } 
+        public int ContentLength { get; init; }
         public string? MediaType { get; init; } = string.Empty;
 
         public IEnumerable<RedirectResult> Redirects { get; init; } = Enumerable.Empty<RedirectResult>();
 
-        public static IngestResult Failure(Uri uri, IngestFailureReason failureReason, HttpStatusCode? httpStatusCode = null, string? mediaType = null, IEnumerable<RedirectResult>? redirects = null)
+        public static IngestResult Failure(Uri uri, DateTimeOffset requestStartTime, IngestFailureReason failureReason, HttpStatusCode? httpStatusCode = null, string? mediaType = null, IEnumerable<RedirectResult>? redirects = null)
         {
-            return new IngestResult(uri)
+            return new IngestResult(uri, requestStartTime)
             { 
-                IngestFailureReason = failureReason,
+                FailureReason = failureReason,
                 HttpStatusCode = httpStatusCode,
                 MediaType = mediaType,
+                Redirects = redirects ?? Enumerable.Empty<RedirectResult>()
             };
         }
 
-        public static IngestResult Success(Uri uri, Guid contentId, string mediaType, IEnumerable<RedirectResult>? redirects = null)
+        public static IngestResult Success(Uri uri, DateTimeOffset requestStartTime, Guid contentId, int contentLength, string mediaType, IEnumerable<RedirectResult>? redirects = null)
         {
-            return new IngestResult(uri)
+            return new IngestResult(uri, requestStartTime)
             { 
-                ContentId = contentId, 
+                ContentId = contentId,
+                ContentLength = contentLength,
                 MediaType = mediaType,
                 Redirects = redirects ?? Enumerable.Empty<RedirectResult>()
             };
