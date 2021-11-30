@@ -142,17 +142,17 @@ namespace DistributedWebCrawler.Core.Components
                     _itemSemaphore.Release();
                 }, TaskScheduler.Current);
 
-                _ = task.ContinueWith(r =>
+                _ = task.ContinueWith(async t =>
                 {
-                    var queuedItemResult = task.Result;
+                    var queuedItemResult = t.Result;
 
                     if (queuedItemResult.Status == QueuedItemStatus.Completed)
                     {
-                        _eventDispatcher.NotifyCompletedAsync(currentItem, task.Status, queuedItemResult.Result);
+                        await _eventDispatcher.NotifyCompletedAsync(currentItem, task.Status, queuedItemResult.Result).ConfigureAwait(false);
                     }
                     else if (queuedItemResult.Status == QueuedItemStatus.Waiting)
                     {
-                        _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem, cancellationToken);
+                        await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem, cancellationToken).ConfigureAwait(false);
                     }
                 }, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
 
