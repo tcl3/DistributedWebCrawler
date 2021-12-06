@@ -1,12 +1,14 @@
 ﻿using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.Core.Seeding;
 using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using RabbitMQ.Client;
+using System.Reflection;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
@@ -61,15 +63,15 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 .AddSingleton(typeof(IProducerConsumer<>), typeof(RabbitMQProducerConsumer<>))
                 .AddSingleton(typeof(IEventDispatcher<,>), typeof(RabbitMQEventDispatcher<,>))
                 .AddSingleton(typeof(IEventReceiver<,>), typeof(RabbitMQEventReceiver<,>))
+                .AddSingleton(typeof(InMemoryEventStore<,>))
                 .AddSingleton<RabbitMQChannelPool>()
                 .Decorate<ICrawlerComponent, RabbitMQComponentDecorator>();
         }
 
-        public static IServiceCollection AddRabbitMQCrawlerManager(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddRabbitMQCrawlerManager(this IServiceCollection services, IConfiguration configuration, IEnumerable<Assembly>? componentAssembly = null)
         {
             return services.AddRabbitMQConnection(configuration)
-                .AddInMemoryCrawlerManager()
-                .AddSingleton(typeof(IEventReceiver<,>), typeof(RabbitMQEventReceiver<,>))
+                .AddCrawlerManager(typeof(RabbitMQEventReceiver<,>), componentAssembly)
                 .AddSingleton<RabbitMQChannelPool>()
                 .Decorate<ICrawlerManager, RabbitMQCrawlerManagerDecorator>();
         }

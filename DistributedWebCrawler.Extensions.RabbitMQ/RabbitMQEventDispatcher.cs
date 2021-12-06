@@ -4,23 +4,39 @@ using DistributedWebCrawler.Core.Queue;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
-    public class RabbitMQEventDispatcher<TRequest, TResult> : IEventDispatcher<TRequest, TResult> 
-        where TRequest : RequestBase
+    public class RabbitMQEventDispatcher<TSuccess, TFailure> : IEventDispatcher<TSuccess, TFailure>
     {
         private readonly RabbitMQChannelPool _channelPool;
+        private readonly ISerializer _serializer;
+        
+        private const string NotifierQueueSuffix = "-Notifier";
 
-        private static readonly string NotifierQueueName = typeof(TRequest).Name + "-Notifier";
-
-        public RabbitMQEventDispatcher(RabbitMQChannelPool channelPool)
+        public RabbitMQEventDispatcher(RabbitMQChannelPool channelPool, ISerializer serializer)
         {
             _channelPool = channelPool;
+            _serializer = serializer;
         }
 
-        public Task NotifyCompletedAsync(TRequest item, TaskStatus status, TResult? result)
+        public Task NotifyCompletedAsync(RequestBase item, TSuccess result)
         {
-            var eventArgs = new ItemCompletedEventArgs<TResult>(item.Id, status) { Result = result };
 
-            _channelPool.Publish(eventArgs, RabbitMQConstants.ProducerConsumer.ExchangeName, NotifierQueueName);
+            return PublishAsync(item, result);
+        }
+
+        public Task NotifyFailedAsync(RequestBase item, TFailure result)
+        {
+            return PublishAsync(item, result);
+        }
+
+        private Task PublishAsync<TResult>(RequestBase item, TResult result)
+        {
+            var eventArgs = new ItemCompletedEventArgs<TResult>(item.Id, result);
+            
+            var bytes = _serializer.Serialize(eventArgs);
+
+            var queueName = typeof(TResult).Name + NotifierQueueSuffix;
+
+            _channelPool.Publish(bytes, RabbitMQConstants.ProducerConsumer.ExchangeName, queueName);
 
             return Task.CompletedTask;
         }

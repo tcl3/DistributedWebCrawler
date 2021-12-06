@@ -3,23 +3,27 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class ItemCompletedEventArgs : ItemCompletedEventArgs<bool>
+    public class ItemCompletedEventArgs : EventArgs
     {
-        public ItemCompletedEventArgs(Guid id, TaskStatus status) : base(id, status)
+        public ItemCompletedEventArgs(Guid id, object result)
         {
+            Id = id;
+            Result = result;
         }
+
+        public Guid Id { get; }
+        public object Result { get; init; }
     }
 
     public class ItemCompletedEventArgs<TResult> : EventArgs
     {
-        public ItemCompletedEventArgs(Guid id, TaskStatus status)
+        public ItemCompletedEventArgs(Guid id, TResult result)
         {
             Id = id;
-            Status = status;
+            Result = result;
         }
 
         public Guid Id { get; }
-        public TaskStatus Status { get; }
-        public TResult? Result { get; init; }
+        public TResult Result { get; init; }
     }
 }

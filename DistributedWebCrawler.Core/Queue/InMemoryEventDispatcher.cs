@@ -4,22 +4,28 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class InMemoryEventDispatcher<TRequest, TResult>
-        : IEventDispatcher<TRequest, TResult>
-        where TRequest : RequestBase
+    public class InMemoryEventDispatcher<TSuccess, TFailure> : IEventDispatcher<TSuccess, TFailure>
     {
-        private readonly InMemoryEventStore<TResult> _eventStore;
+        private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
 
-        public InMemoryEventDispatcher(InMemoryEventStore<TResult> eventStore)
+        public InMemoryEventDispatcher(InMemoryEventStore<TSuccess, TFailure> eventStore)
         {
             _eventStore = eventStore;
         }
 
-        public async Task NotifyCompletedAsync(TRequest item, TaskStatus status, TResult? result)
+        public async Task NotifyCompletedAsync(RequestBase item, TSuccess result)
         {
             if (_eventStore.OnCompletedAsyncHandler != null)
             {
-                await _eventStore.OnCompletedAsyncHandler.Invoke(this, new ItemCompletedEventArgs<TResult>(item.Id, status) { Result = result }).ConfigureAwait(false);
+                await _eventStore.OnCompletedAsyncHandler(this, new ItemCompletedEventArgs<TSuccess>(item.Id, result)).ConfigureAwait(false);
+            }
+        }
+
+        public async Task NotifyFailedAsync(RequestBase item, TFailure result)
+        {
+            if (_eventStore.OnFailedAsyncHandler != null)
+            {
+                await _eventStore.OnFailedAsyncHandler(this, new ItemCompletedEventArgs<TFailure>(item.Id, result)).ConfigureAwait(false);
             }
         }
     }

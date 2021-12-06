@@ -11,24 +11,12 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public abstract class AbstractTaskQueueComponent<TRequest> : AbstractTaskQueueComponent<TRequest, bool>
-        where TRequest : RequestBase
-    {
-        protected AbstractTaskQueueComponent(IConsumer<TRequest> consumer,
-            IEventDispatcher<TRequest, bool> eventDispatcher,
-            IKeyValueStore keyValueStore,
-            ILogger logger,
-            string name, TaskQueueSettings settings)
-            : base(consumer, eventDispatcher, keyValueStore, logger, name, settings)
-        {
-        }
-    }
 
-    public abstract class AbstractTaskQueueComponent<TRequest, TResult> : ICrawlerComponent
+    public abstract class AbstractTaskQueueComponent<TRequest, TSuccess, TFailure> : ICrawlerComponent
         where TRequest : RequestBase
     {
         private readonly IConsumer<TRequest> _consumer;
-        private readonly IEventDispatcher<TRequest, TResult> _eventDispatcher;
+        private readonly IEventDispatcher<TSuccess, TFailure> _eventDispatcher;
         private readonly IKeyValueStore _outstandingItemsStore;
         private readonly ILogger _logger;
         private readonly TaskQueueSettings _taskQueueSettings;
@@ -44,7 +32,7 @@ namespace DistributedWebCrawler.Core.Components
 
 
         protected AbstractTaskQueueComponent(IConsumer<TRequest> consumer,
-            IEventDispatcher<TRequest, TResult> eventReceiver,
+            IEventDispatcher<TSuccess, TFailure> eventReceiver,
             IKeyValueStore keyValueStore,
             ILogger logger,
             string name, TaskQueueSettings taskQueueSettings)
@@ -144,13 +132,17 @@ namespace DistributedWebCrawler.Core.Components
 
                 _ = task.ContinueWith(async t =>
                 {
-                    var queuedItemResult = t.Result;
+                    var queuedItem = t.Result;
 
-                    if (queuedItemResult.Status == QueuedItemStatus.Completed)
+                    if (queuedItem.Status == QueuedItemStatus.Success && queuedItem is QueuedItemResult<TSuccess> successResult)
                     {
-                        await _eventDispatcher.NotifyCompletedAsync(currentItem, task.Status, queuedItemResult.Result).ConfigureAwait(false);
+                        await _eventDispatcher.NotifyCompletedAsync(currentItem, successResult.Result).ConfigureAwait(false);
                     }
-                    else if (queuedItemResult.Status == QueuedItemStatus.Waiting)
+                    else if (queuedItem.Status == QueuedItemStatus.Failed && queuedItem is QueuedItemResult<TFailure> failureResult)
+                    {
+                        await _eventDispatcher.NotifyFailedAsync(currentItem, failureResult.Result).ConfigureAwait(false);
+                    }
+                    else if (queuedItem.Status == QueuedItemStatus.Waiting)
                     {
                         await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem, cancellationToken).ConfigureAwait(false);
                     }
@@ -220,6 +212,22 @@ namespace DistributedWebCrawler.Core.Components
             return Task.CompletedTask;
         }
 
-        protected abstract Task<QueuedItemResult<TResult>> ProcessItemAsync(TRequest item, CancellationToken cancellationToken);
+
+        protected static QueuedItemResult<TSuccess> Success(RequestBase requst, TSuccess result)
+        {
+            return QueuedItemResult.Success(requst, result);
+        }
+
+        protected static QueuedItemResult<TFailure> Failed(RequestBase requst, TFailure result)
+        {
+            return QueuedItemResult.Failed(requst, result);
+        }
+
+        protected static QueuedItemResult Waiting(RequestBase request)
+        {
+            return QueuedItemResult.Waiting(request);
+        }
+
+        protected abstract Task<QueuedItemResult> ProcessItemAsync(TRequest item, CancellationToken cancellationToken);
     }
 }

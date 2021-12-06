@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class IngesterComponent : AbstractTaskQueueComponent<IngestRequest, IngestResult>
+    public class IngesterComponent : AbstractTaskQueueComponent<IngestRequest, IngestSuccess, IngestFailure>
     {
         private readonly IngesterSettings _ingesterSettings;
         private readonly IProducer<ParseRequest> _parseRequestProducer;
@@ -42,7 +42,7 @@ namespace DistributedWebCrawler.Core.Components
         
         public IngesterComponent(IngesterSettings ingesterSettings,
             IConsumer<IngestRequest> ingestRequestConsumer,
-            IEventDispatcher<IngestRequest, IngestResult> eventDispatcher,
+            IEventDispatcher<IngestSuccess, IngestFailure> eventDispatcher,
             IProducer<ParseRequest> parseRequestProducer,
             CrawlerClient crawlerClient,
             IContentStore contentStore,
@@ -84,18 +84,77 @@ namespace DistributedWebCrawler.Core.Components
             return mediaTypePatterns;
         }
 
-        protected async override Task<QueuedItemResult<IngestResult>> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
+        protected async override Task<QueuedItemResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
         {
             var requestStartTime = DateTime.Now;
             if (item.MaxDepthReached)
             {
                 _logger.LogDebug($"Not sending request to parser for {item.Uri}");
-                return item.Completed(IngestResult.Failure(item.Uri, requestStartTime, IngestFailureReason.MaxDepthReached));
+                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.MaxDepthReached));
             }
 
             try
             {
-                var ingestResult = await IngestCurrentPathAsync(item.Uri, requestStartTime, cancellationToken).ConfigureAwait(false);
+                var handleRedirectsResult = await GetAndHandleRedirectsAsync(item.Uri, cancellationToken).ConfigureAwait(false);
+
+                var currentUri = handleRedirectsResult.Uri;
+
+                if (handleRedirectsResult.FailureReason.HasValue)
+                {
+                    var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, handleRedirectsResult.FailureReason.Value, redirects: handleRedirectsResult.Redirects);
+                    return Failed(item, ingestFailure);
+                }
+
+                if (handleRedirectsResult.Response == null)
+                {
+                    throw new InvalidOperationException("HandleRedirectResult Response to have a value");
+                }
+
+                var response = handleRedirectsResult.Response;
+
+                if (response.StatusCode.IsError())
+                {
+                    _logger.LogInformation($"Failed to retrieve URI {currentUri} . Status code {(int)response.StatusCode}");
+                    var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.Http4xxError, httpStatusCode: response.StatusCode);
+                    return Failed(item, ingestFailure);
+                }
+
+                if (response.Content.Headers.ContentLength > _ingesterSettings.MaxContentLengthBytes)
+                {
+                    _logger.LogInformation($"Content length for {currentUri} ({response.Content.Headers.ContentLength} bytes) is longer than the maximum allowed ({_ingesterSettings.MaxContentLengthBytes} bytes)");
+                    return Failed(item, IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.ContentTooLarge));
+                }
+
+                var contentTypeHeader = response.Content.Headers.ContentType;
+                if (contentTypeHeader?.MediaType != null)
+                {
+                    if (contentTypeHeader.MediaType.Contains('*') || !MediaTypePattern.TryCreate(contentTypeHeader.MediaType, out var contentType))
+                    {
+                        _logger.LogWarning($"Invalid Content-Type header for '{currentUri}' - {contentTypeHeader.MediaType}");
+                    }
+                    else if (_mediaTypesToInclude.Any() && !_mediaTypesToInclude.Any(x => x.Match(contentType)))
+                    {
+                        _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) not present in include list");
+                        var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
+                        return Failed(item, ingestFailure);
+                    }
+                    else if (_mediaTypesToExclude.Any() && _mediaTypesToExclude.Any(x => x.Match(contentType)))
+                    {
+                        _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) present in exclude list");
+                        var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
+                        return Failed(item, ingestFailure);
+                    }
+                }
+
+                var urlContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+                _logger.LogDebug($"Successfully retrieved content for URI {currentUri}");
+
+                var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+
+                var contentId = await _contentStore.SaveContentAsync(urlContent, cancellationToken).ConfigureAwait(false);
+
+                var ingestResult = IngestSuccess.Success(currentUri, requestStartTime, contentId, urlContent.Length, mediaType, handleRedirectsResult.Redirects);
 
                 if (ingestResult.ContentId.HasValue && ingestResult.MediaType != null)
                 {
@@ -110,83 +169,23 @@ namespace DistributedWebCrawler.Core.Components
                     }
                 }
 
-                return item.Completed(ingestResult);
+                return Success(item, ingestResult);
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, $"Error when getting for URI {item.Uri}. {ex.Message}");
-                return item.Completed(IngestResult.Failure(item.Uri, requestStartTime, IngestFailureReason.NetworkConnectivityError, httpStatusCode: ex.StatusCode));
+                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.NetworkConnectivityError, httpStatusCode: ex.StatusCode));
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, $"Error processing URL for URI {item.Uri}. {ex.Message}");
-                return item.Completed(IngestResult.Failure(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
+                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError($"Timeout while getting URL for URI {item.Uri}. {ex.Message}");
-                return item.Completed(IngestResult.Failure(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
+                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
             }
-        }
-
-        private async Task<IngestResult> IngestCurrentPathAsync(Uri initialUri, DateTimeOffset requestStartTime, CancellationToken cancellationToken)
-        {
-            var handleRedirectsResult = await GetAndHandleRedirectsAsync(initialUri, cancellationToken).ConfigureAwait(false);
-
-            var currentUri = handleRedirectsResult.Uri;
-
-            if (handleRedirectsResult.FailureReason.HasValue)
-            {
-                return IngestResult.Failure(currentUri, requestStartTime, handleRedirectsResult.FailureReason.Value, redirects: handleRedirectsResult.Redirects);
-            }
-
-            if (handleRedirectsResult.Response == null)
-            {
-                throw new InvalidOperationException("HandleRedirectResult Response to have a value");
-            }
-
-            var response = handleRedirectsResult.Response;
-
-            if (response.StatusCode.IsError())
-            {
-                _logger.LogInformation($"Failed to retrieve URI {currentUri} . Status code {(int)response.StatusCode}");
-                return IngestResult.Failure(currentUri, requestStartTime, IngestFailureReason.Http4xxError, httpStatusCode: response.StatusCode);
-            }
-
-            if (response.Content.Headers.ContentLength > _ingesterSettings.MaxContentLengthBytes)
-            {
-                _logger.LogInformation($"Content length for {currentUri} ({response.Content.Headers.ContentLength} bytes) is longer than the maximum allowed ({_ingesterSettings.MaxContentLengthBytes} bytes)");
-                return IngestResult.Failure(currentUri, requestStartTime, IngestFailureReason.ContentTooLarge);
-            }
-
-            var contentTypeHeader = response.Content.Headers.ContentType;
-            if (contentTypeHeader?.MediaType != null)
-            {                
-                if (contentTypeHeader.MediaType.Contains('*') || !MediaTypePattern.TryCreate(contentTypeHeader.MediaType, out var contentType))
-                {
-                    _logger.LogWarning($"Invalid Content-Type header for '{currentUri}' - {contentTypeHeader.MediaType}");
-                }                
-                else if (_mediaTypesToInclude.Any() && !_mediaTypesToInclude.Any(x => x.Match(contentType)))
-                {
-                    _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) not present in include list");
-                    return IngestResult.Failure(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
-                }
-                else if (_mediaTypesToExclude.Any() && _mediaTypesToExclude.Any(x => x.Match(contentType)))
-                {
-                    _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) present in exclude list");
-                    return IngestResult.Failure(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
-                }
-            }
-
-            var urlContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-
-            _logger.LogDebug($"Successfully retrieved content for URI {currentUri}");
-
-            var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
-
-            var contentId = await _contentStore.SaveContentAsync(urlContent, cancellationToken).ConfigureAwait(false);
-
-            return IngestResult.Success(currentUri, requestStartTime, contentId, urlContent.Length, mediaType, handleRedirectsResult.Redirects);
         }
 
         private async Task<HandleRedirectResult> GetAndHandleRedirectsAsync(Uri uri, CancellationToken cancellationToken)

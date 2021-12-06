@@ -9,7 +9,21 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class RobotsDownloaderComponent : AbstractTaskQueueComponent<RobotsRequest>
+    public class RobotsDownloaderSuccess 
+    {
+        public RobotsDownloaderSuccess(Uri uri)
+        {
+            Uri = uri;
+        }
+        public Uri Uri { get; init; }
+    }
+
+    public enum RobotsDownloaderFailure
+    {
+
+    }
+
+    public class RobotsDownloaderComponent : AbstractTaskQueueComponent<RobotsRequest, RobotsDownloaderSuccess, RobotsDownloaderFailure>
     {
         private readonly ILogger<RobotsDownloaderComponent> _logger;
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
@@ -18,7 +32,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly TimeSpan _expirationTimeSpan;
 
         public RobotsDownloaderComponent(IConsumer<RobotsRequest> consumer,
-            IEventDispatcher<RobotsRequest, bool> eventDispatcher,
+            IEventDispatcher<RobotsDownloaderSuccess, RobotsDownloaderFailure> eventDispatcher,
             IKeyValueStore keyValueStore,
             ILogger<RobotsDownloaderComponent> logger,
             IProducer<SchedulerRequest> schedulerRequestProducer,
@@ -33,7 +47,7 @@ namespace DistributedWebCrawler.Core.Components
             _expirationTimeSpan = TimeSpan.FromSeconds(settings.CacheIntervalSeconds);
         }
 
-        protected override async Task<QueuedItemResult<bool>> ProcessItemAsync(RobotsRequest item, CancellationToken cancellationToken)
+        protected override async Task<QueuedItemResult> ProcessItemAsync(RobotsRequest item, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Processing robots.txt request for {item.Uri}");
 
@@ -41,7 +55,7 @@ namespace DistributedWebCrawler.Core.Components
 
             await RequeueAsync(item.SchedulerRequestId, _schedulerRequestProducer, cancellationToken).ConfigureAwait(false);
 
-            return item.Completed(true);
+            return Success(item, new RobotsDownloaderSuccess(item.Uri));
         }
     }
 }

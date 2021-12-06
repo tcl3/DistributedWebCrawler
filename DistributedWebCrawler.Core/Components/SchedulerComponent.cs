@@ -11,11 +11,26 @@ using System.Threading.Tasks;
 using Nager.PublicSuffix;
 using DistributedWebCrawler.Core.Queue;
 using System.Threading;
-using DistributedWebCrawler.Core.Extensions;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest>
+    public class SchedulerSuccess
+    {
+        public Uri Uri { get; set; }
+        public IEnumerable<string> AddedPaths { get; init; }
+
+        public SchedulerSuccess(Uri uri, IEnumerable<string> addedPaths)
+        {
+            Uri = uri;
+            AddedPaths = addedPaths;
+        }
+    }
+
+    public enum SchedulerFailure
+    {
+        MaximumCrawlDepthReached,
+    }
+    public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest, SchedulerSuccess, SchedulerFailure>
     {
         private enum DomainStatus
         {   
@@ -60,8 +75,8 @@ namespace DistributedWebCrawler.Core.Components
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest> consumer,
-            IEventDispatcher<SchedulerRequest, bool> eventDispatcher,
-            IEventReceiver<IngestRequest, IngestResult> ingestEventReceiver,
+            IEventDispatcher<SchedulerSuccess, SchedulerFailure> eventDispatcher,
+            IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
             IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
             IRobotsCacheReader robotsCacheReader,
@@ -151,7 +166,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        private async Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<IngestResult> eventArgs)
+        private async Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<IngestSuccess> eventArgs)
         {
             if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
             {
@@ -170,12 +185,12 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        protected async override Task<QueuedItemResult<bool>> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
+        protected async override Task<QueuedItemResult> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
         {
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
             {
                 _logger.LogError($"Not processing {schedulerRequest.Uri}. Maximum crawl depth exceeded (curremt: {schedulerRequest.CurrentCrawlDepth}, max: {_schedulerSettings.MaxCrawlDepth})");
-                return schedulerRequest.Completed(false);
+                return Failed(schedulerRequest, SchedulerFailure.MaximumCrawlDepthReached);
             }
 
             var visitedPathsForHost = Enumerable.Empty<string>();
@@ -221,7 +236,7 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest.Id);
                     _robotsRequestProducer.Enqueue(robotsRequest);
-                    return schedulerRequest.Waiting();
+                    return Waiting(schedulerRequest);
                 }
             }
 
@@ -238,7 +253,7 @@ namespace DistributedWebCrawler.Core.Components
             if (!pathsToVisit.Any())
             {
                 _logger.LogDebug($"Not processing request for host: {schedulerRequest.Uri}. No unvisited paths");
-                return schedulerRequest.Completed(false);
+                return Success(schedulerRequest, new SchedulerSuccess(schedulerRequest.Uri, Enumerable.Empty<string>()));
             }
 
             schedulerRequest.Paths = pathsToVisit;
@@ -252,7 +267,7 @@ namespace DistributedWebCrawler.Core.Components
                 await AddNextUriToSchedulerQueueAsync(domain, schedulerRequest, cancellationToken, firstTimeVisit).ConfigureAwait(false);
             }
 
-            return schedulerRequest.Completed(true);
+            return Success(schedulerRequest, new SchedulerSuccess(schedulerRequest.Uri, pathsToVisit));
         }
 
         private enum PathCompareMode

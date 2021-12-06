@@ -34,30 +34,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                });
         }
 
-        public event AsyncEventHandler<PageCrawlSuccess> OnPageCrawlSuccess
-        {
-            add
-            {
-                _inner.OnPageCrawlSuccess += value;
-            }
-            remove
-            {
-                _inner.OnPageCrawlSuccess -= value;
-            }
-        }
-
-        public event AsyncEventHandler<PageCrawlFailure> OnPageCrawlFailure
-        {
-
-            add
-            {
-                _inner.OnPageCrawlFailure += value;
-            }
-            remove
-            {
-                _inner.OnPageCrawlFailure -= value;
-            }
-        }
+        public EventReceiverCollection Components => _inner.Components;
 
         public Task PauseAsync()
         {

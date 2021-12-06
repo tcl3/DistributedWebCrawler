@@ -1,20 +1,33 @@
 ﻿using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Enums;
-using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.LinkParser;
 using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mime;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class ParserComponent : AbstractTaskQueueComponent<ParseRequest>
+    public class ParseSuccess
+    {
+        public Uri Uri { get; init; }
+        public int NumberOfLinks { get; init; }
+
+        public ParseSuccess(Uri uri, int numberOfLinks)
+        {
+            Uri = uri;
+            NumberOfLinks = numberOfLinks;
+        }
+    }
+
+    public enum ParseFailure
+    {
+        NoItemInContentStore,
+        NoLinksFound
+    }
+
+    public class ParserComponent : AbstractTaskQueueComponent<ParseRequest, ParseSuccess, ParseFailure>
     {
         private readonly IConsumer<ParseRequest> _parseRequestConsumer;
 
@@ -25,7 +38,7 @@ namespace DistributedWebCrawler.Core.Components
 
         public ParserComponent(ParserSettings parserSettings,
             IConsumer<ParseRequest> parseRequestConsumer,
-            IEventDispatcher<ParseRequest, bool> eventDispatcher,
+            IEventDispatcher<ParseSuccess, ParseFailure> eventDispatcher,
             IProducer<SchedulerRequest> schedulerRequestProducer,
             ILinkParser linkParser,
             IContentStore contentStore,
@@ -40,26 +53,26 @@ namespace DistributedWebCrawler.Core.Components
             _logger = logger;
         }
 
-        protected override Task<QueuedItemResult<bool>> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
+        protected override Task<QueuedItemResult> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
         {
             return Task.Run(async () => await ProcessItemInternalAsync(parseRequest, cancellationToken).ConfigureAwait(false), cancellationToken);
         }
 
-        private async Task<QueuedItemResult<bool>> ProcessItemInternalAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
+        private async Task<QueuedItemResult> ProcessItemInternalAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
         {
             var content = await _contentStore.GetContentAsync(parseRequest.ContentId, cancellationToken).ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(content)) 
             {
                 _logger.LogError($"Item with ID: '{parseRequest.ContentId}', not found in ContentStore");
-                return parseRequest.Completed(false);
+                return Failed(parseRequest, ParseFailure.NoItemInContentStore);
             }
 
             var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
             if (!links.Any())
             {
-                return parseRequest.Completed(false);
+                return Failed(parseRequest, ParseFailure.NoLinksFound);
             }
 
             _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri}");
@@ -86,7 +99,7 @@ namespace DistributedWebCrawler.Core.Components
                 _schedulerRequestProducer.Enqueue(schedulerRequest);
             }
 
-            return parseRequest.Completed(true);
+            return Success(parseRequest, new ParseSuccess(parseRequest.Uri, links.Count));
         }
 
 

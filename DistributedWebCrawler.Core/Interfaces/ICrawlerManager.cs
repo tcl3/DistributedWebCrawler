@@ -12,8 +12,6 @@ namespace DistributedWebCrawler.Core.Interfaces
         Task PauseAsync();
         Task ResumeAsync();
 
-        event AsyncEventHandler<PageCrawlSuccess> OnPageCrawlSuccess;
-        
-        event AsyncEventHandler<PageCrawlFailure> OnPageCrawlFailure;
+        EventReceiverCollection Components { get; }
     }
 }

@@ -3,42 +3,50 @@ using System;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class QueuedItemResult<TResult>
+    public class QueuedItemResult<TResult> : QueuedItemResult
     {
-        public Guid RequestId { get; }
-        public QueuedItemStatus Status { get; }
-        public TResult? Result { get; }
+        public TResult Result { get; }
 
-        private QueuedItemResult(Guid requestId, QueuedItemStatus status, TResult? result = default)
+        private QueuedItemResult(Guid requestId, QueuedItemStatus status, TResult result) : base(requestId, status)
         {
-            RequestId = requestId;
-            Status = status;
             Result = result;
         }
 
-        public static QueuedItemResult<TResult> Completed<TRequest>(TRequest request, TResult result)
-            where TRequest : RequestBase
+        public static QueuedItemResult<TResult> Success(RequestBase request, TResult result)
         {
-            return new QueuedItemResult<TResult>(request.Id, QueuedItemStatus.Completed, result);
+            return new QueuedItemResult<TResult>(request.Id, QueuedItemStatus.Success, result);
         }
 
-        public static QueuedItemResult<TResult> Waiting<TRequest>(TRequest request)
-            where TRequest : RequestBase
+        public static QueuedItemResult<TResult> Failed(RequestBase request, TResult result)
         {
-            return new QueuedItemResult<TResult>(request.Id, QueuedItemStatus.Waiting);
+            return new QueuedItemResult<TResult>(request.Id, QueuedItemStatus.Failed, result);
         }
     }
 
-    internal static class QueuedItemResult
+    public class QueuedItemResult
     {
-        public static QueuedItemResult<TResult> Completed<TResult>(RequestBase request, TResult result)
+        public Guid RequestId { get; }
+        public QueuedItemStatus Status { get; }
+
+        protected QueuedItemResult(Guid requestId, QueuedItemStatus status)
         {
-            return QueuedItemResult<TResult>.Completed(request, result);
+            RequestId = requestId;
+            Status = status;
         }
 
-        public static QueuedItemResult<TResult> Waiting<TResult>(RequestBase request)
+        public static QueuedItemResult<TSuccess> Success<TSuccess>(RequestBase request, TSuccess result)
         {
-            return QueuedItemResult<TResult>.Waiting(request);
+            return QueuedItemResult<TSuccess>.Success(request, result);
+        }
+
+        public static QueuedItemResult<TFailure> Failed<TFailure>(RequestBase request, TFailure result)
+        {
+            return QueuedItemResult<TFailure>.Failed(request, result);
+        }
+
+        public static QueuedItemResult Waiting(RequestBase request)
+        {
+            return new QueuedItemResult(request.Id, QueuedItemStatus.Waiting);
         }
     }
 }

@@ -14,15 +14,13 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
     {
         private readonly ConcurrentDictionary<int, IModel> _channelPool;
         private readonly IPersistentConnection _connection;
-        private readonly ISerializer _serializer;
         private readonly ILogger<RabbitMQChannelPool> _logger;
         private readonly RetryPolicy _retryPolicy;
 
-        public RabbitMQChannelPool(IPersistentConnection connection, ISerializer serializer, ILogger<RabbitMQChannelPool> logger)
+        public RabbitMQChannelPool(IPersistentConnection connection, ILogger<RabbitMQChannelPool> logger)
         {
             _channelPool = new();
             _connection = connection;
-            _serializer = serializer;
             _logger = logger;
             _retryPolicy = Policy.Handle<BrokerUnreachableException>()
                 .Or<AlreadyClosedException>()
@@ -33,14 +31,13 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 });
         }
 
-        public void Publish(object data, string exchangeName, string queueName)
+        public void Publish(byte[] bytes, string exchangeName, string queueName)
         {
             if (!_connection.IsConnected)
             {
                 _connection.TryConnect();
             }
 
-            var body = _serializer.Serialize(data);
             var channel = GetChannel();
 
             channel.ExchangeDeclare(exchange: exchangeName, type: "direct");
@@ -51,7 +48,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                                     routingKey: queueName,
                                     basicProperties: null,
                                     mandatory: true,
-                                    body: body);
+                                    body: bytes);
             });
         }
 

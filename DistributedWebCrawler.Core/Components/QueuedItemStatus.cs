@@ -3,6 +3,7 @@
     public enum QueuedItemStatus
     {
         Waiting,
-        Completed
+        Success,
+        Failed,
     }
 }

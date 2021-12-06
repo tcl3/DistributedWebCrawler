@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
-    public interface IEventDispatcher<TRequest, TResult> 
-        where TRequest : RequestBase
+    public interface IEventDispatcher<TSuccess, TFailure>
     {
-        Task NotifyCompletedAsync(TRequest item, TaskStatus status, TResult? result);
+        Task NotifyCompletedAsync(RequestBase item, TSuccess result);
+        Task NotifyFailedAsync(RequestBase item, TFailure result);
     }
 }

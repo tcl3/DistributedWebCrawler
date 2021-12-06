@@ -1,19 +1,17 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class InMemoryEventReceiver<TRequest, TResult> : IEventReceiver<TRequest, TResult> 
-        where TRequest : RequestBase
+    public class InMemoryEventReceiver<TSuccess, TFailure> : IEventReceiver<TSuccess, TFailure>
     {
-        private readonly InMemoryEventStore<TResult> _eventStore;
-
-        public InMemoryEventReceiver(InMemoryEventStore<TResult> eventStore)
+        private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
+        
+        public InMemoryEventReceiver(InMemoryEventStore<TSuccess, TFailure> eventStore)
         {
             _eventStore = eventStore;
         }
         
-        public event ItemCompletedEventHandler<TResult> OnCompletedAsync
+        public event ItemCompletedEventHandler<TSuccess> OnCompletedAsync
         {
             add
             {
@@ -22,6 +20,42 @@ namespace DistributedWebCrawler.Core.Queue
             remove
             {
                 _eventStore.OnCompletedAsyncHandler -= value;
+            }
+        }
+
+        public event ItemCompletedEventHandler<TFailure> OnFailedAsync
+        {
+            add
+            {
+                _eventStore.OnFailedAsyncHandler += value;
+            }
+            remove
+            {
+                _eventStore.OnFailedAsyncHandler -= value;
+            }
+        }
+
+        event ItemCompletedEventHandler IEventReceiver.OnCompletedAsync
+        {
+            add
+            {
+                _eventStore.OnCompletedAsync += value;
+            }
+            remove
+            {
+                _eventStore.OnCompletedAsync -= value;
+            }
+        }
+
+        event ItemCompletedEventHandler IEventReceiver.OnFailedAsync
+        {
+            add
+            {
+                _eventStore.OnFailedAsync += value;
+            }
+            remove
+            {
+                _eventStore.OnFailedAsync -= value;
             }
         }
     }
