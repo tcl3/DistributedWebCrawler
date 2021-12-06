@@ -10,13 +10,13 @@ using System.Text;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
-    public class RabbitMQProducerConsumer<TRequest, TResult> : IProducerConsumer<TRequest, TResult>
+    public class RabbitMQProducerConsumer<TRequest> : IProducerConsumer<TRequest>
         where TRequest : RequestBase
     {
         private readonly IPersistentConnection _connection;
         private readonly RabbitMQChannelPool _channelPool;
         private readonly ISerializer _serializer;
-        private readonly ILogger<RabbitMQProducerConsumer<TRequest, TResult>> _logger;
+        private readonly ILogger<RabbitMQProducerConsumer<TRequest>> _logger;
 
         private static readonly string ConsumerQueueName = typeof(TRequest).Name;
 
@@ -51,7 +51,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         public RabbitMQProducerConsumer(IPersistentConnection connection,
             RabbitMQChannelPool channelPool,
             ISerializer serializer,
-            ILogger<RabbitMQProducerConsumer<TRequest, TResult>> logger)
+            ILogger<RabbitMQProducerConsumer<TRequest>> logger)
         {
             _connection = connection;
             _channelPool = channelPool;
@@ -122,8 +122,10 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                     } 
                 }
             }
+            
+            var bytes = _serializer.Serialize(data);
 
-            _channelPool.Publish(data, RabbitMQConstants.ProducerConsumer.ExchangeName, ConsumerQueueName);
+            _channelPool.Publish(bytes, RabbitMQConstants.ProducerConsumer.ExchangeName, ConsumerQueueName);
         }
     }
 }

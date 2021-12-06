@@ -16,17 +16,17 @@ namespace DistributedWebCrawler.Core.Components
 {
     public class ParserComponent : AbstractTaskQueueComponent<ParseRequest>
     {
-        private readonly IConsumer<ParseRequest, bool> _parseRequestConsumer;
+        private readonly IConsumer<ParseRequest> _parseRequestConsumer;
 
-        private readonly IProducer<SchedulerRequest, bool> _schedulerRequestProducer;
+        private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly ILinkParser _linkParser;
         private readonly IContentStore _contentStore;
         private readonly ILogger<ParserComponent> _logger;
 
         public ParserComponent(ParserSettings parserSettings,
-            IConsumer<ParseRequest, bool> parseRequestConsumer,
+            IConsumer<ParseRequest> parseRequestConsumer,
             IEventDispatcher<ParseRequest, bool> eventDispatcher,
-            IProducer<SchedulerRequest, bool> schedulerRequestProducer,
+            IProducer<SchedulerRequest> schedulerRequestProducer,
             ILinkParser linkParser,
             IContentStore contentStore,
             IKeyValueStore keyValueStore,

@@ -25,7 +25,7 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 
         public static IServiceCollection AddInMemoryProducerConsumer(this IServiceCollection services)
         {
-            services.AddSingleton(typeof(IProducerConsumer<,>), typeof(InMemoryQueue<,>));
+            services.AddSingleton(typeof(IProducerConsumer<>), typeof(InMemoryQueue<>));
             services.AddSingleton(typeof(IEventDispatcher<,>), typeof(InMemoryEventDispatcher<,>));
             services.AddSingleton(typeof(IEventReceiver<,>), typeof(InMemoryEventReceiver<,>));
             services.AddSingleton(typeof(InMemoryEventStore<>));

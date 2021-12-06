@@ -17,7 +17,7 @@ namespace DistributedWebCrawler.Core.Components
     public class IngesterComponent : AbstractTaskQueueComponent<IngestRequest, IngestResult>
     {
         private readonly IngesterSettings _ingesterSettings;
-        private readonly IProducer<ParseRequest, bool> _parseRequestProducer;
+        private readonly IProducer<ParseRequest> _parseRequestProducer;
         private readonly CrawlerClient _crawlerClient;
         private readonly IContentStore _contentStore;
         private readonly ILogger<IngesterComponent> _logger;
@@ -41,9 +41,9 @@ namespace DistributedWebCrawler.Core.Components
         }
         
         public IngesterComponent(IngesterSettings ingesterSettings,
-            IConsumer<IngestRequest, IngestResult> ingestRequestConsumer,
+            IConsumer<IngestRequest> ingestRequestConsumer,
             IEventDispatcher<IngestRequest, IngestResult> eventDispatcher,
-            IProducer<ParseRequest, bool> parseRequestProducer,
+            IProducer<ParseRequest> parseRequestProducer,
             CrawlerClient crawlerClient,
             IContentStore contentStore,
             IKeyValueStore keyValueStore,

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
-    internal class ParserBuilder : ComponentBuilder<ParseRequest, bool, ParserSettings>, IParserBuilder
+    internal class ParserBuilder : ComponentBuilder<ParseRequest, ParserSettings>, IParserBuilder
     {
         public ParserBuilder(IServiceCollection services) : base(services)
         {

@@ -11,7 +11,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
     {
         public SeederBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<IProducer<TRequest, bool>>(x => x.GetRequiredService<IProducerConsumer<TRequest, bool>>());
+            services.AddSingleton<IProducer<TRequest>>(x => x.GetRequiredService<IProducerConsumer<TRequest>>());
         }
 
         ISeederBuilder ISeederBuilder.WithComponent<TComnponent>()

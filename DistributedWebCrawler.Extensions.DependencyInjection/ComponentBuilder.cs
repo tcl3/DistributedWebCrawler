@@ -67,14 +67,14 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
         }
     }
 
-    public abstract class ComponentBuilder<TRequest, TResult, TSettings> : ComponentBuilder<TSettings>
+    public abstract class ComponentBuilder<TRequest, TSettings> : ComponentBuilder<TSettings>
         where TRequest : RequestBase
         where TSettings : class
     {
         public ComponentBuilder(IServiceCollection services) : base(services)
         {
-            services.AddSingleton<IProducer<TRequest, TResult>>(x => x.GetRequiredService<IProducerConsumer<TRequest, TResult>>());
-            services.AddSingleton<IConsumer<TRequest, TResult>>(x => x.GetRequiredService<IProducerConsumer<TRequest, TResult>>());
+            services.AddSingleton<IProducer<TRequest>>(x => x.GetRequiredService<IProducerConsumer<TRequest>>());
+            services.AddSingleton<IConsumer<TRequest>>(x => x.GetRequiredService<IProducerConsumer<TRequest>>());
         }
     }
 }

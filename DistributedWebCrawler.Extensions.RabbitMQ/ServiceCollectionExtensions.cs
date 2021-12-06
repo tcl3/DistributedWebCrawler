@@ -58,7 +58,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         public static IServiceCollection AddRabbitMQProducerConsumer(this IServiceCollection services, IConfiguration configuration)
         {
             return services.AddRabbitMQConnection(configuration)
-                .AddSingleton(typeof(IProducerConsumer<,>), typeof(RabbitMQProducerConsumer<,>))
+                .AddSingleton(typeof(IProducerConsumer<>), typeof(RabbitMQProducerConsumer<>))
                 .AddSingleton(typeof(IEventDispatcher<,>), typeof(RabbitMQEventDispatcher<,>))
                 .AddSingleton(typeof(IEventReceiver<,>), typeof(RabbitMQEventReceiver<,>))
                 .AddSingleton<RabbitMQChannelPool>()

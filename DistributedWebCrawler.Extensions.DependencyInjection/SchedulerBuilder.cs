@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
-    internal class SchedulerBuilder : ComponentBuilder<SchedulerRequest, bool, SchedulerSettings>, ISchedulerBuilder
+    internal class SchedulerBuilder : ComponentBuilder<SchedulerRequest, SchedulerSettings>, ISchedulerBuilder
     {
         public SchedulerBuilder(IServiceCollection services) : base(services)
         {

@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
-    internal class RobotsDownloaderBuilder : ComponentBuilder<RobotsRequest, bool, RobotsTxtSettings>, IRobotsDownloaderBuilder
+    internal class RobotsDownloaderBuilder : ComponentBuilder<RobotsRequest, RobotsTxtSettings>, IRobotsDownloaderBuilder
     {
         public RobotsDownloaderBuilder(IServiceCollection services) : base(services)
         {

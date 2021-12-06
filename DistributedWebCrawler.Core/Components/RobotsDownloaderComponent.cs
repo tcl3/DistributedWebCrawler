@@ -12,16 +12,16 @@ namespace DistributedWebCrawler.Core.Components
     public class RobotsDownloaderComponent : AbstractTaskQueueComponent<RobotsRequest>
     {
         private readonly ILogger<RobotsDownloaderComponent> _logger;
-        private readonly IProducer<SchedulerRequest, bool> _schedulerRequestProducer;
+        private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly IRobotsCacheWriter _robotsCache;
 
         private readonly TimeSpan _expirationTimeSpan;
 
-        public RobotsDownloaderComponent(IConsumer<RobotsRequest, bool> consumer,
+        public RobotsDownloaderComponent(IConsumer<RobotsRequest> consumer,
             IEventDispatcher<RobotsRequest, bool> eventDispatcher,
             IKeyValueStore keyValueStore,
             ILogger<RobotsDownloaderComponent> logger,
-            IProducer<SchedulerRequest, bool> schedulerRequestProducer,
+            IProducer<SchedulerRequest> schedulerRequestProducer,
             IRobotsCacheWriter robotsCacheWriter,
             RobotsTxtSettings settings) 
             : base(consumer, eventDispatcher, keyValueStore, logger, nameof(RobotsDownloaderComponent), settings)

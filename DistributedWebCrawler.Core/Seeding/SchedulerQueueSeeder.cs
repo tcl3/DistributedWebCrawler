@@ -14,7 +14,7 @@ namespace DistributedWebCrawler.Core.Seeding
     {
         private readonly SeederSettings _seederSettings;
 
-        public SchedulerQueueSeeder(IProducer<SchedulerRequest, bool> ingestRequestProducer, SeederSettings seederSettings) 
+        public SchedulerQueueSeeder(IProducer<SchedulerRequest> ingestRequestProducer, SeederSettings seederSettings) 
             : base(ingestRequestProducer)
         {
             _seederSettings = seederSettings;
@@ -36,7 +36,7 @@ namespace DistributedWebCrawler.Core.Seeding
         }
 
         // This assumes we are starting from scratch for now
-        protected async override Task SeedQueueAsync(IProducer<SchedulerRequest, bool> producer)
+        protected async override Task SeedQueueAsync(IProducer<SchedulerRequest> producer)
         {
             var uris = await GetInitialUrisAsync().ConfigureAwait(false);
 

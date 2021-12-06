@@ -5,16 +5,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class InMemoryQueue<TRequest> : InMemoryQueue<TRequest, bool>
-        where TRequest : RequestBase
-    {
-        public InMemoryQueue() : base()
-        {
-
-        }
-    }
-
-    public class InMemoryQueue<TRequest, TResult> : IProducerConsumer<TRequest, TResult>
+    public class InMemoryQueue<TRequest> : IProducerConsumer<TRequest>
         where TRequest : RequestBase
     {
         private readonly ConcurrentQueue<TRequest> _queue;

@@ -41,8 +41,8 @@ namespace DistributedWebCrawler.Core.Components
         private readonly SchedulerSettings _schedulerSettings;
         private readonly ILogger<SchedulerComponent> _logger;
         private readonly IRobotsCacheReader _robotsCacheReader;
-        private readonly IProducer<RobotsRequest, bool> _robotsRequestProducer;
-        private readonly IProducer<IngestRequest, IngestResult> _ingestRequestProducer;
+        private readonly IProducer<RobotsRequest> _robotsRequestProducer;
+        private readonly IProducer<IngestRequest> _ingestRequestProducer;
 
         private readonly ConcurrentDictionary<Uri, bool> _visitedUris;
         private readonly ConcurrentDictionary<string, IEnumerable<string>> _visitedPathsLookup;
@@ -59,14 +59,14 @@ namespace DistributedWebCrawler.Core.Components
         private const int IngestQueueMaxItems = 500;
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
-            IConsumer<SchedulerRequest, bool> consumer,
+            IConsumer<SchedulerRequest> consumer,
             IEventDispatcher<SchedulerRequest, bool> eventDispatcher,
             IEventReceiver<IngestRequest, IngestResult> ingestEventReceiver,
             IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
             IRobotsCacheReader robotsCacheReader,
-            IProducer<RobotsRequest, bool> robotsRequestProducer,
-            IProducer<IngestRequest, IngestResult> ingestRequestProducer)
+            IProducer<RobotsRequest> robotsRequestProducer,
+            IProducer<IngestRequest> ingestRequestProducer)
             : base(consumer, eventDispatcher, keyValueStore, logger, nameof(SchedulerComponent), schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;

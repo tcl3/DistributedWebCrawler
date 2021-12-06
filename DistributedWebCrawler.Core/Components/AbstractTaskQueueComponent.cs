@@ -14,11 +14,11 @@ namespace DistributedWebCrawler.Core.Components
     public abstract class AbstractTaskQueueComponent<TRequest> : AbstractTaskQueueComponent<TRequest, bool>
         where TRequest : RequestBase
     {
-        protected AbstractTaskQueueComponent(IConsumer<TRequest, bool> consumer, 
+        protected AbstractTaskQueueComponent(IConsumer<TRequest> consumer,
             IEventDispatcher<TRequest, bool> eventDispatcher,
             IKeyValueStore keyValueStore,
-            ILogger logger, 
-            string name, TaskQueueSettings settings) 
+            ILogger logger,
+            string name, TaskQueueSettings settings)
             : base(consumer, eventDispatcher, keyValueStore, logger, name, settings)
         {
         }
@@ -27,7 +27,7 @@ namespace DistributedWebCrawler.Core.Components
     public abstract class AbstractTaskQueueComponent<TRequest, TResult> : ICrawlerComponent
         where TRequest : RequestBase
     {
-        private readonly IConsumer<TRequest, TResult> _consumer;
+        private readonly IConsumer<TRequest> _consumer;
         private readonly IEventDispatcher<TRequest, TResult> _eventDispatcher;
         private readonly IKeyValueStore _outstandingItemsStore;
         private readonly ILogger _logger;
@@ -43,7 +43,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly TaskCompletionSource _taskCompletionSource;
 
 
-        protected AbstractTaskQueueComponent(IConsumer<TRequest, TResult> consumer,
+        protected AbstractTaskQueueComponent(IConsumer<TRequest> consumer,
             IEventDispatcher<TRequest, TResult> eventReceiver,
             IKeyValueStore keyValueStore,
             ILogger logger,
@@ -180,7 +180,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        public async Task RequeueAsync<TInnerRequest, TInnerResult>(Guid requestId, IProducer<TInnerRequest, TInnerResult> producer, CancellationToken cancellationToken)
+        public async Task RequeueAsync<TInnerRequest>(Guid requestId, IProducer<TInnerRequest> producer, CancellationToken cancellationToken)
             where TInnerRequest : RequestBase
         {
             var requestKey = requestId.ToString("N");
