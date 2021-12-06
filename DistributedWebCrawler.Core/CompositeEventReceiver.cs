@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
+﻿using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Interfaces;
 using System.Collections.Generic;
 
 namespace DistributedWebCrawler.Core
@@ -43,6 +44,24 @@ namespace DistributedWebCrawler.Core
                 foreach (var eventReceiver in _eventReceivers)
                 {
                     eventReceiver.OnFailedAsync -= value;
+                }
+            }
+        }
+
+        public event AsyncEventHandler<ComponentStatus> OnComponentUpdateAsync
+        {
+            add
+            {
+                foreach (var eventReceiver in _eventReceivers)
+                {
+                    eventReceiver.OnComponentUpdateAsync += value;
+                }
+            }
+            remove
+            {
+                foreach (var eventReceiver in _eventReceivers)
+                {
+                    eventReceiver.OnComponentUpdateAsync -= value;
                 }
             }
         }

@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Model;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
@@ -7,5 +8,6 @@ namespace DistributedWebCrawler.Core.Interfaces
     {
         Task NotifyCompletedAsync(RequestBase item, TSuccess result);
         Task NotifyFailedAsync(RequestBase item, TFailure result);
+        Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus);
     }
 }

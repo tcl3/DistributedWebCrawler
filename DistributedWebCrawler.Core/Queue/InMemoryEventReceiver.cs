@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
+﻿using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Interfaces;
 
 namespace DistributedWebCrawler.Core.Queue
 {
@@ -10,7 +11,7 @@ namespace DistributedWebCrawler.Core.Queue
         {
             _eventStore = eventStore;
         }
-        
+
         public event ItemCompletedEventHandler<TSuccess> OnCompletedAsync
         {
             add
@@ -56,6 +57,18 @@ namespace DistributedWebCrawler.Core.Queue
             remove
             {
                 _eventStore.OnFailedAsync -= value;
+            }
+        }
+
+        public event AsyncEventHandler<ComponentStatus> OnComponentUpdateAsync
+        {
+            add
+            {
+                _eventStore.OnComponentUpdateAsyncHandler += value;
+            }
+            remove 
+            {
+                _eventStore.OnComponentUpdateAsyncHandler -= value;
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
+﻿using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using System.Threading.Tasks;
 
@@ -26,6 +27,15 @@ namespace DistributedWebCrawler.Core.Queue
             if (_eventStore.OnFailedAsyncHandler != null)
             {
                 await _eventStore.OnFailedAsyncHandler(this, new ItemCompletedEventArgs<TFailure>(item.Id, result)).ConfigureAwait(false);
+            }
+        }
+
+
+        public async Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus)
+        {
+            if (_eventStore.OnComponentUpdateAsyncHandler != null)
+            {
+                await _eventStore.OnComponentUpdateAsyncHandler.Invoke(this, componentStatus).ConfigureAwait(false);
             }
         }
     }

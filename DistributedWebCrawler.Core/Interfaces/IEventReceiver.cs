@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Core.Components;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
@@ -6,6 +6,7 @@ namespace DistributedWebCrawler.Core.Interfaces
     {
         event ItemCompletedEventHandler OnCompletedAsync;
         event ItemCompletedEventHandler OnFailedAsync;
+        event AsyncEventHandler<ComponentStatus> OnComponentUpdateAsync;
     }
 
     public interface IEventReceiver<TSuccess, TFailure> : IEventReceiver

@@ -146,6 +146,9 @@ namespace DistributedWebCrawler.Core.Components
                     {
                         await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem, cancellationToken).ConfigureAwait(false);
                     }
+
+                    var componentStatus = GetComponentStatus();
+                    await _eventDispatcher.NotifyComponentStatusUpdateAsync(componentStatus).ConfigureAwait(false);
                 }, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
 
                 _ = task.ContinueWith(r =>
@@ -210,6 +213,15 @@ namespace DistributedWebCrawler.Core.Components
             _pauseSemaphore.Release();
 
             return Task.CompletedTask;
+        }
+
+        private ComponentStatus GetComponentStatus()
+        {
+            return new ComponentStatus
+            {
+                TasksInUse = _taskQueueSettings.MaxConcurrentItems,
+                MaxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems - _itemSemaphore.CurrentCount
+            };
         }
 
 

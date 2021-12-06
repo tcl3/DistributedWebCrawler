@@ -63,6 +63,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 .AddSingleton(typeof(IProducerConsumer<>), typeof(RabbitMQProducerConsumer<>))
                 .AddSingleton(typeof(IEventDispatcher<,>), typeof(RabbitMQEventDispatcher<,>))
                 .AddSingleton(typeof(IEventReceiver<,>), typeof(RabbitMQEventReceiver<,>))
+                .AddSingleton(typeof(QueueNameProvider<,>))
                 .AddSingleton(typeof(InMemoryEventStore<,>))
                 .AddSingleton<RabbitMQChannelPool>()
                 .Decorate<ICrawlerComponent, RabbitMQComponentDecorator>();

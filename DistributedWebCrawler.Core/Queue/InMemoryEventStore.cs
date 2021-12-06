@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Extensions;
+﻿using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Interfaces;
 using System.Collections.Concurrent;
 
@@ -15,6 +15,7 @@ namespace DistributedWebCrawler.Core.Queue
 
         public ItemCompletedEventHandler<TSuccess>? OnCompletedAsyncHandler { get; set; }
         public ItemCompletedEventHandler<TFailure>? OnFailedAsyncHandler { get; set; }
+        public AsyncEventHandler<ComponentStatus>? OnComponentUpdateAsyncHandler { get; set; }
 
         public event ItemCompletedEventHandler OnCompletedAsync
         {
