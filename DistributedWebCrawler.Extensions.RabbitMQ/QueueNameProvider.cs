@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Concurrent;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
@@ -12,7 +7,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         private readonly ConcurrentDictionary<Type, string> _queueNameLookup;
 
         private static readonly string QueueNamePrefix;
-        private const string QueueNameSuffix = "-Notifier";
+        private const string QueueNameSuffix = "Notifier";
 
         static QueueNameProvider()
         {
@@ -23,16 +18,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
             else
             {
-                if (commonPrefix.EndsWith('e'))
-                {
-                    commonPrefix += 'r';
-                }
-                else if (!commonPrefix.EndsWith("er"))
-                {
-                    
-                    commonPrefix += "er";
-                }
-                QueueNamePrefix = commonPrefix  + '-';
+                QueueNamePrefix = commonPrefix;
             }
         }
 
@@ -46,9 +32,25 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return _queueNameLookup.GetOrAdd(typeof(TData), GetQueueNameFromType);
         }
 
-        private string GetQueueNameFromType(Type type)
+        private static string GetQueueNameFromType(Type type)
         {
-            return QueueNamePrefix + type.Name + QueueNameSuffix;
+            string prefix = QueueNamePrefix;
+            if (prefix.EndsWith('e'))
+            {
+                prefix += 'r';
+            }
+            else if (!prefix.EndsWith("er"))
+            {
+
+                prefix += "er";
+            }
+            var typeName = type.Name;
+            if (typeName.StartsWith(QueueNamePrefix))
+            {
+                typeName = typeName[QueueNamePrefix.Length..];
+            }
+
+            return prefix + typeName + QueueNameSuffix;
         }
 
         private static string GetCommonPrefix(string first, string second)
