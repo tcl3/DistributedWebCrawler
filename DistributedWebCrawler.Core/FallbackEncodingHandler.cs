@@ -37,7 +37,7 @@ namespace DistributedWebCrawler.Core
             {
                 if (message != null)
                 {
-                    using var responseStream = message.Content.ReadAsStreamAsync().Result;
+                    using var responseStream = await message.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
                     using var reader = new StreamReader(responseStream, _fallbackEncoding);
                     message.Content = new StringContent(reader.ReadToEnd(), _fallbackEncoding);
                 }
