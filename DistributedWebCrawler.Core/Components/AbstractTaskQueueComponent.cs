@@ -28,6 +28,8 @@ namespace DistributedWebCrawler.Core.Components
 
         protected bool IsStarted { get; private set; }
 
+        protected string Name { get; }
+
         private readonly TaskCompletionSource _taskCompletionSource;
 
 
@@ -35,17 +37,18 @@ namespace DistributedWebCrawler.Core.Components
             IEventDispatcher<TSuccess, TFailure> eventReceiver,
             IKeyValueStore keyValueStore,
             ILogger logger,
-            string name, TaskQueueSettings taskQueueSettings)
+            ComponentNameProvider<TSuccess, TFailure> componentNameProvider, TaskQueueSettings taskQueueSettings)
         {
             _consumer = consumer;
             _eventDispatcher = eventReceiver;
             _outstandingItemsStore = keyValueStore.WithKeyPrefix("TaskQueueOutstandingItems");
             _logger = logger;
-            Name = name;
             _taskQueueSettings = taskQueueSettings;
             _itemSemaphore = new SemaphoreSlim(taskQueueSettings.MaxConcurrentItems, taskQueueSettings.MaxConcurrentItems);
             _pauseSemaphore = new SemaphoreSlim(0);
             _taskCompletionSource = new();
+
+            Name = componentNameProvider.GetComponentNameOrDefault();
         }
 
         public CrawlerComponentStatus Status
@@ -60,8 +63,6 @@ namespace DistributedWebCrawler.Core.Components
                 return GetStatus();
             }
         }
-
-        public string Name { get; }
 
         public Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
         {

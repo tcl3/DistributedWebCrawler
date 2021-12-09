@@ -6,6 +6,8 @@ using DistributedWebCrawler.Core.Queue;
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public class RabbitMQEventDispatcher<TSuccess, TFailure> : IEventDispatcher<TSuccess, TFailure>
+        where TSuccess : notnull
+        where TFailure : notnull
     {
         private readonly QueueNameProvider<TSuccess, TFailure> _queueNameProvider;
         private readonly RabbitMQChannelPool _channelPool;
@@ -22,19 +24,31 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         public Task NotifyCompletedAsync(RequestBase item, TSuccess result)
         {
-            return PublishAsync(item, result);
+            return PublishCompletedItemAsync(item, result);
         }
 
         public Task NotifyFailedAsync(RequestBase item, TFailure result)
         {
-            return PublishAsync(item, result);
+            return PublishCompletedItemAsync(item, result);
         }
 
-        private Task PublishAsync<TResult>(RequestBase item, TResult result)
+        public Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus)
         {
-            var eventArgs = new ItemCompletedEventArgs<TResult>(item.Id, result);
+            return PublishAsync(componentStatus);
+        }
+
+        private Task PublishCompletedItemAsync<TResult>(RequestBase item, TResult result)
+            where TResult : notnull        
+        {
+            var eventArgs = new CompletedItem<TResult>(item.Id, result);
+            return PublishAsync(eventArgs);
+        }
+
+        private Task PublishAsync<TResult>(TResult result)
+            where TResult : notnull
+        {
             var queueName = _queueNameProvider.GetQueueName<TResult>();
-            return PublishAsync(queueName, eventArgs);
+            return PublishAsync(queueName, result);
         }
 
         private Task PublishAsync<TData>(string queueName, TData data)
@@ -44,12 +58,6 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             _channelPool.Publish(bytes, RabbitMQConstants.ProducerConsumer.ExchangeName, queueName);
 
             return Task.CompletedTask;
-        }
-
-        public Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus)
-        {
-            var queueName = _queueNameProvider.GetQueueName<ComponentStatus>();
-            return PublishAsync(queueName, componentStatus);
         }
     }
 }

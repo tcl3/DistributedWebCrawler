@@ -48,7 +48,7 @@ namespace DistributedWebCrawler.Core
             }
         }
 
-        public event AsyncEventHandler<ComponentStatus> OnComponentUpdateAsync
+        public event ComponentEventHandler<ComponentStatus> OnComponentUpdateAsync
         {
             add
             {

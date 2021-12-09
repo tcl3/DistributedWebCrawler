@@ -5,6 +5,8 @@ using System.Collections.Concurrent;
 namespace DistributedWebCrawler.Core.Queue
 {
     public class InMemoryEventStore<TSuccess, TFailure>
+        where TSuccess : notnull
+        where TFailure : notnull
     {
         private readonly ConcurrentDictionary<ItemCompletedEventHandler, object> _delegateLookup;
 
@@ -15,7 +17,7 @@ namespace DistributedWebCrawler.Core.Queue
 
         public ItemCompletedEventHandler<TSuccess>? OnCompletedAsyncHandler { get; set; }
         public ItemCompletedEventHandler<TFailure>? OnFailedAsyncHandler { get; set; }
-        public AsyncEventHandler<ComponentStatus>? OnComponentUpdateAsyncHandler { get; set; }
+        public ComponentEventHandler<ComponentStatus>? OnComponentUpdateAsyncHandler { get; set; }
 
         public event ItemCompletedEventHandler OnCompletedAsync
         {
@@ -52,8 +54,9 @@ namespace DistributedWebCrawler.Core.Queue
         }
 
         private static ItemCompletedEventHandler<T> ConvertArgs<T>(ItemCompletedEventHandler handler)
+            where T : notnull
         {
-            return (sender, args) => handler.Invoke(sender, new ItemCompletedEventArgs(args.Id, args.Result!));
+            return (sender, args) => handler.Invoke(sender, args);
         }
     }
 }

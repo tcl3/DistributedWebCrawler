@@ -4,8 +4,13 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
-    public delegate Task ItemCompletedEventHandler<TResult>(object? sender, ItemCompletedEventArgs<TResult> e);
+    public delegate Task ItemCompletedEventHandler<TResult>(object? sender, ItemCompletedEventArgs<TResult> e)
+        where TResult : notnull;
+
     public delegate Task ItemCompletedEventHandler(object? sender, ItemCompletedEventArgs e);
+
+    public delegate Task ComponentEventHandler<TResult>(object? sender, ComponentEventArgs<TResult> e)
+        where TResult : notnull;
 
     public interface IProducerConsumer<TRequest>
         : IProducer<TRequest>, IConsumer<TRequest>

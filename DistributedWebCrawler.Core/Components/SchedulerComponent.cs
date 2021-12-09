@@ -79,10 +79,11 @@ namespace DistributedWebCrawler.Core.Components
             IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
             IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
+            ComponentNameProvider<SchedulerSuccess, SchedulerFailure> componentNameProvider,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest> robotsRequestProducer,
             IProducer<IngestRequest> ingestRequestProducer)
-            : base(consumer, eventDispatcher, keyValueStore, logger, nameof(SchedulerComponent), schedulerSettings)
+            : base(consumer, eventDispatcher, keyValueStore, logger, componentNameProvider, schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
             _logger = logger;

@@ -10,6 +10,5 @@ namespace DistributedWebCrawler.Core.Interfaces
         Task ResumeAsync();
         Task WaitUntilCompletedAsync();
         CrawlerComponentStatus Status { get; }
-        string Name { get; }
     }
 }

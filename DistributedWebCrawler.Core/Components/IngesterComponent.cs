@@ -47,8 +47,9 @@ namespace DistributedWebCrawler.Core.Components
             CrawlerClient crawlerClient,
             IContentStore contentStore,
             IKeyValueStore keyValueStore,
-            ILogger<IngesterComponent> logger) 
-            : base(ingestRequestConsumer, eventDispatcher, keyValueStore, logger, nameof(IngesterComponent), ingesterSettings)
+            ILogger<IngesterComponent> logger,
+            ComponentNameProvider<IngestSuccess, IngestFailure> componentNameProvider) 
+            : base(ingestRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, ingesterSettings)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;

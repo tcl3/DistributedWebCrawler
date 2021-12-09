@@ -52,20 +52,15 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
                 return new EventReceiverFactory(serviceProvider.GetRequiredService);
             });
             services.AddSingleton<EventReceiverCollection>();
-            services.AddEventReceivers(componentAssemblies);
+            services.AddEventReceivers(eventReceiverType, componentAssemblies);
 
             services.AddDefaultSerializer();
 
             return services;
         }
 
-        public static IServiceCollection AddEventReceivers(this IServiceCollection services, IEnumerable<Assembly> componentAssemblies)
+        public static IServiceCollection AddEventReceivers(this IServiceCollection services, Type implementationType, IEnumerable<Assembly> componentAssemblies)
         {
-            var implementationType = services.Where(x => x.ServiceType == typeof(IEventReceiver<,>))
-                .Select(x => x.ImplementationType)
-                .OfType<Type>()
-                .Single();
-
             var componentTypes = componentAssemblies
                 .SelectMany(x => x.ExportedTypes)
                 .Select(x => x.BaseType)

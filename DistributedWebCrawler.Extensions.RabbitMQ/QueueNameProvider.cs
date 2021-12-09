@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Extensions;
+using System.Collections.Concurrent;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
@@ -6,25 +8,14 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
     {
         private readonly ConcurrentDictionary<Type, string> _queueNameLookup;
 
-        private static readonly string QueueNamePrefix;
+        private readonly string _queueNamePrefix;
+        
         private const string QueueNameSuffix = "Notifier";
 
-        static QueueNameProvider()
-        {
-            var commonPrefix = GetCommonPrefix(typeof(TSuccess).Name, typeof(TFailure).Name);
-            if (commonPrefix == string.Empty)
-            {
-                QueueNamePrefix = Guid.NewGuid().ToString("N") + '-';
-            }
-            else
-            {
-                QueueNamePrefix = commonPrefix;
-            }
-        }
-
-        public QueueNameProvider()
+        public QueueNameProvider(ComponentNameProvider<TSuccess, TFailure> componentNameProvider)
         {
             _queueNameLookup = new();
+            _queueNamePrefix = componentNameProvider.GetComponentNameOrDefault(() => Guid.NewGuid().ToString("N"));
         }
 
         public string GetQueueName<TData>()
@@ -32,50 +23,13 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return _queueNameLookup.GetOrAdd(typeof(TData), GetQueueNameFromType);
         }
 
-        private static string GetQueueNameFromType(Type type)
+        private string GetQueueNameFromType(Type type)
         {
-            string prefix = QueueNamePrefix;
-            if (prefix.EndsWith('e'))
-            {
-                prefix += 'r';
-            }
-            else if (!prefix.EndsWith("er"))
-            {
+            var commonPrefix = _queueNamePrefix.GetCommonPrefix(type.Name);
 
-                prefix += "er";
-            }
-            var typeName = type.Name;
-            if (typeName.StartsWith(QueueNamePrefix))
-            {
-                typeName = typeName[QueueNamePrefix.Length..];
-            }
+            var typeName = type.Name[commonPrefix.Length..];
 
-            return prefix + typeName + QueueNameSuffix;
-        }
-
-        private static string GetCommonPrefix(string first, string second)
-        {
-            if (first[0] != second[0])
-            {
-                return string.Empty;
-            }
-
-            if (first.Length > second.Length)
-            {
-                var tmp = first;
-                first = second;
-                second = tmp;
-            }
-            
-            for (var i = 1; i < first.Length; i++)
-            {
-                if (first[i] != second[i])
-                {
-                    return first[..i];
-                }
-            }
-
-            return first;
+            return _queueNamePrefix + typeName + QueueNameSuffix;
         }
     }
 }

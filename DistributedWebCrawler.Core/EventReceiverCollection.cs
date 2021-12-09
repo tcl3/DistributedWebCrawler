@@ -32,6 +32,8 @@ namespace DistributedWebCrawler.Core
         public IEventReceiver<RobotsDownloaderSuccess, RobotsDownloaderFailure> RobotsDownloader { get; }
 
         public IEventReceiver<TSuccess, TFailure> OfType<TSuccess, TFailure>()
+            where TSuccess : notnull
+            where TFailure : notnull
         {
             return _eventReceiverFactory.Get<TSuccess, TFailure>();
         }

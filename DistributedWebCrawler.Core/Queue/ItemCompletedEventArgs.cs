@@ -1,29 +1,24 @@
 ﻿using System;
-using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class ItemCompletedEventArgs : EventArgs
+    public class ItemCompletedEventArgs : ComponentEventArgs
     {
-        public ItemCompletedEventArgs(Guid id, object result)
+        public ItemCompletedEventArgs(Guid id, string componentName, object result) : base(componentName, result)
         {
             Id = id;
-            Result = result;
         }
 
         public Guid Id { get; }
-        public object Result { get; init; }
     }
 
-    public class ItemCompletedEventArgs<TResult> : EventArgs
+    public class ItemCompletedEventArgs<TResult> : ItemCompletedEventArgs
+        where TResult : notnull
     {
-        public ItemCompletedEventArgs(Guid id, TResult result)
+        public ItemCompletedEventArgs(Guid id, string componentName, TResult result) : base(id, componentName, result)
         {
-            Id = id;
-            Result = result;
         }
 
-        public Guid Id { get; }
-        public TResult Result { get; init; }
+        public new TResult Result => (TResult)base.Result;
     }
 }

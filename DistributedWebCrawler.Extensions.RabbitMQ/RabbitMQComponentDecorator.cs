@@ -21,9 +21,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             _connection = connection;
         }
 
-        public CrawlerComponentStatus Status => _inner.Status;
-
-        public string Name => _inner.Name;
+        public CrawlerComponentStatus Status => _inner.Status;       
 
         public Task PauseAsync()
         {

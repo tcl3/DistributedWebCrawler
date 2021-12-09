@@ -4,6 +4,8 @@ using DistributedWebCrawler.Core.Interfaces;
 namespace DistributedWebCrawler.Core.Queue
 {
     public class InMemoryEventReceiver<TSuccess, TFailure> : IEventReceiver<TSuccess, TFailure>
+        where TSuccess : notnull
+        where TFailure : notnull
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
         
@@ -60,7 +62,7 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public event AsyncEventHandler<ComponentStatus> OnComponentUpdateAsync
+        public event ComponentEventHandler<ComponentStatus> OnComponentUpdateAsync
         {
             add
             {
