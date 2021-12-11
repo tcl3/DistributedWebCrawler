@@ -1,5 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
 using DistributedWebCrawler.Core.Configuration;
+using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
@@ -29,10 +30,8 @@ namespace DistributedWebCrawler.Core.Components
     }
 
     [ComponentName("Parser")]
-    public class ParserComponent : AbstractTaskQueueComponent<ParseRequest, ParseSuccess, ParseFailure>
+    public class ParserComponent : AbstractTaskQueueComponent<ParseRequest, ParseSuccess, ErrorCode<ParseFailure>>
     {
-        private readonly IConsumer<ParseRequest> _parseRequestConsumer;
-
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly ILinkParser _linkParser;
         private readonly IContentStore _contentStore;
@@ -40,7 +39,7 @@ namespace DistributedWebCrawler.Core.Components
 
         public ParserComponent(ParserSettings parserSettings,
             IConsumer<ParseRequest> parseRequestConsumer,
-            IEventDispatcher<ParseSuccess, ParseFailure> eventDispatcher,
+            IEventDispatcher<ParseSuccess, ErrorCode<ParseFailure>> eventDispatcher,
             IProducer<SchedulerRequest> schedulerRequestProducer,
             ILinkParser linkParser,
             IContentStore contentStore,
@@ -49,7 +48,6 @@ namespace DistributedWebCrawler.Core.Components
             ComponentNameProvider componentNameProvider)
             : base(parseRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, parserSettings)
         {
-            _parseRequestConsumer = parseRequestConsumer;
             _schedulerRequestProducer = schedulerRequestProducer;
             _linkParser = linkParser;
             _contentStore = contentStore;
@@ -68,14 +66,14 @@ namespace DistributedWebCrawler.Core.Components
             if (string.IsNullOrEmpty(content)) 
             {
                 _logger.LogError($"Item with ID: '{parseRequest.ContentId}', not found in ContentStore");
-                return Failed(parseRequest, ParseFailure.NoItemInContentStore);
+                return Failed(parseRequest, ParseFailure.NoItemInContentStore.AsErrorCode());
             }
 
             var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
             if (!links.Any())
             {
-                return Failed(parseRequest, ParseFailure.NoLinksFound);
+                return Failed(parseRequest, ParseFailure.NoLinksFound.AsErrorCode());
             }
 
             _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri}");

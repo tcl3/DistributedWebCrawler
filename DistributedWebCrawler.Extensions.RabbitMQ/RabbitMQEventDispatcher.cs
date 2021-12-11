@@ -7,7 +7,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public class RabbitMQEventDispatcher<TSuccess, TFailure> : IEventDispatcher<TSuccess, TFailure>
         where TSuccess : notnull
-        where TFailure : notnull
+        where TFailure : notnull, IErrorCode
     {
         private readonly QueueNameProvider<TSuccess, TFailure> _queueNameProvider;
         private readonly RabbitMQChannelPool _channelPool;

@@ -12,6 +12,7 @@ using Nager.PublicSuffix;
 using DistributedWebCrawler.Core.Queue;
 using System.Threading;
 using DistributedWebCrawler.Core.Attributes;
+using DistributedWebCrawler.Core.Extensions;
 
 namespace DistributedWebCrawler.Core.Components
 {
@@ -32,7 +33,7 @@ namespace DistributedWebCrawler.Core.Components
         MaximumCrawlDepthReached,
     }
     [ComponentName("Scheduler")]
-    public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest, SchedulerSuccess, SchedulerFailure>
+    public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest, SchedulerSuccess, ErrorCode<SchedulerFailure>>
     {
         private enum DomainStatus
         {   
@@ -77,7 +78,7 @@ namespace DistributedWebCrawler.Core.Components
 
         public SchedulerComponent(SchedulerSettings schedulerSettings,
             IConsumer<SchedulerRequest> consumer,
-            IEventDispatcher<SchedulerSuccess, SchedulerFailure> eventDispatcher,
+            IEventDispatcher<SchedulerSuccess, ErrorCode<SchedulerFailure>> eventDispatcher,
             IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
             IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
@@ -193,7 +194,7 @@ namespace DistributedWebCrawler.Core.Components
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
             {
                 _logger.LogError($"Not processing {schedulerRequest.Uri}. Maximum crawl depth exceeded (curremt: {schedulerRequest.CurrentCrawlDepth}, max: {_schedulerSettings.MaxCrawlDepth})");
-                return Failed(schedulerRequest, SchedulerFailure.MaximumCrawlDepthReached);
+                return Failed(schedulerRequest, SchedulerFailure.MaximumCrawlDepthReached.AsErrorCode());
             }
 
             var visitedPathsForHost = Enumerable.Empty<string>();

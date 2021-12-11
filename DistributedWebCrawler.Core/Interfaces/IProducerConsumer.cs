@@ -9,6 +9,11 @@ namespace DistributedWebCrawler.Core.Interfaces
 
     public delegate Task ItemCompletedEventHandler(object? sender, ItemCompletedEventArgs e);
 
+    public delegate Task ItemFailedEventHandler<TFailure>(object? sender, ItemFailedEventArgs<TFailure> e)
+        where TFailure : notnull, IErrorCode;
+
+    public delegate Task ItemFailedEventHandler(object? sender, ItemFailedEventArgs e);
+
     public delegate Task ComponentEventHandler<TResult>(object? sender, ComponentEventArgs<TResult> e)
         where TResult : notnull;
 

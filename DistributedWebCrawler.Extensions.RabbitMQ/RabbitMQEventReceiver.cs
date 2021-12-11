@@ -13,7 +13,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public class RabbitMQEventReceiver<TSuccess, TFailure> : IEventReceiver<TSuccess, TFailure>
         where TSuccess : notnull
-        where TFailure : notnull
+        where TFailure : notnull, IErrorCode
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
         private readonly QueueNameProvider<TSuccess, TFailure> _queueNameProvider;
@@ -41,7 +41,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             _notifierReceiveChannelLookup = new();
         }
 
-        public event ItemCompletedEventHandler<TFailure> OnFailedAsync
+        public event ItemFailedEventHandler<TFailure> OnFailedAsync
         {
             add
             {
@@ -83,7 +83,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
         }
 
-        event ItemCompletedEventHandler IEventReceiver.OnFailedAsync
+        event ItemFailedEventHandler IEventReceiver.OnFailedAsync
         {
             add
             {
@@ -112,13 +112,17 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private void StartOnFailedNotifier()
         {
-            var receiveCallback = OnItemCompletedNotificationReceived<TFailure>((obj, args) => _eventStore.OnFailedAsyncHandler?.Invoke(obj, args));
+            var argsFactory = (CompletedItem<TFailure> data, string componentName) => new ItemFailedEventArgs<TFailure>(data.Id, componentName, data.Result);
+            var handler = (object? obj, ItemFailedEventArgs<TFailure> args) => _eventStore.OnFailedAsyncHandler?.Invoke(obj, args);
+            var receiveCallback = OnNotificationReceived<ItemFailedEventArgs<TFailure>, CompletedItem<TFailure>, TFailure>(handler, argsFactory);
             StartNotifierConsumer<TFailure>(receiveCallback);
         }
 
         private void StartOnCompletedNotifier()
         {
-            var receiveCallback = OnItemCompletedNotificationReceived<TSuccess>((obj, args) => _eventStore.OnCompletedAsyncHandler?.Invoke(obj, args));
+            var argsFactory = (CompletedItem<TSuccess> data, string componentName) => new ItemCompletedEventArgs<TSuccess>(data.Id, componentName, data.Result);
+            var handler = (object? obj, ItemCompletedEventArgs<TSuccess> args) => _eventStore.OnCompletedAsyncHandler?.Invoke(obj, args);
+            var receiveCallback = OnNotificationReceived<ItemCompletedEventArgs<TSuccess>, CompletedItem<TSuccess>, TSuccess>(handler, argsFactory);
             StartNotifierConsumer<TSuccess>(receiveCallback);
         }
 
@@ -133,11 +137,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         private void StartNotifierConsumer<TData>(BasicDeliverAsyncEventHandler receiveCallback)
         {
             var queueName = _queueNameProvider.GetQueueName<TData>();
-            StartNotifierConsumer(queueName, receiveCallback);
-        }
 
-        private void StartNotifierConsumer(string queueName, BasicDeliverAsyncEventHandler receiveCallback)
-        {
             _notifierReceiveChannelLookup.GetOrAdd(queueName, k =>
             {
                 if (!_connection.IsConnected)
@@ -147,13 +147,6 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
                 return _connection.StartConsumer(queueName, receiveCallback, _logger);
             });
-        }
-
-        private BasicDeliverAsyncEventHandler OnItemCompletedNotificationReceived<TResult>(Func<object?, ItemCompletedEventArgs<TResult>, Task?> handler)
-            where TResult : notnull
-        {
-            var argsFactory = (CompletedItem<TResult> data, string componentName) => new ItemCompletedEventArgs<TResult>(data.Id, componentName, data.Result);
-            return OnNotificationReceived<ItemCompletedEventArgs<TResult>, CompletedItem<TResult>, TResult>(handler, argsFactory);
         }
 
         private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData, TResult>(Func<object?, TArgs, Task?> handler, Func<TData, string, TArgs> argsFactory)
@@ -176,7 +169,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                     throw new SerializationException($"Failed to deserialize event data of type {typeof(TData).Name}");
                 }
 
-                if (_eventStore.OnCompletedAsyncHandler != null)
+                if (handler != null)
                 {
                     var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
                     var eventArgs = argsFactory(data, componentName);

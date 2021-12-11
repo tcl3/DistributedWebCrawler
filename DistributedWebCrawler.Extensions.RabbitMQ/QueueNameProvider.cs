@@ -1,9 +1,11 @@
 ﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Interfaces;
 using System.Collections.Concurrent;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public class QueueNameProvider<TSuccess, TFailure>
+        where TFailure : IErrorCode
     {
         private readonly ConcurrentDictionary<Type, string> _queueNameLookup;
 

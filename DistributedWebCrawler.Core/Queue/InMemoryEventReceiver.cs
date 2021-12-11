@@ -5,7 +5,7 @@ namespace DistributedWebCrawler.Core.Queue
 {
     public class InMemoryEventReceiver<TSuccess, TFailure> : IEventReceiver<TSuccess, TFailure>
         where TSuccess : notnull
-        where TFailure : notnull
+        where TFailure : notnull, IErrorCode
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
         
@@ -26,7 +26,7 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public event ItemCompletedEventHandler<TFailure> OnFailedAsync
+        public event ItemFailedEventHandler<TFailure> OnFailedAsync
         {
             add
             {
@@ -50,7 +50,7 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        event ItemCompletedEventHandler IEventReceiver.OnFailedAsync
+        event ItemFailedEventHandler IEventReceiver.OnFailedAsync
         {
             add
             {

@@ -24,8 +24,8 @@ namespace DistributedWebCrawler.Core.Components
 
     }
 
-    [ComponentName("Robots")]
-    public class RobotsDownloaderComponent : AbstractTaskQueueComponent<RobotsRequest, RobotsDownloaderSuccess, RobotsDownloaderFailure>
+    [ComponentName("RobotsDownloader")]    
+    public class RobotsDownloaderComponent : AbstractTaskQueueComponent<RobotsRequest, RobotsDownloaderSuccess, ErrorCode<RobotsDownloaderFailure>>
     {
         private readonly ILogger<RobotsDownloaderComponent> _logger;
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
@@ -34,7 +34,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly TimeSpan _expirationTimeSpan;
 
         public RobotsDownloaderComponent(IConsumer<RobotsRequest> consumer,
-            IEventDispatcher<RobotsDownloaderSuccess, RobotsDownloaderFailure> eventDispatcher,
+            IEventDispatcher<RobotsDownloaderSuccess, ErrorCode<RobotsDownloaderFailure>> eventDispatcher,
             IKeyValueStore keyValueStore,
             ILogger<RobotsDownloaderComponent> logger,
             ComponentNameProvider componentNameProvider,

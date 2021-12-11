@@ -7,7 +7,7 @@ namespace DistributedWebCrawler.Core.Queue
 {
     public class InMemoryEventDispatcher<TSuccess, TFailure> : IEventDispatcher<TSuccess, TFailure>
         where TSuccess : notnull
-        where TFailure : notnull
+        where TFailure : notnull, IErrorCode
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
         private readonly ComponentNameProvider _componentNameProvider;
@@ -19,14 +19,22 @@ namespace DistributedWebCrawler.Core.Queue
             _componentNameProvider = componentNameProvider;
         }
 
-        public Task NotifyCompletedAsync(RequestBase item, TSuccess result)
+        public async Task NotifyCompletedAsync(RequestBase item, TSuccess result)
         {
-            return Notify(_eventStore.OnCompletedAsyncHandler, item, result);
+            if (_eventStore.OnCompletedAsyncHandler != null)
+            {
+                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
+                await _eventStore.OnCompletedAsyncHandler(this, new ItemCompletedEventArgs<TSuccess>(item.Id, componentName, result)).ConfigureAwait(false);
+            }
         }
 
-        public Task NotifyFailedAsync(RequestBase item, TFailure result)
+        public async Task NotifyFailedAsync(RequestBase item, TFailure result)
         {
-            return Notify(_eventStore.OnFailedAsyncHandler, item, result);
+            if (_eventStore.OnFailedAsyncHandler != null)
+            {
+                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
+                await _eventStore.OnFailedAsyncHandler(this, new ItemFailedEventArgs<TFailure>(item.Id, componentName, result)).ConfigureAwait(false);
+            }
         }
 
         public async Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus)
@@ -35,16 +43,6 @@ namespace DistributedWebCrawler.Core.Queue
             {
                 var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
                 await _eventStore.OnComponentUpdateAsyncHandler(this, new ComponentEventArgs<ComponentStatus>(componentName, componentStatus)).ConfigureAwait(false);
-            }
-        }
-
-        private async Task Notify<TResult>(ItemCompletedEventHandler<TResult>? handler, RequestBase item, TResult result)
-            where TResult : notnull
-        {
-            if (handler != null)
-            {
-                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
-                await handler(this, new ItemCompletedEventArgs<TResult>(item.Id, componentName, result)).ConfigureAwait(false);
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DistributedWebCrawler.Core.Interfaces;
+using System;
 
 namespace DistributedWebCrawler.Core.Queue
 {
@@ -20,5 +21,25 @@ namespace DistributedWebCrawler.Core.Queue
         }
 
         public new TResult Result => (TResult)base.Result;
+    }
+
+    public class ItemFailedEventArgs : ComponentEventArgs<IErrorCode>
+    {
+        public ItemFailedEventArgs(Guid id, string componentName, IErrorCode result) : base(componentName, result)
+        {
+            Id = id;
+        }
+
+        public Guid Id { get; }
+    }
+
+    public class ItemFailedEventArgs<TFailure> : ItemFailedEventArgs
+        where TFailure : notnull, IErrorCode
+    {
+        public ItemFailedEventArgs(Guid id, string componentName, TFailure result) : base(id, componentName, result)
+        {
+        }
+
+        public new TFailure Result => (TFailure)base.Result;
     }
 }

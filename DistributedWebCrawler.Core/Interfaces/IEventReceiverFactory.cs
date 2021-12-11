@@ -7,6 +7,6 @@ namespace DistributedWebCrawler.Core.Interfaces
         IEnumerable<IEventReceiver> GetAll();
         IEventReceiver<TSuccess, TFailure> Get<TSuccess, TFailure>()
             where TSuccess : notnull
-            where TFailure : notnull;
+            where TFailure : notnull, IErrorCode;
     }
 }

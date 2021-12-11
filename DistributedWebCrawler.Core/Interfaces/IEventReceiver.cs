@@ -5,15 +5,15 @@ namespace DistributedWebCrawler.Core.Interfaces
     public interface IEventReceiver
     {
         event ItemCompletedEventHandler OnCompletedAsync;
-        event ItemCompletedEventHandler OnFailedAsync;
+        event ItemFailedEventHandler OnFailedAsync;
         event ComponentEventHandler<ComponentStatus> OnComponentUpdateAsync;
     }
 
     public interface IEventReceiver<TSuccess, TFailure> : IEventReceiver
         where TSuccess : notnull
-        where TFailure : notnull
+        where TFailure : notnull, IErrorCode
     {
         new event ItemCompletedEventHandler<TSuccess> OnCompletedAsync;
-        new event ItemCompletedEventHandler<TFailure> OnFailedAsync;
+        new event ItemFailedEventHandler<TFailure> OnFailedAsync;
     }
 }

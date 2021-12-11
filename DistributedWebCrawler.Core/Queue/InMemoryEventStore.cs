@@ -6,9 +6,9 @@ namespace DistributedWebCrawler.Core.Queue
 {
     public class InMemoryEventStore<TSuccess, TFailure>
         where TSuccess : notnull
-        where TFailure : notnull
+        where TFailure : notnull, IErrorCode
     {
-        private readonly ConcurrentDictionary<ItemCompletedEventHandler, object> _delegateLookup;
+        private readonly ConcurrentDictionary<object, object> _delegateLookup;
 
         public InMemoryEventStore()
         {
@@ -16,14 +16,14 @@ namespace DistributedWebCrawler.Core.Queue
         }
 
         public ItemCompletedEventHandler<TSuccess>? OnCompletedAsyncHandler { get; set; }
-        public ItemCompletedEventHandler<TFailure>? OnFailedAsyncHandler { get; set; }
+        public ItemFailedEventHandler<TFailure>? OnFailedAsyncHandler { get; set; }
         public ComponentEventHandler<ComponentStatus>? OnComponentUpdateAsyncHandler { get; set; }
 
         public event ItemCompletedEventHandler OnCompletedAsync
         {
             add
             {
-                var convertedDelegate = ConvertArgs<TSuccess>(value);
+                var convertedDelegate = ConvertItemCompletedArgs(value);
                 _delegateLookup.TryAdd(value, convertedDelegate);
                 OnCompletedAsyncHandler += convertedDelegate;
             }
@@ -37,24 +37,28 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public event ItemCompletedEventHandler OnFailedAsync
+        public event ItemFailedEventHandler OnFailedAsync
         {
             add
             {
-                OnFailedAsyncHandler += ConvertArgs<TFailure>(value);
+                OnFailedAsyncHandler += ConvertItemFailedArgs(value);
             }
             remove
             {
                 if (_delegateLookup.TryRemove(value, out var obj)
-                    && obj is ItemCompletedEventHandler<TFailure> convertedDelegate)
+                    && obj is ItemFailedEventHandler<TFailure> convertedDelegate)
                 {
                     OnFailedAsyncHandler -= convertedDelegate;
                 }
             }
         }
 
-        private static ItemCompletedEventHandler<T> ConvertArgs<T>(ItemCompletedEventHandler handler)
-            where T : notnull
+        private static ItemCompletedEventHandler<TSuccess> ConvertItemCompletedArgs(ItemCompletedEventHandler handler)
+        {
+            return (sender, args) => handler.Invoke(sender, args);
+        }
+
+        private static ItemFailedEventHandler<TFailure> ConvertItemFailedArgs(ItemFailedEventHandler handler)
         {
             return (sender, args) => handler.Invoke(sender, args);
         }

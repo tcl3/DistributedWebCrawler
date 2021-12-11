@@ -30,7 +30,7 @@ namespace DistributedWebCrawler.Core
                 }
             }
         }
-        public event ItemCompletedEventHandler OnFailedAsync
+        public event ItemFailedEventHandler OnFailedAsync
         {
             add
             {

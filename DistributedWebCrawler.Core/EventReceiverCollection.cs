@@ -18,22 +18,22 @@ namespace DistributedWebCrawler.Core
             _allReceivers = new Lazy<IEventReceiver>(() => new CompositeEventReceiver(this.ToList()));
             _eventReceiverFactory = eventReceiverFactory;
             
-            Scheduler = _eventReceiverFactory.Get<SchedulerSuccess, SchedulerFailure>();
+            Scheduler = _eventReceiverFactory.Get<SchedulerSuccess, ErrorCode<SchedulerFailure>>();
             Ingester = _eventReceiverFactory.Get<IngestSuccess, IngestFailure>();
-            Parser = _eventReceiverFactory.Get<ParseSuccess, ParseFailure>();
-            RobotsDownloader = _eventReceiverFactory.Get<RobotsDownloaderSuccess, RobotsDownloaderFailure>();
+            Parser = _eventReceiverFactory.Get<ParseSuccess, ErrorCode<ParseFailure>>();
+            RobotsDownloader = _eventReceiverFactory.Get<RobotsDownloaderSuccess, ErrorCode<RobotsDownloaderFailure>>();
         }
 
         public IEventReceiver All => _allReceivers.Value;
 
-        public IEventReceiver<SchedulerSuccess, SchedulerFailure> Scheduler { get; }
+        public IEventReceiver<SchedulerSuccess, ErrorCode<SchedulerFailure>> Scheduler { get; }
         public IEventReceiver<IngestSuccess, IngestFailure> Ingester { get; }
-        public IEventReceiver<ParseSuccess, ParseFailure> Parser { get; }
-        public IEventReceiver<RobotsDownloaderSuccess, RobotsDownloaderFailure> RobotsDownloader { get; }
+        public IEventReceiver<ParseSuccess, ErrorCode<ParseFailure>> Parser { get; }
+        public IEventReceiver<RobotsDownloaderSuccess, ErrorCode<RobotsDownloaderFailure>> RobotsDownloader { get; }
 
         public IEventReceiver<TSuccess, TFailure> OfType<TSuccess, TFailure>()
             where TSuccess : notnull
-            where TFailure : notnull
+            where TFailure : notnull, IErrorCode
         {
             return _eventReceiverFactory.Get<TSuccess, TFailure>();
         }

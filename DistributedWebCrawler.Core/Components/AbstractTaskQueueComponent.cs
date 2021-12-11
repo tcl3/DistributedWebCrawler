@@ -14,6 +14,7 @@ namespace DistributedWebCrawler.Core.Components
 
     public abstract class AbstractTaskQueueComponent<TRequest, TSuccess, TFailure> : ICrawlerComponent
         where TRequest : RequestBase
+        where TFailure : IErrorCode
     {
         private readonly IConsumer<TRequest> _consumer;
         private readonly IEventDispatcher<TSuccess, TFailure> _eventDispatcher;
