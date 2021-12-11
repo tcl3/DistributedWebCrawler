@@ -9,15 +9,15 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         where TSuccess : notnull
         where TFailure : notnull, IErrorCode
     {
-        private readonly QueueNameProvider<TSuccess, TFailure> _queueNameProvider;
+        private readonly ExchangeNameProvider<TSuccess, TFailure> _exchangeNameProvider;
         private readonly RabbitMQChannelPool _channelPool;
         private readonly ISerializer _serializer;
 
-        public RabbitMQEventDispatcher(QueueNameProvider<TSuccess, TFailure> queueNameProvider, 
+        public RabbitMQEventDispatcher(ExchangeNameProvider<TSuccess, TFailure> exchangeNameProvider, 
             RabbitMQChannelPool channelPool,
             ISerializer serializer)
         {
-            _queueNameProvider = queueNameProvider;
+            _exchangeNameProvider = exchangeNameProvider;
             _channelPool = channelPool;
             _serializer = serializer;
         }
@@ -47,15 +47,15 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         private Task PublishAsync<TResult>(object result)
             where TResult : notnull
         {
-            var queueName = _queueNameProvider.GetQueueName<TResult>();
-            return PublishAsync(queueName, result);
+            var exchangeName = _exchangeNameProvider.GetExchangeName<TResult>();
+            return PublishAsync(exchangeName, result);
         }
 
-        private Task PublishAsync<TData>(string queueName, TData data)
+        private Task PublishAsync<TData>(string exchangeName, TData data)
         {
             var bytes = _serializer.Serialize(data);
 
-            _channelPool.Publish(bytes, RabbitMQConstants.ProducerConsumer.ExchangeName, queueName);
+            _channelPool.PublishFanout(bytes, exchangeName);
 
             return Task.CompletedTask;
         }

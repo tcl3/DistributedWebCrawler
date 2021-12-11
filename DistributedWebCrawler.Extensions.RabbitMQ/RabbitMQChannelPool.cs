@@ -12,7 +12,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
     public class RabbitMQChannelPool
     {
-        private readonly ConcurrentDictionary<int, IModel> _channelPool;
+        private readonly ConcurrentDictionary<string, IModel> _channelPool;
         private readonly IPersistentConnection _connection;
         private readonly ILogger<RabbitMQChannelPool> _logger;
         private readonly RetryPolicy _retryPolicy;
@@ -31,30 +31,41 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 });
         }
 
-        public void Publish(byte[] bytes, string exchangeName, string queueName)
+        public void PublishDirect(byte[] bytes, string exchangeName, string queueName)
+        {
+            Publish(bytes, exchangeName, exchangeType: "direct", routingKey: queueName);
+        }
+
+        public void PublishFanout(byte[] bytes, string exchangeName)
+        {
+            Publish(bytes, exchangeName, exchangeType: "fanout");
+        }
+
+        private void Publish(byte[] bytes, string exchangeName, string exchangeType, string routingKey = "")
         {
             if (!_connection.IsConnected)
             {
                 _connection.TryConnect();
             }
 
-            var channel = GetChannel();
+            var channel = GetChannel(exchangeName);
 
-            channel.ExchangeDeclare(exchange: exchangeName, type: "direct");
+            channel.ExchangeDeclare(exchange: exchangeName, type: exchangeType);
 
             _retryPolicy.Execute(() =>
             {
-                channel.BasicPublish(exchange: RabbitMQConstants.ProducerConsumer.ExchangeName,
-                                    routingKey: queueName,
+                channel.BasicPublish(exchange: exchangeName,
+                                    routingKey: routingKey,
                                     basicProperties: null,
                                     mandatory: true,
                                     body: bytes);
             });
         }
 
-        public IModel GetChannel()
+        public IModel GetChannel(string exchangeName)
         {
-            return _channelPool.GetOrAdd(Environment.CurrentManagedThreadId, key =>
+            var channelKey = Environment.CurrentManagedThreadId + '_' + exchangeName;
+            return _channelPool.GetOrAdd(channelKey, key =>
             {
                 var channel = _connection.CreateModel();
                 channel.ConfirmSelect();
@@ -62,9 +73,9 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 channel.CallbackException += (_, _) =>
                 {
                     channel?.Dispose();
-                    if (_channelPool.TryRemove(Environment.CurrentManagedThreadId, out _))
+                    if (_channelPool.TryRemove(key, out _))
                     {
-                        channel = _channelPool.GetOrAdd(Environment.CurrentManagedThreadId, key => _connection.CreateModel());
+                        channel = _channelPool.GetOrAdd(key, _ => _connection.CreateModel());
                     }
                 };
 

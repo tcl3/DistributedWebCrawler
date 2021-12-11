@@ -61,7 +61,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 .AddSingleton(typeof(IProducerConsumer<>), typeof(RabbitMQProducerConsumer<>))
                 .AddSingleton(typeof(IEventDispatcher<,>), typeof(RabbitMQEventDispatcher<,>))
                 .AddSingleton(typeof(IEventReceiver<,>), typeof(RabbitMQEventReceiver<,>))
-                .AddSingleton(typeof(QueueNameProvider<,>))
+                .AddSingleton(typeof(ExchangeNameProvider<,>))
                 .AddSingleton<ComponentNameProvider>()
                 .AddSingleton(typeof(InMemoryEventStore<,>))
                 .AddSingleton<RabbitMQChannelPool>()
@@ -72,7 +72,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         {
             return services.AddRabbitMQConnection(configuration)
                 .AddCrawlerManager(typeof(RabbitMQEventReceiver<,>), componentAssemblies)
-                .AddSingleton(typeof(QueueNameProvider<,>))
+                .AddSingleton(typeof(ExchangeNameProvider<,>))
                 .AddSingleton(typeof(InMemoryEventStore<,>))
                 .AddSingleton<RabbitMQChannelPool>()
                 .Decorate<ICrawlerManager, RabbitMQCrawlerManagerDecorator>();

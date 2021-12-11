@@ -16,7 +16,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         where TFailure : notnull, IErrorCode
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
-        private readonly QueueNameProvider<TSuccess, TFailure> _queueNameProvider;
+        private readonly ExchangeNameProvider<TSuccess, TFailure> _exchangeNameProvider;
         private readonly ComponentNameProvider _componentNameProvider;
         private readonly IPersistentConnection _connection;
         private readonly ISerializer _serializer;
@@ -25,14 +25,14 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         private readonly ConcurrentDictionary<string, IModel> _notifierReceiveChannelLookup;
 
         public RabbitMQEventReceiver(InMemoryEventStore<TSuccess, TFailure> eventStore,
-            QueueNameProvider<TSuccess, TFailure> queueNameProvider,
+            ExchangeNameProvider<TSuccess, TFailure> exchangeNameProvider,
             ComponentNameProvider componentNameProvider,
             IPersistentConnection connection,
             ISerializer serializer,
             ILogger<RabbitMQEventReceiver<TSuccess, TFailure>> logger)
         {
             _eventStore = eventStore;
-            _queueNameProvider = queueNameProvider;
+            _exchangeNameProvider = exchangeNameProvider;
             _componentNameProvider = componentNameProvider;
             _connection = connection;
             _serializer = serializer;
@@ -136,16 +136,16 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private void StartNotifierConsumer<TData>(BasicDeliverAsyncEventHandler receiveCallback)
         {
-            var queueName = _queueNameProvider.GetQueueName<TData>();
+            var exchangeName = _exchangeNameProvider.GetExchangeName<TData>();
 
-            _notifierReceiveChannelLookup.GetOrAdd(queueName, k =>
+            _notifierReceiveChannelLookup.GetOrAdd(exchangeName, k =>
             {
                 if (!_connection.IsConnected)
                 {
                     _connection.TryConnect();
                 }
 
-                return _connection.StartConsumer(queueName, receiveCallback, _logger);
+                return _connection.StartConsumerForNotifier(exchangeName, receiveCallback, _logger);
             });
         }
 
@@ -153,11 +153,11 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             where TArgs: ComponentEventArgs
             where TResult : notnull
         {
-            var queueName = _queueNameProvider.GetQueueName<TResult>();
-            return OnNotificationReceived(queueName, handler, argsFactory);
+            var exchangeName = _exchangeNameProvider.GetExchangeName<TResult>();
+            return OnNotificationReceived(exchangeName, handler, argsFactory);
         }
 
-        private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData>(string queueName, Func<object?, TArgs, Task?> handler, Func<TData, string, TArgs> argsFactory)
+        private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData>(string exchangeName, Func<object?, TArgs, Task?> handler, Func<TData, string, TArgs> argsFactory)
             where TArgs : ComponentEventArgs
         {
             return async (model, ea) =>
@@ -180,9 +180,9 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                     }                    
                 }
 
-                if (!_notifierReceiveChannelLookup.TryGetValue(queueName, out var channel))
+                if (!_notifierReceiveChannelLookup.TryGetValue(exchangeName, out var channel))
                 {
-                    throw new InvalidOperationException($"Channel for queue: {queueName} not found");
+                    throw new InvalidOperationException($"Channel for exchange: {exchangeName} not found");
                 }
 
 

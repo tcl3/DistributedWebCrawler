@@ -36,7 +36,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                     _connection.TryConnect();
                 }
 
-                var channel = _channelPool.GetChannel();
+                var channel = _channelPool.GetChannel(RabbitMQConstants.ProducerConsumer.ExchangeName);
 
                 var result = channel.QueueDeclare(queue: ConsumerQueueName,
                                      durable: false,
@@ -75,7 +75,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 {
                     if (_producerReceiveChannel == null)
                     {
-                        _producerReceiveChannel = _connection.StartConsumer(ConsumerQueueName, OnQueueItemReceived, _logger);
+                        _producerReceiveChannel = _connection.StartConsumerForComponent(ConsumerQueueName, OnQueueItemReceived, _logger);
                     } 
                 }
             }
@@ -118,14 +118,14 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 {
                     if (_producerReceiveChannel == null)
                     {
-                        _producerReceiveChannel = _connection.StartConsumer(ConsumerQueueName, OnQueueItemReceived, _logger);
+                        _producerReceiveChannel = _connection.StartConsumerForComponent(ConsumerQueueName, OnQueueItemReceived, _logger);
                     } 
                 }
             }
             
             var bytes = _serializer.Serialize(data);
 
-            _channelPool.Publish(bytes, RabbitMQConstants.ProducerConsumer.ExchangeName, ConsumerQueueName);
+            _channelPool.PublishDirect(bytes, RabbitMQConstants.ProducerConsumer.ExchangeName, ConsumerQueueName);
         }
     }
 }
