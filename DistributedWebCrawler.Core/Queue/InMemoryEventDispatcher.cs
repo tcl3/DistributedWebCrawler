@@ -10,10 +10,10 @@ namespace DistributedWebCrawler.Core.Queue
         where TFailure : notnull
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
-        private readonly ComponentNameProvider<TSuccess, TFailure> _componentNameProvider;
+        private readonly ComponentNameProvider _componentNameProvider;
 
         public InMemoryEventDispatcher(InMemoryEventStore<TSuccess, TFailure> eventStore,
-            ComponentNameProvider<TSuccess, TFailure> componentNameProvider)
+            ComponentNameProvider componentNameProvider)
         {
             _eventStore = eventStore;
             _componentNameProvider = componentNameProvider;
@@ -33,7 +33,7 @@ namespace DistributedWebCrawler.Core.Queue
         {
             if (_eventStore.OnComponentUpdateAsyncHandler != null)
             {
-                var componentName = _componentNameProvider.GetComponentNameOrDefault();
+                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
                 await _eventStore.OnComponentUpdateAsyncHandler(this, new ComponentEventArgs<ComponentStatus>(componentName, componentStatus)).ConfigureAwait(false);
             }
         }
@@ -43,7 +43,7 @@ namespace DistributedWebCrawler.Core.Queue
         {
             if (handler != null)
             {
-                var componentName = _componentNameProvider.GetComponentNameOrDefault();
+                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
                 await handler(this, new ItemCompletedEventArgs<TResult>(item.Id, componentName, result)).ConfigureAwait(false);
             }
         }

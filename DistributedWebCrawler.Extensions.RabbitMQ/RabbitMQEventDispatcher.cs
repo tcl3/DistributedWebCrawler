@@ -34,17 +34,17 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         public Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus)
         {
-            return PublishAsync(componentStatus);
+            return PublishAsync<ComponentStatus>(componentStatus);
         }
 
         private Task PublishCompletedItemAsync<TResult>(RequestBase item, TResult result)
             where TResult : notnull        
         {
             var eventArgs = new CompletedItem<TResult>(item.Id, result);
-            return PublishAsync(eventArgs);
+            return PublishAsync<TResult>(eventArgs);
         }
 
-        private Task PublishAsync<TResult>(TResult result)
+        private Task PublishAsync<TResult>(object result)
             where TResult : notnull
         {
             var queueName = _queueNameProvider.GetQueueName<TResult>();

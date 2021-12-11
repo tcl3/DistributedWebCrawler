@@ -17,7 +17,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
         private readonly QueueNameProvider<TSuccess, TFailure> _queueNameProvider;
-        private readonly Core.ComponentNameProvider<TSuccess, TFailure> _componentNameProvider;
+        private readonly ComponentNameProvider _componentNameProvider;
         private readonly IPersistentConnection _connection;
         private readonly ISerializer _serializer;
         private readonly ILogger _logger;
@@ -26,7 +26,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         public RabbitMQEventReceiver(InMemoryEventStore<TSuccess, TFailure> eventStore,
             QueueNameProvider<TSuccess, TFailure> queueNameProvider,
-            Core.ComponentNameProvider<TSuccess, TFailure> componentNameProvider,
+            ComponentNameProvider componentNameProvider,
             IPersistentConnection connection,
             ISerializer serializer,
             ILogger<RabbitMQEventReceiver<TSuccess, TFailure>> logger)
@@ -178,7 +178,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
                 if (_eventStore.OnCompletedAsyncHandler != null)
                 {
-                    var componentName = _componentNameProvider.GetComponentNameOrDefault();
+                    var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
                     var eventArgs = argsFactory(data, componentName);
                     var handlerTask = handler(this, eventArgs);
                     if (handlerTask != null)

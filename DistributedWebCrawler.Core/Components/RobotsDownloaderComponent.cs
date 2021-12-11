@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Configuration;
+﻿using DistributedWebCrawler.Core.Attributes;
+using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
@@ -23,6 +24,7 @@ namespace DistributedWebCrawler.Core.Components
 
     }
 
+    [ComponentName("Robots")]
     public class RobotsDownloaderComponent : AbstractTaskQueueComponent<RobotsRequest, RobotsDownloaderSuccess, RobotsDownloaderFailure>
     {
         private readonly ILogger<RobotsDownloaderComponent> _logger;
@@ -35,7 +37,7 @@ namespace DistributedWebCrawler.Core.Components
             IEventDispatcher<RobotsDownloaderSuccess, RobotsDownloaderFailure> eventDispatcher,
             IKeyValueStore keyValueStore,
             ILogger<RobotsDownloaderComponent> logger,
-            ComponentNameProvider<RobotsDownloaderSuccess, RobotsDownloaderFailure> componentNameProvider,
+            ComponentNameProvider componentNameProvider,
             IProducer<SchedulerRequest> schedulerRequestProducer,
             IRobotsCacheWriter robotsCacheWriter,
             RobotsTxtSettings settings) 

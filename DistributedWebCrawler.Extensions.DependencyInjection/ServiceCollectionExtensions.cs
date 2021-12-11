@@ -44,41 +44,32 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
         {
             componentAssemblies ??= new[] { typeof(AbstractTaskQueueComponent<,,>).Assembly };
 
-            services.AddSingleton<ISeeder, CompositeSeeder>();
-            services.AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
+            var componentDescriptors = ComponentDescriptor.FromAssemblies(componentAssemblies);
+
+            services.AddSingleton<IEnumerable<ComponentDescriptor>>(componentDescriptors)
+                .AddSingleton<ComponentNameProvider>()
+                .AddSingleton<ISeeder, CompositeSeeder>()
+                .AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
 
             services.AddSingleton<IEventReceiverFactory>(serviceProvider =>
             {
                 return new EventReceiverFactory(serviceProvider.GetRequiredService);
             });
             services.AddSingleton<EventReceiverCollection>();
-            services.AddEventReceivers(eventReceiverType, componentAssemblies);
+            services.AddEventReceivers(eventReceiverType, componentDescriptors);
 
             services.AddDefaultSerializer();
 
             return services;
         }
 
-        public static IServiceCollection AddEventReceivers(this IServiceCollection services, Type implementationType, IEnumerable<Assembly> componentAssemblies)
+        public static IServiceCollection AddEventReceivers(this IServiceCollection services, Type implementationType, IEnumerable<ComponentDescriptor> componentDescriptors)
         {
-            var componentTypes = componentAssemblies
-                .SelectMany(x => x.ExportedTypes)
-                .Select(x => x.BaseType)
-                .OfType<Type>()
-                .Where(x =>
-                {
-                    return  x.IsAbstract
-                            && !x.IsInterface
-                            && x.IsGenericType
-                            && x.GetGenericTypeDefinition() == typeof(AbstractTaskQueueComponent<,,>)
-                            && x.GetGenericArguments().Length == 3;
-                }
-            );
-            foreach (var componentType in componentTypes)
+            foreach (var componentDescriptor in componentDescriptors)
             {
-                var genericArgs = componentType.GetGenericArguments();
-                var successType = genericArgs[1];
-                var failureType = genericArgs[2];
+                var genericArgs = componentDescriptor.ComponentType.GetGenericArguments();
+                var successType = componentDescriptor.SuccessType;
+                var failureType = componentDescriptor.FailureType;
 
                 var eventReceiverServiceType = typeof(IEventReceiver<,>).MakeGenericType(successType, failureType);
                 var eventReceiverImplementationType = implementationType.MakeGenericType(successType, failureType);

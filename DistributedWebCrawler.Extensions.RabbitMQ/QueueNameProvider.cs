@@ -1,5 +1,4 @@
 ﻿using DistributedWebCrawler.Core;
-using DistributedWebCrawler.Core.Extensions;
 using System.Collections.Concurrent;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
@@ -12,10 +11,10 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         
         private const string QueueNameSuffix = "Notifier";
 
-        public QueueNameProvider(ComponentNameProvider<TSuccess, TFailure> componentNameProvider)
+        public QueueNameProvider(ComponentNameProvider componentNameProvider)
         {
             _queueNameLookup = new();
-            _queueNamePrefix = componentNameProvider.GetComponentNameOrDefault(() => Guid.NewGuid().ToString("N"));
+            _queueNamePrefix = componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>(() => Guid.NewGuid().ToString("N"));
         }
 
         public string GetQueueName<TData>()
@@ -25,9 +24,19 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private string GetQueueNameFromType(Type type)
         {
-            var commonPrefix = _queueNamePrefix.GetCommonPrefix(type.Name);
-
-            var typeName = type.Name[commonPrefix.Length..];
+            string typeName;
+            if (type == typeof(TSuccess)) 
+            {
+                typeName = "Success";
+            }
+            else if (type == typeof(TFailure))
+            {
+                typeName = "Failure";
+            } 
+            else
+            {
+                typeName = type.Name;
+            }
 
             return _queueNamePrefix + typeName + QueueNameSuffix;
         }

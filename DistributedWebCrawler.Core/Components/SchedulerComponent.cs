@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Nager.PublicSuffix;
 using DistributedWebCrawler.Core.Queue;
 using System.Threading;
+using DistributedWebCrawler.Core.Attributes;
 
 namespace DistributedWebCrawler.Core.Components
 {
@@ -30,6 +31,7 @@ namespace DistributedWebCrawler.Core.Components
     {
         MaximumCrawlDepthReached,
     }
+    [ComponentName("Scheduler")]
     public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest, SchedulerSuccess, SchedulerFailure>
     {
         private enum DomainStatus
@@ -79,7 +81,7 @@ namespace DistributedWebCrawler.Core.Components
             IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
             IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
-            ComponentNameProvider<SchedulerSuccess, SchedulerFailure> componentNameProvider,
+            ComponentNameProvider componentNameProvider,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest> robotsRequestProducer,
             IProducer<IngestRequest> ingestRequestProducer)

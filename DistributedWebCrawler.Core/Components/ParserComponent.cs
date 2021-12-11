@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Configuration;
+﻿using DistributedWebCrawler.Core.Attributes;
+using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,7 @@ namespace DistributedWebCrawler.Core.Components
         NoLinksFound
     }
 
+    [ComponentName("Parser")]
     public class ParserComponent : AbstractTaskQueueComponent<ParseRequest, ParseSuccess, ParseFailure>
     {
         private readonly IConsumer<ParseRequest> _parseRequestConsumer;
@@ -44,7 +46,7 @@ namespace DistributedWebCrawler.Core.Components
             IContentStore contentStore,
             IKeyValueStore keyValueStore,
             ILogger<ParserComponent> logger,
-            ComponentNameProvider<ParseSuccess, ParseFailure> componentNameProvider)
+            ComponentNameProvider componentNameProvider)
             : base(parseRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, parserSettings)
         {
             _parseRequestConsumer = parseRequestConsumer;

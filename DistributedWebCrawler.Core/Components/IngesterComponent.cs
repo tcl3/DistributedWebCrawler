@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Configuration;
+﻿using DistributedWebCrawler.Core.Attributes;
+using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
@@ -14,6 +15,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
+    [ComponentName("Ingester")]
     public class IngesterComponent : AbstractTaskQueueComponent<IngestRequest, IngestSuccess, IngestFailure>
     {
         private readonly IngesterSettings _ingesterSettings;
@@ -48,7 +50,7 @@ namespace DistributedWebCrawler.Core.Components
             IContentStore contentStore,
             IKeyValueStore keyValueStore,
             ILogger<IngesterComponent> logger,
-            ComponentNameProvider<IngestSuccess, IngestFailure> componentNameProvider) 
+            ComponentNameProvider componentNameProvider) 
             : base(ingestRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, ingesterSettings)
         {
             _ingesterSettings = ingesterSettings;

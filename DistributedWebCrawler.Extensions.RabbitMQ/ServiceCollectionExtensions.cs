@@ -2,11 +2,9 @@
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Queue;
-using DistributedWebCrawler.Core.Seeding;
 using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using RabbitMQ.Client;
 using System.Reflection;
 
@@ -64,18 +62,17 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 .AddSingleton(typeof(IEventDispatcher<,>), typeof(RabbitMQEventDispatcher<,>))
                 .AddSingleton(typeof(IEventReceiver<,>), typeof(RabbitMQEventReceiver<,>))
                 .AddSingleton(typeof(QueueNameProvider<,>))
-                .AddSingleton(typeof(ComponentNameProvider<,>))
+                .AddSingleton<ComponentNameProvider>()
                 .AddSingleton(typeof(InMemoryEventStore<,>))
                 .AddSingleton<RabbitMQChannelPool>()
                 .Decorate<ICrawlerComponent, RabbitMQComponentDecorator>();
         }
 
-        public static IServiceCollection AddRabbitMQCrawlerManager(this IServiceCollection services, IConfiguration configuration, IEnumerable<Assembly>? componentAssembly = null)
+        public static IServiceCollection AddRabbitMQCrawlerManager(this IServiceCollection services, IConfiguration configuration, IEnumerable<Assembly>? componentAssemblies = null)
         {
             return services.AddRabbitMQConnection(configuration)
-                .AddCrawlerManager(typeof(RabbitMQEventReceiver<,>), componentAssembly)
+                .AddCrawlerManager(typeof(RabbitMQEventReceiver<,>), componentAssemblies)
                 .AddSingleton(typeof(QueueNameProvider<,>))
-                .AddSingleton(typeof(ComponentNameProvider<,>))
                 .AddSingleton(typeof(InMemoryEventStore<,>))
                 .AddSingleton<RabbitMQChannelPool>()
                 .Decorate<ICrawlerManager, RabbitMQCrawlerManagerDecorator>();

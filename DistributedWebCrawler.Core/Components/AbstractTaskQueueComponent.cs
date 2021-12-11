@@ -37,7 +37,7 @@ namespace DistributedWebCrawler.Core.Components
             IEventDispatcher<TSuccess, TFailure> eventReceiver,
             IKeyValueStore keyValueStore,
             ILogger logger,
-            ComponentNameProvider<TSuccess, TFailure> componentNameProvider, TaskQueueSettings taskQueueSettings)
+            ComponentNameProvider componentNameProvider, TaskQueueSettings taskQueueSettings)
         {
             _consumer = consumer;
             _eventDispatcher = eventReceiver;
@@ -48,7 +48,8 @@ namespace DistributedWebCrawler.Core.Components
             _pauseSemaphore = new SemaphoreSlim(0);
             _taskCompletionSource = new();
 
-            Name = componentNameProvider.GetComponentNameOrDefault();
+            var componentType = GetType();
+            Name = componentNameProvider.GetComponentName(componentType);
         }
 
         public CrawlerComponentStatus Status
