@@ -187,7 +187,7 @@ namespace DistributedWebCrawler.Core.Components
             catch (TaskCanceledException ex)
             {
                 _logger.LogError($"Timeout while getting URL for URI {item.Uri}. {ex.Message}");
-                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
+                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.RequestTimeout));
             }
         }
 
