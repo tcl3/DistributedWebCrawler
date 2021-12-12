@@ -8,8 +8,6 @@ using System;
 using System.Text;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.DependencyInjection;
-using DistributedWebCrawler.Core.Robots;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core;
 
 namespace DistributedWebCrawler.Console
@@ -36,7 +34,7 @@ namespace DistributedWebCrawler.Console
             services.AddInMemoryKeyValueStore();
 
             services.AddCrawler(crawler => crawler
-                .WithSeeder<SchedulerRequest>(seeder => seeder
+                .WithSeeder(seeder => seeder
                     .WithComponent<SchedulerQueueSeeder>()
                     .WithSettings(configuration.GetSection("SeederSettings")))
                 .WithScheduler(scheduler => scheduler

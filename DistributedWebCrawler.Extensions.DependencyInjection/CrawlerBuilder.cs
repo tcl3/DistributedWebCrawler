@@ -51,10 +51,9 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
             services.AddDefaultSerializer();
         }
 
-        public ICrawlerBuilder WithSeeder<TRequest>(Action<ISeederBuilder> seederBuilderAction)
-            where TRequest : RequestBase
+        public ICrawlerBuilder WithSeeder(Action<ISeederBuilder> seederBuilderAction)
         {
-            var seederBuilder = new SeederBuilder<TRequest>(_services);
+            var seederBuilder = new SeederBuilder(_services);
             seederBuilderAction?.Invoke(seederBuilder);
             return this;
         }

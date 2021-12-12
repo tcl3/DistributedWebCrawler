@@ -44,7 +44,7 @@ namespace DistributedWebCrawler.ComponentAPI
             {
                 if (roles.Contains(ComponentApiRole.Scheduler))
                 {
-                    crawler.WithSeeder<SchedulerRequest>(seeder => seeder
+                    crawler.WithSeeder(seeder => seeder
                         .WithComponent<SchedulerQueueSeeder>()
                         .WithSettings(crawlerConfiguration.GetSection("SeederSettings")));
 
