@@ -155,7 +155,7 @@ namespace DistributedWebCrawler.Core.Components
                             continue;
                         }
                         _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
-                        _ingestRequestProducer.Enqueue(ingestRequest, _ingestEventReceiver, OnIngestCompletedAsync);
+                        _ingestRequestProducer.Enqueue(ingestRequest, _ingestEventReceiver, OnIngestCompletedAsync, OnIngestFailedAsync);
                         _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
                     }
                     else
@@ -172,20 +172,30 @@ namespace DistributedWebCrawler.Core.Components
 
         private async Task OnIngestCompletedAsync(object? sender, ItemCompletedEventArgs<IngestSuccess> eventArgs)
         {
-            if (_activeQueueEntries.TryRemove(eventArgs.Id, out var entry))
+            await UpdateActiveQueueEntries(eventArgs.Id).ConfigureAwait(false);
+        }
+
+        private async Task OnIngestFailedAsync(object? sender, ItemFailedEventArgs<IngestFailure> eventArgs)
+        {
+            await UpdateActiveQueueEntries(eventArgs.Id).ConfigureAwait(false);
+        }
+
+        private async Task UpdateActiveQueueEntries(Guid id)
+        {
+            if (_activeQueueEntries.TryRemove(id, out var entry))
             {
                 if (_activeDomains.TryUpdate(entry.Domain, DomainStatus.Inactive, DomainStatus.Ingesting))
                 {
-                    if (!_activeDomains.TryRemove(entry.Domain, out var status) && status != DomainStatus.Inactive) 
+                    if (!_activeDomains.TryRemove(entry.Domain, out var status) && status != DomainStatus.Inactive)
                     {
                         _activeDomains.TryAdd(entry.Domain, status);
                     }
                 }
                 await AddNextUriToSchedulerQueueAsync(entry.Domain, entry.SchedulerRequest).ConfigureAwait(false);
-            } 
+            }
             else
             {
-                _logger.LogCritical($"No queue entry found for ingest request ID: {eventArgs.Id}");
+                _logger.LogCritical($"No queue entry found for ingest request ID: {id}");
             }
         }
 
