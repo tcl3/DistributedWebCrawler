@@ -57,6 +57,7 @@ namespace DistributedWebCrawler.Core.Components
         }
 
         private readonly SchedulerSettings _schedulerSettings;
+        private readonly IEventReceiver<IngestSuccess, IngestFailure> _ingestEventReceiver;
         private readonly ILogger<SchedulerComponent> _logger;
         private readonly IRobotsCacheReader _robotsCacheReader;
         private readonly IProducer<RobotsRequest> _robotsRequestProducer;
@@ -89,6 +90,7 @@ namespace DistributedWebCrawler.Core.Components
             : base(consumer, eventDispatcher, keyValueStore, logger, componentNameProvider, schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
+            _ingestEventReceiver = ingestEventReceiver;
             _logger = logger;
             _robotsCacheReader = robotsCacheReader;
             _robotsRequestProducer = robotsRequestProducer;
@@ -110,8 +112,6 @@ namespace DistributedWebCrawler.Core.Components
             _domainsToExclude = _schedulerSettings.ExcludeDomains != null
                 ? _schedulerSettings.ExcludeDomains.Select(str => new DomainPattern(str))
                 : Enumerable.Empty<DomainPattern>();
-
-            ingestEventReceiver.OnCompletedAsync += OnIngestCompletedAsync;
         }
 
         protected override Task ComponentStartAsync(CrawlerStartState startState)
@@ -155,7 +155,7 @@ namespace DistributedWebCrawler.Core.Components
                             continue;
                         }
                         _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
-                        _ingestRequestProducer.Enqueue(ingestRequest);
+                        _ingestRequestProducer.Enqueue(ingestRequest, _ingestEventReceiver, OnIngestCompletedAsync);
                         _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
                     }
                     else
