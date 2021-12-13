@@ -11,17 +11,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class ParseSuccess
-    {
-        public Uri Uri { get; init; }
-        public int NumberOfLinks { get; init; }
-
-        public ParseSuccess(Uri uri, int numberOfLinks)
-        {
-            Uri = uri;
-            NumberOfLinks = numberOfLinks;
-        }
-    }
+    public record ParseSuccess(Uri Uri, int NumberOfLinks);
 
     public enum ParseFailure
     {

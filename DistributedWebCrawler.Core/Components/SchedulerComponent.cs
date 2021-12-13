@@ -16,22 +16,13 @@ using DistributedWebCrawler.Core.Extensions;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class SchedulerSuccess
-    {
-        public Uri Uri { get; set; }
-        public IEnumerable<string> AddedPaths { get; init; }
-
-        public SchedulerSuccess(Uri uri, IEnumerable<string> addedPaths)
-        {
-            Uri = uri;
-            AddedPaths = addedPaths;
-        }
-    }
+    public record SchedulerSuccess(Uri Uri, IEnumerable<string> AddedPaths);
 
     public enum SchedulerFailure
     {
         MaximumCrawlDepthReached,
     }
+
     [ComponentName("Scheduler")]
     public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest, SchedulerSuccess, ErrorCode<SchedulerFailure>>
     {
@@ -42,19 +33,7 @@ namespace DistributedWebCrawler.Core.Components
             Ingesting
         }
 
-        private class SchedulerQueueEntry
-        {
-            public Uri Uri { get;  }
-            public string Domain { get; }
-            public SchedulerRequest SchedulerRequest { get; }
-
-            public SchedulerQueueEntry(Uri uri, string domain, SchedulerRequest schedulerRequest)
-            {
-                Uri = uri;
-                Domain = domain;
-                SchedulerRequest = schedulerRequest;
-            }
-        }
+        private record SchedulerQueueEntry(Uri Uri, string Domain, SchedulerRequest SchedulerRequest);
 
         private readonly SchedulerSettings _schedulerSettings;
         private readonly IEventReceiver<IngestSuccess, IngestFailure> _ingestEventReceiver;

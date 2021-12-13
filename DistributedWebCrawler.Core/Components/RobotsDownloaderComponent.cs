@@ -1,6 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
 using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
@@ -10,14 +9,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public class RobotsDownloaderSuccess 
-    {
-        public RobotsDownloaderSuccess(Uri uri)
-        {
-            Uri = uri;
-        }
-        public Uri Uri { get; init; }
-    }
+    public record RobotsDownloaderSuccess(Uri Uri);
 
     public enum RobotsDownloaderFailure
     {

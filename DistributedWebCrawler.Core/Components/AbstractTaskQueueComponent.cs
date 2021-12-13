@@ -220,27 +220,25 @@ namespace DistributedWebCrawler.Core.Components
 
         private ComponentStatus GetComponentStatus()
         {
-            return new ComponentStatus
-            {
-                TasksInUse = _taskQueueSettings.MaxConcurrentItems,
-                MaxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems - _itemSemaphore.CurrentCount
-            };
+            var tasksInUse = _taskQueueSettings.MaxConcurrentItems - _itemSemaphore.CurrentCount;
+            var maxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems;
+            return new ComponentStatus(tasksInUse, maxConcurrentTasks);
         }
 
 
-        protected static QueuedItemResult<TSuccess> Success(RequestBase requst, TSuccess result)
+        protected static QueuedItemResult<TSuccess> Success(RequestBase request, TSuccess result)
         {
-            return QueuedItemResult.Success(requst, result);
+            return new QueuedItemResult<TSuccess>(request.Id, QueuedItemStatus.Success, result);
         }
 
-        protected static QueuedItemResult<TFailure> Failed(RequestBase requst, TFailure result)
+        protected static QueuedItemResult<TFailure> Failed(RequestBase request, TFailure result)
         {
-            return QueuedItemResult.Failed(requst, result);
+            return new QueuedItemResult<TFailure>(request.Id, QueuedItemStatus.Failed, result);
         }
 
         protected static QueuedItemResult Waiting(RequestBase request)
         {
-            return QueuedItemResult.Waiting(request);
+            return new QueuedItemResult(request.Id, QueuedItemStatus.Waiting);
         }
 
         protected abstract Task<QueuedItemResult> ProcessItemAsync(TRequest item, CancellationToken cancellationToken);
