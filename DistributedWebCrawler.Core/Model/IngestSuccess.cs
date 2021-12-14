@@ -1,58 +1,10 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 
 namespace DistributedWebCrawler.Core.Model
 {
-
-    public enum IngestFailureReason
-    {
-        None = 0,
-        UnknownError,
-        MaxDepthReached,
-        Http4xxError,
-        NetworkConnectivityError,
-        UriFormatError,
-        RequestTimeout,
-        ContentTooLarge,
-        MediaTypeNotPermitted,
-        MaxRedirectsReached
-
-    }
-
-    public class IngestFailure : IErrorCode<IngestFailureReason>
-    {
-        public Uri Uri { get; init; }
-        public DateTimeOffset RequestStartTime { get; init; }
-        public TimeSpan TimeTaken { get; init; }
-        public HttpStatusCode? HttpStatusCode { get; init; }
-        public string? MediaType { get; init; } = string.Empty;
-        public IEnumerable<RedirectResult> Redirects { get; init; } = Enumerable.Empty<RedirectResult>();
-
-        public IngestFailureReason Error { get; init; }
-
-        Enum IErrorCode.Error => Error;
-
-        public IngestFailure(Uri uri, DateTimeOffset requestStartTime) : base()
-        {
-            Uri = uri;
-            RequestStartTime = requestStartTime;
-            TimeTaken = DateTimeOffset.Now - requestStartTime;
-        }
-
-        public static IngestFailure Create(Uri uri, DateTimeOffset requestStartTime, IngestFailureReason errorCode, HttpStatusCode? httpStatusCode = null, string? mediaType = null, IEnumerable<RedirectResult>? redirects = null)
-        {
-            return new IngestFailure(uri, requestStartTime)
-            {
-                Error = errorCode,
-                HttpStatusCode = httpStatusCode,
-                MediaType = mediaType,
-                Redirects = redirects ?? Enumerable.Empty<RedirectResult>()
-            };
-        }
-    }
 
     public class IngestSuccess
     {
@@ -84,17 +36,5 @@ namespace DistributedWebCrawler.Core.Model
                 Redirects = redirects ?? Enumerable.Empty<RedirectResult>()
             };
         }
-    }
-
-    public class RedirectResult
-    {
-        public RedirectResult(Uri destinationUri, HttpStatusCode redirectStatusCode)
-        {
-            DestinationUri = destinationUri;
-            RedirectStatusCode = redirectStatusCode;
-        }
-
-        public Uri DestinationUri { get; init; }
-        public HttpStatusCode RedirectStatusCode { get; init; }
     }
 }

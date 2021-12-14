@@ -11,14 +11,6 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public record ParseSuccess(Uri Uri, int NumberOfLinks);
-
-    public enum ParseFailure
-    {
-        NoItemInContentStore,
-        NoLinksFound
-    }
-
     [ComponentName("Parser")]
     public class ParserComponent : AbstractTaskQueueComponent<ParseRequest, ParseSuccess, ErrorCode<ParseFailure>>
     {

@@ -9,12 +9,6 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public record RobotsDownloaderSuccess(Uri Uri);
-
-    public enum RobotsDownloaderFailure
-    {
-
-    }
 
     [ComponentName("RobotsDownloader")]    
     public class RobotsDownloaderComponent : AbstractTaskQueueComponent<RobotsRequest, RobotsDownloaderSuccess, ErrorCode<RobotsDownloaderFailure>>

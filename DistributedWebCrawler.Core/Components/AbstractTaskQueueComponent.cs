@@ -225,7 +225,6 @@ namespace DistributedWebCrawler.Core.Components
             return new ComponentStatus(tasksInUse, maxConcurrentTasks);
         }
 
-
         protected static QueuedItemResult<TSuccess> Success(RequestBase request, TSuccess result)
         {
             return new QueuedItemResult<TSuccess>(request.Id, QueuedItemStatus.Success, result);

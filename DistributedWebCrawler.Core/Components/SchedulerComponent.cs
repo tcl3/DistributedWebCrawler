@@ -16,13 +16,6 @@ using DistributedWebCrawler.Core.Extensions;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public record SchedulerSuccess(Uri Uri, IEnumerable<string> AddedPaths);
-
-    public enum SchedulerFailure
-    {
-        MaximumCrawlDepthReached,
-    }
-
     [ComponentName("Scheduler")]
     public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest, SchedulerSuccess, ErrorCode<SchedulerFailure>>
     {
