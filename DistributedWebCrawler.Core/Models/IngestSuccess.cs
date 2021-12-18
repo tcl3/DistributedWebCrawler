@@ -5,7 +5,6 @@ using System.Net;
 
 namespace DistributedWebCrawler.Core.Model
 {
-
     public class IngestSuccess
     {
         public IngestSuccess(Uri uri, DateTimeOffset requestStartTime) : base()

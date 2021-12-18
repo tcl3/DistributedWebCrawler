@@ -2,5 +2,12 @@
 
 namespace DistributedWebCrawler.Core.Model
 {
-    public record RobotsDownloaderSuccess(Uri Uri);
+    public class RobotsDownloaderSuccess
+    {
+        public Uri Uri { get; init; }
+        public RobotsDownloaderSuccess(Uri uri)
+        {
+            Uri = uri;
+        }
+    }
 }

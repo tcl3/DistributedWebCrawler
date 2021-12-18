@@ -82,7 +82,7 @@ namespace DistributedWebCrawler.Core.Components
                 _schedulerRequestProducer.Enqueue(schedulerRequest);
             }
 
-            return Success(parseRequest, new ParseSuccess(parseRequest.Uri, links.Count));
+            return Success(parseRequest, new ParseSuccess(parseRequest.Uri) { NumberOfLinks = links.Count });
         }
 
 

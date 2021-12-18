@@ -220,9 +220,11 @@ namespace DistributedWebCrawler.Core.Components
 
         private ComponentStatus GetComponentStatus()
         {
-            var tasksInUse = _taskQueueSettings.MaxConcurrentItems - _itemSemaphore.CurrentCount;
-            var maxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems;
-            return new ComponentStatus(tasksInUse, maxConcurrentTasks);
+            return new ComponentStatus
+            {
+                TasksInUse = _taskQueueSettings.MaxConcurrentItems - _itemSemaphore.CurrentCount,
+                MaxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems
+            };
         }
 
         protected static QueuedItemResult<TSuccess> Success(RequestBase request, TSuccess result)
