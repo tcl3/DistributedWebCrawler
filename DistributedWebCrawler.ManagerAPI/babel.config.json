@@ -1,0 +1,22 @@
+{
+	"plugins": [
+		[
+			"@babel/plugin-transform-runtime",
+			{
+				"corejs": 3,
+				"helpers": true,
+				"regenerator": true
+			}
+		]
+	],
+	"presets": [
+		[
+			"@babel/preset-env",
+			{
+				"modules": false
+			}
+		],
+		"@babel/react",
+		"@babel/typescript"
+	]
+}

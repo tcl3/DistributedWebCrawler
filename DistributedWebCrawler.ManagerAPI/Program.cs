@@ -1,3 +1,5 @@
+using DistributedWebCrawler.ManagerAPI.Hubs;
+
 namespace DistributedWebCrawler.ManagerAPI
 {
     class Program
@@ -30,9 +32,21 @@ namespace DistributedWebCrawler.ManagerAPI
                 app.UseSwaggerUI();
             }
 
+            app.MapHub<CrawlerHub>("/crawlerHub");
+
+            app.UseResponseCompression();
+
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
+
             app.UseAuthorization();
 
             app.MapControllers();
+
+            app.UseSpa(spa =>
+            {
+                spa.Options.SourcePath = "app";
+            });
 
             app.Run();
         }
