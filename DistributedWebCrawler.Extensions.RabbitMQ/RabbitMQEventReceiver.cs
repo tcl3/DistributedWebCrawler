@@ -150,7 +150,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         }
 
         private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData, TResult>(Func<object?, TArgs, Task?> handler, Func<TData, string, TArgs> argsFactory)
-            where TArgs: ComponentEventArgs
+            where TArgs: EventArgs
             where TResult : notnull
         {
             var exchangeName = _exchangeNameProvider.GetExchangeName<TResult>();
@@ -158,7 +158,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         }
 
         private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData>(string exchangeName, Func<object?, TArgs, Task?> handler, Func<TData, string, TArgs> argsFactory)
-            where TArgs : ComponentEventArgs
+            where TArgs : EventArgs
         {
             return async (model, ea) =>
             {

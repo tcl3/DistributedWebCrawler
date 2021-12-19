@@ -18,6 +18,7 @@ namespace DistributedWebCrawler.Core.Queue
     {
         public ItemCompletedEventArgs(Guid id, string componentName, TResult result) : base(id, componentName, result)
         {
+         
         }
 
         public new TResult Result => (TResult)base.Result;

@@ -14,13 +14,17 @@ namespace DistributedWebCrawler.Core.Queue
         public object Result { get; }
     }
 
-    public class ComponentEventArgs<TResult> : ComponentEventArgs
+    public class ComponentEventArgs<TResult> : EventArgs
         where TResult : notnull
     {
-        public ComponentEventArgs(string componentName, TResult result) : base(componentName, result)
+        public ComponentEventArgs(string componentName, TResult result)
         {
+            ComponentName = componentName;
+            Result = result;
         }
 
-        public new TResult Result => (TResult)base.Result;
+        public string ComponentName { get; }
+
+        public TResult Result { get; }
     }
 }
