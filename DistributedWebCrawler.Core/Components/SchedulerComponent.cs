@@ -86,7 +86,7 @@ namespace DistributedWebCrawler.Core.Components
                 : Enumerable.Empty<DomainPattern>();
         }
 
-        protected override Task ComponentStartAsync(CrawlerStartState startState)
+        protected override Task ComponentStartAsync(CrawlerRunningState startState)
         {
             var queueLoopTask = base.ComponentStartAsync(startState);
             var schedulerLoopTask = Task.Run(SchedulerLoop);

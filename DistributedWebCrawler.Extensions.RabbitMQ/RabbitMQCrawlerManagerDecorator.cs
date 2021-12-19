@@ -48,7 +48,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return Task.CompletedTask;
         }
 
-        public Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
+        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
         {
             return _inner.StartAsync(startState);
         }

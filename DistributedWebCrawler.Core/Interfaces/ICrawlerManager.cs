@@ -7,7 +7,7 @@ namespace DistributedWebCrawler.Core.Interfaces
 {
     public interface ICrawlerManager
     {
-        Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running);
+        Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running);
         Task WaitUntilCompletedAsync();
         Task PauseAsync();
         Task ResumeAsync();

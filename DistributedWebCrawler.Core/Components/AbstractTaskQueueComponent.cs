@@ -66,7 +66,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        public Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
+        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
         {
             if (IsStarted)
             {
@@ -99,9 +99,9 @@ namespace DistributedWebCrawler.Core.Components
             return CrawlerComponentStatus.Busy;
         }
 
-        protected virtual async Task ComponentStartAsync(CrawlerStartState startState)
+        protected virtual async Task ComponentStartAsync(CrawlerRunningState startState)
         {
-            if (startState == CrawlerStartState.Paused)
+            if (startState == CrawlerRunningState.Paused)
             {
                 await PauseAsync().ConfigureAwait(false);
             }

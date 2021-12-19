@@ -16,7 +16,7 @@ namespace DistributedWebCrawler.ManagerAPI
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await _crawlerManager.StartAsync(CrawlerStartState.Running).ConfigureAwait(false);
+            await _crawlerManager.StartAsync(CrawlerRunningState.Running).ConfigureAwait(false);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

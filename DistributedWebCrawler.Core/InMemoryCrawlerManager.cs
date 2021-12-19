@@ -23,7 +23,7 @@ namespace DistributedWebCrawler.Core
             _seeder = seeder;
         }       
 
-        public async Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
+        public async Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
         {
             if (_isStarted)
             {
