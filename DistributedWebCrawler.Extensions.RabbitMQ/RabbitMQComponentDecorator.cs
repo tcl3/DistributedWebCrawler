@@ -33,13 +33,13 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return _inner.ResumeAsync();
         }
 
-        public Task StartAsync(CrawlerStartState startState = CrawlerStartState.Running)
+        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
         {
             if (_receiveChannel == null)
             {
                 lock (_connection)
                 {
-                    if (_receiveChannel == null) _receiveChannel = StartConumer();
+                    if (_receiveChannel == null) _receiveChannel = StartConsumer();
                 }
             }
 
@@ -51,7 +51,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return _inner.WaitUntilCompletedAsync();
         }
 
-        private IModel StartConumer()
+        private IModel StartConsumer()
         {
             if (!_connection.IsConnected)
             {
@@ -73,7 +73,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             channel.CallbackException += (sender, ea) =>
             {
                 _receiveChannel?.Dispose();
-                _receiveChannel = StartConumer();
+                _receiveChannel = StartConsumer();
             };
 
             var consumer = new AsyncEventingBasicConsumer(channel);
