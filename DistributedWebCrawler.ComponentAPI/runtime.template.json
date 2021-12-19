@@ -1,0 +1,8 @@
+{
+  "configProperties": {
+    "System.Threading.ThreadPool.MinThreads": 1000,
+    "System.Threading.ThreadPool.MaxThreads": 1000,
+    "System.GC.Server": true,
+    "System.GC.Concurrent": true
+  }
+}
