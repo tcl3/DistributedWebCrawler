@@ -1,14 +1,12 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Seeding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using System;
 using System.Text;
+using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
-using DistributedWebCrawler.Extensions.DependencyInjection;
-using DistributedWebCrawler.Core;
 
 namespace DistributedWebCrawler.Console
 {
@@ -30,26 +28,7 @@ namespace DistributedWebCrawler.Console
                 loggingBuilder.AddNLog();
             });
 
-            services.AddInMemoryProducerConsumer();
-            services.AddInMemoryKeyValueStore();
-
-            services.AddCrawler(crawler => crawler
-                .WithSeeder(seeder => seeder
-                    .WithComponent<SchedulerQueueSeeder>()
-                    .WithSettings(configuration.GetSection("SeederSettings")))
-                .WithScheduler(scheduler => scheduler
-                    .WithSettings(configuration.GetSection("SchedulerSettings")))
-                .WithIngester(ingester => ingester
-                    .WithSettings(configuration.GetSection("IngesterSettings"))
-                    .WithClient<CrawlerClient>(configuration.GetSection("CrawlerClientSettings")))
-                .WithParser(parser => parser
-                    .WithAngleSharpLinkParser()
-                    .WithSettings(configuration.GetSection("ParserSettings")))
-                .WithRobotsDownloader(robots => robots
-                    .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings"), allowAutoRedirect: true)
-                    .WithSettings(configuration.GetSection("RobotsTxtSettings"))));
-
-            services.AddInMemoryCrawlerManager();
+            services.AddInMemoryCrawlerWithDefaultSettings(configuration);
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 

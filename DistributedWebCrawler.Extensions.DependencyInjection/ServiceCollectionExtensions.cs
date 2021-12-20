@@ -126,5 +126,37 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 
             return services;
         }
+
+        public static IServiceCollection AddInMemoryCrawlerWithDefaultSettings(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddInMemoryProducerConsumer();
+            services.AddInMemoryKeyValueStore();
+            services.AddInMemoryCrawlerManager();
+
+            services.AddCrawlerWithDefaultSettings(configuration);
+
+            return services;
+        }
+
+        public static IServiceCollection AddCrawlerWithDefaultSettings(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddCrawler(crawler => crawler
+                    .WithSeeder(seeder => seeder
+                        .WithComponent<SchedulerQueueSeeder>()
+                        .WithSettings(configuration.GetSection("SeederSettings")))
+                    .WithScheduler(scheduler => scheduler
+                        .WithSettings(configuration.GetSection("SchedulerSettings")))
+                    .WithIngester(ingester => ingester
+                        .WithSettings(configuration.GetSection("IngesterSettings"))
+                        .WithClient<CrawlerClient>(configuration.GetSection("CrawlerClientSettings")))
+                    .WithParser(parser => parser
+                        .WithAngleSharpLinkParser()
+                        .WithSettings(configuration.GetSection("ParserSettings")))
+                    .WithRobotsDownloader(robots => robots
+                        .WithClient<RobotsClient>(configuration.GetSection("CrawlerClientSettings"), allowAutoRedirect: true)
+                        .WithSettings(configuration.GetSection("RobotsTxtSettings"))));
+
+            return services;
+        }
     }
 }
