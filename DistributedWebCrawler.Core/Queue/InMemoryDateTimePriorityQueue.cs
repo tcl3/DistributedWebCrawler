@@ -60,23 +60,19 @@ namespace DistributedWebCrawler.Core.Queue
         }
 
         private Task<TData> GetQueueItemAndAwait(SemaphoreSlim semaphore, CancellationToken cancellationToken = default)
-        {
-            Task<TData>? t1 = null;
-             
-            if (TryGetQueueItem(out var entry))
+        {             
+            var awaitSemaphoreTask = semaphore.WaitAsync(cancellationToken)
+                    .ContinueWith(t => GetQueueItemAndAwait(semaphore, cancellationToken), cancellationToken,
+                    TaskContinuationOptions.DenyChildAttach | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default).Unwrap(); 
+            if (!TryGetQueueItem(out var entry))
             {
-                t1 = AwaitDateTime(entry.Priority, cancellationToken).ContinueWith(t => entry.Item, cancellationToken,
-                    TaskContinuationOptions.DenyChildAttach | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+                return awaitSemaphoreTask;
             }
-            
-            var t2 = semaphore.WaitAsync(cancellationToken).ContinueWith(t => GetQueueItemAndAwait(semaphore, cancellationToken), 
-                cancellationToken, TaskContinuationOptions.DenyChildAttach | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default).Unwrap();
 
-            if (t1 == null)
-            {
-                return t2;
-            }
-            return Task.WhenAny(t1, t2).Unwrap();
+            var awaitDateTimeTask = AwaitDateTime(entry.Priority, cancellationToken).ContinueWith(t => entry.Item, cancellationToken,
+                    TaskContinuationOptions.DenyChildAttach | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+
+            return Task.WhenAny(awaitDateTimeTask, awaitSemaphoreTask).Unwrap();
         }
 
         public async Task<TData> DequeueAsync(CancellationToken cancellationToken = default)
