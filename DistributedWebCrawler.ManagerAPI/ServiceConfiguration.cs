@@ -3,13 +3,14 @@ using System.Text;
 using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.ManagerAPI.Hubs;
 using Microsoft.AspNetCore.ResponseCompression;
+using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.ManagerAPI
 {
     internal static class ServiceConfiguration
     {
         public static IServiceProvider ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        {            
+        {          
 
             services.AddLogging(loggingBuilder =>
             {
@@ -27,7 +28,15 @@ namespace DistributedWebCrawler.ManagerAPI
                 configuration.RootPath = "wwwroot";
             });
 
-            services.AddRabbitMQCrawlerManager(configuration);
+            if (configuration.GetValue<bool>("DevMode"))
+            {
+                services.AddInMemoryCrawlerManager();
+                services.AddInMemoryCrawlerWithDefaultSettings(configuration);
+            } 
+            else
+            {
+                services.AddRabbitMQCrawlerManager(configuration);
+            }            
 
             services.AddSignalR();
             services.AddSingleton<CrawlerHub>();
@@ -75,10 +84,20 @@ namespace DistributedWebCrawler.ManagerAPI
 
         public static IConfiguration BuildConfiguration()
         {
-            return new ConfigurationBuilder()
-                          .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-                          .AddEnvironmentVariables()
-                          .Build();
+            var builder = new ConfigurationBuilder();
+            
+            builder.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
+            
+            var appSettings = builder.Build();
+
+            if (appSettings.GetValue<bool>("DevMode"))
+            {
+                builder.AddJsonFile("crawlersettings.dev.json", optional: false, reloadOnChange: false);
+            }
+
+            builder.AddEnvironmentVariables();
+
+            return builder.Build();
         }
     }
 }

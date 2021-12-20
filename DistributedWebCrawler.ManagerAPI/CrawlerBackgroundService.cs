@@ -20,7 +20,7 @@ namespace DistributedWebCrawler.ManagerAPI
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await _crawlerManager.StartAsync(CrawlerRunningState.Running).ConfigureAwait(false);
+            await _crawlerManager.StartAsync(CrawlerRunningState.Paused).ConfigureAwait(false);
 
             _eventListener.Register(_crawlerManager.Components.All);
         }
