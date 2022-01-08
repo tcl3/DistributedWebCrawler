@@ -44,7 +44,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
                     return new SocketsHttpHandler
                     {
                         AllowAutoRedirect = allowAutoRedirect,
-                        AutomaticDecompression = DecompressionMethods.All,
+                        AutomaticDecompression = clientSettings.AllowRequestCompression ? DecompressionMethods.All : DecompressionMethods.None,
                         ConnectTimeout = TimeSpan.FromSeconds(clientSettings.ConnectTimeoutSeconds),
                         ResponseDrainTimeout = TimeSpan.FromSeconds(clientSettings.ResponseDrainTimeoutSeconds),
                         MaxConnectionsPerServer = clientSettings.MaxConnectionsPerServer,

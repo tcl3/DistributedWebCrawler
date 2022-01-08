@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace DistributedWebCrawler.Core.Configuration
@@ -9,7 +10,7 @@ namespace DistributedWebCrawler.Core.Configuration
         [MinLength(1)]
         public string UserAgentString { get; init; } = string.Empty;
         public string? AcceptLanguage { get; init; }
-        
+
         [Range(1, int.MaxValue, ErrorMessage = nameof(RequestTimeoutSeconds) + " must be a positive integer")]
         public int RequestTimeoutSeconds { get; init; }
 
@@ -21,5 +22,8 @@ namespace DistributedWebCrawler.Core.Configuration
 
         [Range(1, int.MaxValue, ErrorMessage = nameof(MaxConnectionsPerServer) + " must be a positive integer")]
         public int MaxConnectionsPerServer { get; init; }
+
+        [DefaultValue(true)]
+        public bool AllowRequestCompression { get; init; } = true;
     }
 }
