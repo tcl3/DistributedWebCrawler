@@ -40,11 +40,16 @@ namespace DistributedWebCrawler.Core.Components
         {
             _logger.LogInformation($"Processing robots.txt request for {item.Uri}");
 
-            await _robotsCache.AddOrUpdateRobotsForHostAsync(item.Uri, _expirationTimeSpan, cancellationToken).ConfigureAwait(false);
+            var content = await _robotsCache.AddOrUpdateRobotsForHostAsync(item.Uri, _expirationTimeSpan, cancellationToken).ConfigureAwait(false);
 
             await RequeueAsync(item.SchedulerRequestId, _schedulerRequestProducer, cancellationToken).ConfigureAwait(false);
 
-            return Success(item, new RobotsDownloaderSuccess(item.Uri));
+            var result = new RobotsDownloaderSuccess(item.Uri)
+            {
+                ContentLength = content.Length
+            };
+
+            return Success(item, result);
         }
     }
 }

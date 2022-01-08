@@ -6,7 +6,7 @@ namespace DistributedWebCrawler.Core.Interfaces
 {
     public interface IRobotsCacheWriter
     {
-        Task AddOrUpdateRobotsForHostAsync(Uri host, TimeSpan expirationTimeSpan, CancellationToken cancellationToken);
+        Task<string> AddOrUpdateRobotsForHostAsync(Uri host, TimeSpan expirationTimeSpan, CancellationToken cancellationToken);
     }
 
     public interface IRobotsCacheReader

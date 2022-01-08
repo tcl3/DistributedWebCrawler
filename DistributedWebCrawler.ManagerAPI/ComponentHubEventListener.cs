@@ -179,6 +179,14 @@ namespace DistributedWebCrawler.ManagerAPI
                     Interlocked.Add(ref _totalBytes, ingestResult.ContentLength);
                     Interlocked.Add(ref _totalBytesSinceLastUpdate, ingestResult.ContentLength);
                 }
+
+                // TODO: common ContentLength interface
+                else if (args.Result is RobotsDownloaderSuccess robotsResult)
+                {
+                    _hasContentLength = true;
+                    Interlocked.Add(ref _totalBytes, robotsResult.ContentLength);
+                    Interlocked.Add(ref _totalBytesSinceLastUpdate, robotsResult.ContentLength);
+                }
                 _completedItems.Add(args.Result);
             }
 
