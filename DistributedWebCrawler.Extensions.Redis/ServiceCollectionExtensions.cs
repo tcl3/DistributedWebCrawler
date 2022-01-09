@@ -1,44 +1,32 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
+﻿using DistributedWebCrawler.Core.Extensions.DependencyInjection;
+using DistributedWebCrawler.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
-using System.Collections.Concurrent;
 
 namespace DistributedWebCrawler.Extensions.Redis
 {
     public static class ServiceCollectionExtensions
     {
-        private static ConcurrentDictionary<IConfiguration, IConnectionMultiplexer> _connectionMultiplexerLookup = new();
-        public static IServiceCollection AddRedisKeyValueStore(this IServiceCollection services, IConfiguration redisConfiguration)
+        public static IServiceCollection AddRedisKeyValueStore(this IServiceCollection services, IConfiguration redisConfiguration, 
+            IConfiguration redisConnectionPoolSettings)
         {
-            services.AddRedisCache(redisConfiguration);
+            services.AddRedisConnection(redisConfiguration, redisConnectionPoolSettings);
             services.AddSingleton<IKeyValueStore, RedisKeyValueStore>();
             return services;
         }
 
-        private static IServiceCollection AddRedisConnection(this IServiceCollection services, IConfiguration redisConfiguration)
+        private static IServiceCollection AddRedisConnection(this IServiceCollection services, IConfiguration redisConfiguration,
+            IConfiguration redisConnectionPoolSettings)
         {
-            services.AddSingleton<IConnectionMultiplexer>(s => GetConnectionMultiplexer(redisConfiguration));
+            services.AddSingleton<IConnectionMultiplexerPool, ConnectionMultiplexerPool>();
+            services.AddSingleton<ConfigurationOptions>(s => GetConfigurationOptions(redisConfiguration));
+            services.AddSettings<RedisConnectionPoolSettings>(redisConnectionPoolSettings);
 
             return services;
         }
 
-        public static IServiceCollection AddRedisCache(this IServiceCollection services, IConfiguration redisConfiguration)
-        {
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.ConnectionMultiplexerFactory = () => Task.FromResult(GetConnectionMultiplexer(redisConfiguration));
-            });
-
-            return services;
-        }
-
-        private static IConnectionMultiplexer GetConnectionMultiplexer(IConfiguration redisConfiguration)
-        {
-            return _connectionMultiplexerLookup.GetOrAdd(redisConfiguration, CreateConnectionMultiplexer);
-        }
-
-        private static IConnectionMultiplexer CreateConnectionMultiplexer(IConfiguration redisConfiguration)
+        private static ConfigurationOptions GetConfigurationOptions(IConfiguration redisConfiguration)
         {
             var connectionString = redisConfiguration.GetValue<string>("REDIS_CONNECTIONSTRING");
 
@@ -46,7 +34,8 @@ namespace DistributedWebCrawler.Extensions.Redis
             {
                 throw new InvalidOperationException("Variable 'REDIS_CONNECTIONSTRING' not set");
             }
-            return ConnectionMultiplexer.Connect(connectionString);
+            
+            return ConfigurationOptions.Parse(connectionString);
         }
     }
 }

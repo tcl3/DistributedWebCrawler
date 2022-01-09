@@ -18,6 +18,11 @@ namespace DistributedWebCrawler.Core
             return JsonSerializer.Deserialize<TResult>(bytes, _options);
         }
 
+        public TResult? Deserialize<TResult>(string str)
+        {
+            return JsonSerializer.Deserialize<TResult>(str, _options);
+        }
+
         public byte[] Serialize<TData>(TData data)
         {
             return JsonSerializer.SerializeToUtf8Bytes(data, _options);

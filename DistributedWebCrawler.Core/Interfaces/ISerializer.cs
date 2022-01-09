@@ -6,5 +6,6 @@ namespace DistributedWebCrawler.Core.Interfaces
     {
         byte[] Serialize<TData>(TData data);
         TResult? Deserialize<TResult>(ReadOnlySpan<byte> bytes);
+        TResult? Deserialize<TResult>(string str);
     }
 }

@@ -1,77 +1,58 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace DistributedWebCrawler.Extensions.Redis
 {
     public class RedisKeyValueStore : IKeyValueStore
     {
-        private readonly IDistributedCache _cache;
+        private readonly IConnectionMultiplexerPool _connectionMultiplexerPool;
         private readonly ISerializer _serializer;
 
-        public RedisKeyValueStore(IDistributedCache cache, ISerializer serializer)
+        public RedisKeyValueStore(IConnectionMultiplexerPool connectionMultiplexerPool, ISerializer serializer)
         {
-            _cache = cache;
+            _connectionMultiplexerPool = connectionMultiplexerPool;
             _serializer = serializer;
         }
 
-        public Task PutAsync(string key, string value, CancellationToken cancellationToken, TimeSpan? expireAfter)
+        public async Task PutAsync(string key, string value, TimeSpan? expireAfter)
         {
-            if (expireAfter == null)
-            {
-                return _cache.SetStringAsync(key, value, cancellationToken);
-            }
-            else
-            {
-                var options = new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = expireAfter
-                };
-
-                return _cache.SetStringAsync(key, value, options, cancellationToken);
-            }
+            var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
+            database.StringSetAsync(key, value, expireAfter);
         }
 
-        public Task<string?> GetAsync(string key, CancellationToken cancellationToken)
+        public async Task<string?> GetAsync(string key)
         {
-
-            return _cache.GetStringAsync(key, cancellationToken);
+            var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
+            var result = await database.StringGetAsync(key).ConfigureAwait(false);
+            return result;
         }
 
-        public Task RemoveAsync(string key, CancellationToken cancellationToken)
+        public async Task RemoveAsync(string key)
         {
-            return _cache.RemoveAsync(key, cancellationToken);
+            var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
+            database.KeyDeleteAsync(key);
         }
 
-        public Task PutAsync<TData>(string key, TData value, CancellationToken cancellationToken, TimeSpan? expireAfter = null) 
+        public async Task PutAsync<TData>(string key, TData value, TimeSpan? expireAfter = null) 
             where TData : notnull
         {
             var bytes = _serializer.Serialize(value);
 
-            if (expireAfter == null)
-            {
-                return _cache.SetAsync(key, bytes, cancellationToken);
-            }
-            else
-            {
-                var options = new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = expireAfter
-                };
+            var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
 
-                return _cache.SetAsync(key, bytes, options, cancellationToken);
-            }
+            database.StringSetAsync(key, bytes, expireAfter);
         }
 
-        public async Task<TData?> GetAsync<TData>(string key, CancellationToken cancellationToken)
+        public async Task<TData?> GetAsync<TData>(string key)
         {
-            var bytes = await _cache.GetAsync(key, cancellationToken).ConfigureAwait(false);
+            var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
+            var bytes = await database.StringGetAsync(key).ConfigureAwait(false);
 
-            if (bytes == null)
+            if (!bytes.HasValue)
             {
                 return default;
             }
 
-            return _serializer.Deserialize<TData?>(bytes);
+            return _serializer.Deserialize<TData?>(bytes.ToString());
         }
     }
 }

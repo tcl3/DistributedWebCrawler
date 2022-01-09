@@ -6,8 +6,6 @@ using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.RabbitMQ;
-using DistributedWebCrawler.Core.Robots;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Extensions.Redis;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 
@@ -28,7 +26,7 @@ namespace DistributedWebCrawler.ComponentAPI
             var crawlerAction = BuildCrawler(roles, crawlerConfiguration);
             services.AddCrawler(crawlerAction);
 
-            services.AddRedisKeyValueStore(configuration);
+            services.AddRedisKeyValueStore(configuration, redisConnectionPoolSettings: crawlerConfiguration.GetSection("RedisConnectionPoolSettings"));
             
             services.AddRabbitMQProducerConsumer(configuration);
             services.AddRabbitMQCrawlerManager(configuration);

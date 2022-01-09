@@ -35,24 +35,24 @@ namespace DistributedWebCrawler.Core
             _contentLookup = new();
         }
 
-        public Task<string?> GetAsync(string key, CancellationToken cancellationToken)
+        public Task<string?> GetAsync(string key)
         {
-            return GetAsync<string>(key, valueIfExpired: string.Empty, cancellationToken);
+            return GetAsync<string>(key, valueIfExpired: string.Empty);
         }
 
-        public Task RemoveAsync(string key, CancellationToken cancellationToken)
+        public Task RemoveAsync(string key)
         {
             _contentLookup.TryRemove(key, out _);
 
             return Task.CompletedTask;
         }
 
-        public Task PutAsync(string key, string content, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
+        public Task PutAsync(string key, string content, TimeSpan? expireAfter = null)
         {
-            return PutAsync<string>(key, content, cancellationToken, expireAfter);
+            return PutAsync<string>(key, content, expireAfter);
         }
 
-        public Task PutAsync<TData>(string key, TData value, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
+        public Task PutAsync<TData>(string key, TData value, TimeSpan? expireAfter = null)
             where TData : notnull
         {
             _contentLookup.AddOrUpdate(key, _ => new CacheEntry(value, expireAfter), (_, _) => new CacheEntry(value, expireAfter));
@@ -60,12 +60,12 @@ namespace DistributedWebCrawler.Core
             return Task.FromResult(key);
         }
 
-        public Task<TData?> GetAsync<TData>(string key, CancellationToken cancellationToken)
+        public Task<TData?> GetAsync<TData>(string key)
         {
-            return GetAsync<TData>(key, valueIfExpired: default, cancellationToken);
+            return GetAsync<TData>(key, valueIfExpired: default);
         }
 
-        private Task<TData?> GetAsync<TData>(string key, TData? valueIfExpired, CancellationToken cancellationToken)
+        private Task<TData?> GetAsync<TData>(string key, TData? valueIfExpired)
         {
             if (!_contentLookup.TryGetValue(key, out var entry) || entry?.Content == null)
             {

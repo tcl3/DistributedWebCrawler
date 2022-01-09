@@ -24,13 +24,13 @@ namespace DistributedWebCrawler.Core.Robots
             var result = string.Empty;
             var success = await _robotsClient.TryGetRobotsAsync(host, async contentFromClient =>
             {
-                await _keyValueStore.PutAsync(host.Authority, contentFromClient, cancellationToken, expirationTimeSpan).ConfigureAwait(false);
+                await _keyValueStore.PutAsync(host.Authority, contentFromClient, expirationTimeSpan).ConfigureAwait(false);
                 result = contentFromClient;
             }, cancellationToken).ConfigureAwait(false);
 
             if (!success)
             {
-                await _keyValueStore.PutAsync(host.Authority, string.Empty, cancellationToken, expirationTimeSpan).ConfigureAwait(false);
+                await _keyValueStore.PutAsync(host.Authority, string.Empty, expirationTimeSpan).ConfigureAwait(false);
             }
 
             return result;

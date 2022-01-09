@@ -21,7 +21,7 @@ namespace DistributedWebCrawler.Core.Robots
 
         public async Task<bool> GetRobotsTxtAsync(Uri uri, Action<IRobots>? ifExistsAction, CancellationToken cancellationToken)
         {
-            var robotsString = await _keyValueStore.GetAsync(uri.Authority, cancellationToken).ConfigureAwait(false);
+            var robotsString = await _keyValueStore.GetAsync(uri.Authority).ConfigureAwait(false);
 
             if (robotsString == null)
             {

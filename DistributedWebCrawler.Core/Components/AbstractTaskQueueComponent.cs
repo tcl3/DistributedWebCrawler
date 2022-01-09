@@ -147,7 +147,7 @@ namespace DistributedWebCrawler.Core.Components
                     }
                     else if (queuedItem.Status == QueuedItemStatus.Waiting)
                     {
-                        await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem, cancellationToken).ConfigureAwait(false);
+                        await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem).ConfigureAwait(false);
                     }
 
                     var componentStatus = GetComponentStatus();
@@ -182,14 +182,14 @@ namespace DistributedWebCrawler.Core.Components
             where TInnerRequest : RequestBase
         {
             var requestKey = requestId.ToString("N");
-            var request = await _outstandingItemsStore.GetAsync<TInnerRequest>(requestKey, cancellationToken).ConfigureAwait(false);
+            var request = await _outstandingItemsStore.GetAsync<TInnerRequest>(requestKey).ConfigureAwait(false);
             if (request == null)
             {
                 throw new KeyNotFoundException($"Request of type {typeof(TInnerRequest).Name} and ID: {requestId} not found in KeyValueStore");
             }
 
             producer.Enqueue(request);
-            await _outstandingItemsStore.RemoveAsync(requestKey, cancellationToken).ConfigureAwait(false);
+            await _outstandingItemsStore.RemoveAsync(requestKey).ConfigureAwait(false);
         }
 
         public Task PauseAsync()

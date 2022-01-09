@@ -19,18 +19,18 @@ namespace DistributedWebCrawler.Core
 
         public async Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken)
         {
-            return await _keyValueStore.GetAsync(id.ToString("N"), cancellationToken).ConfigureAwait(false) ?? string.Empty;
+            return await _keyValueStore.GetAsync(id.ToString("N")).ConfigureAwait(false) ?? string.Empty;
         }
 
         public Task RemoveAsync(Guid id, CancellationToken cancellationToken)
         {
-            return _keyValueStore.RemoveAsync(id.ToString("N"), cancellationToken);
+            return _keyValueStore.RemoveAsync(id.ToString("N"));
         }
 
         public async Task<Guid> SaveContentAsync(string content, CancellationToken cancellationToken)
         {
             var id = Guid.NewGuid();
-            await _keyValueStore.PutAsync(id.ToString("N"), content, cancellationToken).ConfigureAwait(false);
+            await _keyValueStore.PutAsync(id.ToString("N"), content).ConfigureAwait(false);
 
             return id;
         }

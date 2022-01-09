@@ -23,30 +23,30 @@ namespace DistributedWebCrawler.Core
             _prefix = prefix + PrefixSeperator;
         }
 
-        public Task<string?> GetAsync(string key, CancellationToken cancellationToken)
+        public Task<string?> GetAsync(string key)
         {
-            return _inner.GetAsync(_prefix + key, cancellationToken);
+            return _inner.GetAsync(_prefix + key);
         }
 
-        public Task PutAsync(string key, string value, CancellationToken cancellationToken, TimeSpan? expireAfter = null)
+        public Task PutAsync(string key, string value, TimeSpan? expireAfter = null)
         {
-            return _inner.PutAsync(_prefix + key, value, cancellationToken, expireAfter);
+            return _inner.PutAsync(_prefix + key, value, expireAfter);
         }
 
-        public Task RemoveAsync(string key, CancellationToken cancellationToken)
+        public Task RemoveAsync(string key)
         {
-            return _inner.RemoveAsync(_prefix + key, cancellationToken);
+            return _inner.RemoveAsync(_prefix + key);
         }
 
-        public Task PutAsync<TData>(string key, TData value, CancellationToken cancellationToken, TimeSpan? expireAfter = null) 
+        public Task PutAsync<TData>(string key, TData value, TimeSpan? expireAfter = null) 
             where TData : notnull
         {
-            return _inner.PutAsync(_prefix + key, value, cancellationToken, expireAfter);
+            return _inner.PutAsync(_prefix + key, value, expireAfter);
         }
 
-        public Task<TData?> GetAsync<TData>(string key, CancellationToken cancellationToken)
+        public Task<TData?> GetAsync<TData>(string key)
         {
-            return _inner.GetAsync<TData>(_prefix + key, cancellationToken);
+            return _inner.GetAsync<TData>(_prefix + key);
         }
     }
 }
