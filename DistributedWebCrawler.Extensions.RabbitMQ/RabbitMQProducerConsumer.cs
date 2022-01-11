@@ -36,9 +36,9 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                     _connection.TryConnect();
                 }
 
-                var channel = _channelPool.GetChannel(RabbitMQConstants.ProducerConsumer.ExchangeName);
+                using var pooledChannel = _channelPool.GetPooledChannel(RabbitMQConstants.ProducerConsumer.ExchangeName);
 
-                var result = channel.QueueDeclare(queue: ConsumerQueueName,
+                var result = pooledChannel.Channel.QueueDeclare(queue: ConsumerQueueName,
                                      durable: false,
                                      exclusive: false,
                                      autoDelete: false,
