@@ -19,7 +19,7 @@ namespace DistributedWebCrawler.Core
         {
             if (string.IsNullOrEmpty(stringToMatch))
             {
-                throw new ArgumentException(nameof(stringToMatch));
+                throw new ArgumentNullException(nameof(stringToMatch));
             }
 
             stringToMatch = stringToMatch.ToLowerInvariant();
