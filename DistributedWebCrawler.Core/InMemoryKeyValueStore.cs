@@ -19,12 +19,12 @@ namespace DistributedWebCrawler.Core
             {
                 Content = content;
                 ExpireAfter = expireAfter;
-                CreatedAt = createdAt ?? DateTimeOffset.Now;
+                CreatedAt = createdAt ?? SystemClock.DateTimeOffsetNow();
             }
 
             public bool Expired()
             {                
-                return ExpireAfter.HasValue && (CreatedAt + ExpireAfter) < DateTimeOffset.Now;
+                return ExpireAfter.HasValue && (CreatedAt + ExpireAfter) < SystemClock.DateTimeOffsetNow();
             }
         }
 

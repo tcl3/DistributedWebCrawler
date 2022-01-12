@@ -6,8 +6,8 @@ namespace DistributedWebCrawler.Core.Entity
     {
         protected BaseEntity(DateTimeOffset? createdAt = null, DateTimeOffset? lastModified = null)
         {
-            CreatedAt = createdAt ?? DateTimeOffset.Now;
-            LastModified = lastModified ?? DateTimeOffset.Now;
+            CreatedAt = createdAt ?? SystemClock.DateTimeOffsetNow();
+            LastModified = lastModified ?? SystemClock.DateTimeOffsetNow();
         }
 
         public TKey Key { get; set; }

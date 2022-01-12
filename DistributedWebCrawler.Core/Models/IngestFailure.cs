@@ -23,7 +23,7 @@ namespace DistributedWebCrawler.Core.Model
         {
             Uri = uri;
             RequestStartTime = requestStartTime;
-            TimeTaken = DateTimeOffset.Now - requestStartTime;
+            TimeTaken = SystemClock.DateTimeOffsetNow() - requestStartTime;
         }
 
         public static IngestFailure Create(Uri uri, DateTimeOffset requestStartTime, IngestFailureReason errorCode, HttpStatusCode? httpStatusCode = null, string? mediaType = null, IEnumerable<RedirectResult>? redirects = null)

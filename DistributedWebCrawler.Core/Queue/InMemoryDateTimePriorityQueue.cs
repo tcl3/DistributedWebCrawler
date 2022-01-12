@@ -36,9 +36,9 @@ namespace DistributedWebCrawler.Core.Queue
             _priorityComparer = priorityComparer;
             _enqueueSemaphoreList = new();
         }
-        private static async Task AwaitDateTime(DateTimeOffset priority, CancellationToken cancellationToken)
+        private static async Task AwaitDateTime(DateTimeOffset priority, CancellationToken cancellationToken = default)
         {
-            var delay = priority - DateTimeOffset.Now;
+            var delay = priority - SystemClock.DateTimeOffsetNow();
             if (delay > TimeSpan.Zero)
             {
                 await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
@@ -64,6 +64,7 @@ namespace DistributedWebCrawler.Core.Queue
             var awaitSemaphoreTask = semaphore.WaitAsync(cancellationToken)
                     .ContinueWith(t => GetQueueItemAndAwait(semaphore, cancellationToken), cancellationToken,
                     TaskContinuationOptions.DenyChildAttach | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default).Unwrap(); 
+            
             if (!TryGetQueueItem(out var entry))
             {
                 return awaitSemaphoreTask;
@@ -81,7 +82,7 @@ namespace DistributedWebCrawler.Core.Queue
             _enqueueSemaphoreList.Add(semaphore);
             try
             {
-                if (TryGetQueueItem(out var entry, priority => _priorityComparer.Compare(priority, DateTimeOffset.Now) < 0)
+                if (TryGetQueueItem(out var entry, priority => _priorityComparer.Compare(priority, SystemClock.DateTimeOffsetNow()) < 0)
                     && _priorityQueue.TryRemove(entry.Item))
                 {
                     return entry.Item;
@@ -111,7 +112,7 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public Task<bool> EnqueueAsync(TData item, DateTimeOffset priority, CancellationToken cancellationToken)
+        public Task<bool> EnqueueAsync(TData item, DateTimeOffset priority, CancellationToken cancellationToken = default)
         {
             var success = _priorityQueue.EnqueueWithoutDuplicates(item, priority);
 

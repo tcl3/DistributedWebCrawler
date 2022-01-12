@@ -7,7 +7,7 @@ namespace DistributedWebCrawler.Core.Model
         public RequestBase()
         {
             Id = Guid.NewGuid();
-            CreatedAt = DateTimeOffset.Now;
+            CreatedAt = SystemClock.DateTimeOffsetNow();
         }
 
         public Guid Id { get; init; }

@@ -304,7 +304,7 @@ namespace DistributedWebCrawler.Core.Components
 
             var queueEntry = new SchedulerQueueEntry(nextUriToVisit, domain, schedulerRequest);
                 
-            var notBefore = DateTimeOffset.Now;
+            var notBefore = SystemClock.DateTimeOffsetNow();
             if (!addCrawlDelay)
             {
                 notBefore = notBefore.AddMilliseconds(_schedulerSettings.SameDomainCrawlDelayMillis);

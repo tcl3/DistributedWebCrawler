@@ -89,7 +89,7 @@ namespace DistributedWebCrawler.Core.Components
 
         protected async override Task<QueuedItemResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
         {
-            var requestStartTime = DateTime.Now;
+            var requestStartTime = SystemClock.DateTimeOffsetNow();
             if (item.MaxDepthReached)
             {
                 _logger.LogDebug($"Not sending request to parser for {item.Uri}");

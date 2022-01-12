@@ -11,7 +11,7 @@ namespace DistributedWebCrawler.Core.Model
         {
             Uri = uri;
             RequestStartTime = requestStartTime;
-            TimeTaken = DateTimeOffset.Now - requestStartTime;
+            TimeTaken = SystemClock.DateTimeOffsetNow() - requestStartTime;
         }
         
         public HttpStatusCode? HttpStatusCode { get; init; }
