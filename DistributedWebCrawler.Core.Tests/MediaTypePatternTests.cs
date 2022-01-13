@@ -63,9 +63,10 @@ namespace DistributedWebCrawler.Core.Tests
             Assert.NotNull(pattern);
 
             MediaTypePattern.TryCreate(otherString, out var other);
+            
             Assert.NotNull(other);
-            Assert.True(pattern!.Match(other!) == expectedResult);
-            Assert.True(other!.Match(pattern) == expectedResult);
+            Assert.Equal(expectedResult, pattern!.Match(other!));
+            Assert.Equal(expectedResult, other!.Match(pattern));
         }
     }
 }

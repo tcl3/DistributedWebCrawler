@@ -51,7 +51,7 @@ namespace DistributedWebCrawler.Core.Tests
             var domainPattern = new DomainPattern(pattern);
             var matchResult = domainPattern.Match(domain);
 
-            Assert.Equal(matchResult, expectedResult);
+            Assert.Equal(expectedResult, matchResult);
         }
     }
 }
