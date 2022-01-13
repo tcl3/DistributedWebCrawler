@@ -1,5 +1,6 @@
 ﻿using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;

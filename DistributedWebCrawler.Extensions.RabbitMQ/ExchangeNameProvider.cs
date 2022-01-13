@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using System.Collections.Concurrent;
 

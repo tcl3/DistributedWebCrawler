@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using System.Threading.Tasks;
