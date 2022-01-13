@@ -45,11 +45,6 @@ namespace DistributedWebCrawler.Core
             }
         }
 
-        public IEnumerable<ComponentDescriptor> GetAll()
-        {
-            return _descriptors.ToList();
-        }
-
         public bool TryGetFromComponentType(Type componentType, [NotNullWhen(returnValue: true)] out ComponentDescriptor? descriptor)
         {
             if (!_descriptorComponentTypeLookup.TryGetValue(componentType, out descriptor))
