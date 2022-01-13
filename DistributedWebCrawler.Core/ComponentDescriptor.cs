@@ -1,6 +1,7 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
 using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Extensions;
+using DistributedWebCrawler.Core.Model;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -16,12 +17,12 @@ namespace DistributedWebCrawler.Core
         public Type FailureType { get; }
         public string ComponentName { get; }
 
-        private ComponentDescriptor(Type componentType, Type successType, Type failureType, string name)
+        internal ComponentDescriptor(Type componentType, Type successType, Type failureType, string componentName)
         {
             ComponentType = componentType;
             SuccessType = successType;
             FailureType = failureType;
-            ComponentName = name;
+            ComponentName = componentName;
         }
 
         public static IEnumerable<ComponentDescriptor> FromAssemblies(IEnumerable<Assembly> componentAssemblies)
@@ -51,7 +52,7 @@ namespace DistributedWebCrawler.Core
                 var failureType = genericArgs[2];
 
                 if (!TryGetComponentNameFromAttribute(component.Type, out var componentName)
-                    && TryGetComponentNameFromTypeArguments(successType, failureType, out componentName))
+                    && !TryGetComponentNameFromTypeArguments(successType, failureType, out componentName))
                 {
                     throw new InvalidOperationException($"Component name for {component.Type.Name} could not be inferred from type arguments: {successType.Name} and {failureType.Name}");
                 }
@@ -78,7 +79,13 @@ namespace DistributedWebCrawler.Core
 
         private static bool TryGetComponentNameFromTypeArguments(Type successType, Type failureType, out string componentName)
         {
-            componentName = successType.Name.GetCommonPrefix(failureType.Name);
+            var failureTypeName = failureType.Name;
+            if (failureType.IsGenericType && failureType.GetGenericTypeDefinition() == typeof(ErrorCode<>))
+            {
+                failureTypeName = failureType.GetGenericArguments()[0].Name;
+            }
+
+            componentName = successType.Name.GetCommonPrefix(failureTypeName);
             if (!string.IsNullOrEmpty(componentName))
             {
                 if (componentName.EndsWith('e'))
