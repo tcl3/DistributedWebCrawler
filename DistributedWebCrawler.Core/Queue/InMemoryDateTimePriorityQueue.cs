@@ -1,5 +1,4 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using Microsoft.Extensions.Logging;
 using Priority_Queue;
 using System;
 using System.Collections.Generic;
@@ -41,7 +40,7 @@ namespace DistributedWebCrawler.Core.Queue
             var delay = priority - SystemClock.DateTimeOffsetNow();
             if (delay > TimeSpan.Zero)
             {
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                await SystemClock.DelayAsync(delay, cancellationToken).ConfigureAwait(false);
             }
         }
 
