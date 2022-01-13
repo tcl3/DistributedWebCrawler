@@ -37,7 +37,7 @@ namespace DistributedWebCrawler.Core
 
         public Task<string?> GetAsync(string key)
         {
-            return GetAsync<string>(key, valueIfExpired: string.Empty);
+            return GetAsync<string>(key);
         }
 
         public Task RemoveAsync(string key)
@@ -62,11 +62,7 @@ namespace DistributedWebCrawler.Core
 
         public Task<TData?> GetAsync<TData>(string key)
         {
-            return GetAsync<TData>(key, valueIfExpired: default);
-        }
 
-        private Task<TData?> GetAsync<TData>(string key, TData? valueIfExpired)
-        {
             if (!_contentLookup.TryGetValue(key, out var entry) || entry?.Content == null)
             {
                 return Task.FromResult<TData?>(default);
@@ -74,7 +70,7 @@ namespace DistributedWebCrawler.Core
             else if (entry.Expired())
             {
                 _contentLookup.TryRemove(key, out _);
-                return Task.FromResult(valueIfExpired);
+                return Task.FromResult<TData?>(default);
             }
 
             if (entry.Content is not TData entyData)
