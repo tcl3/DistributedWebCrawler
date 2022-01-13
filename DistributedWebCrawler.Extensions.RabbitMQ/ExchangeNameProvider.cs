@@ -13,7 +13,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
         
         private const string ExchangeNameSuffix = "Notifier";
 
-        public ExchangeNameProvider(ComponentNameProvider componentNameProvider)
+        public ExchangeNameProvider(IComponentNameProvider componentNameProvider)
         {
             _exchangeNameLookup = new();
             _exchangeNamePrefix = componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>(() => Guid.NewGuid().ToString("N"));

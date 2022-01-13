@@ -1,14 +1,12 @@
-﻿using DistributedWebCrawler.Core.Components;
-using DistributedWebCrawler.Core.Extensions;
+﻿using DistributedWebCrawler.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 
 namespace DistributedWebCrawler.Core
 {
-    public class ComponentNameProvider
+    public class ComponentNameProvider : IComponentNameProvider
     {
         private readonly IEnumerable<ComponentDescriptor> _descriptors;
 
@@ -73,7 +71,7 @@ namespace DistributedWebCrawler.Core
     public static class ComponentNameProviderExtensions
     {
         private const string DefaultComponentName = "Unknown";
-        public static ComponentDescriptor GetFromComponentType(this ComponentNameProvider componentNameProvider, Type componentType)
+        public static ComponentDescriptor GetFromComponentType(this IComponentNameProvider componentNameProvider, Type componentType)
         {
             if (!componentNameProvider.TryGetFromComponentType(componentType, out var result))
             {
@@ -83,28 +81,28 @@ namespace DistributedWebCrawler.Core
             return result;
         }
 
-        public static ComponentDescriptor GetFromComponentType<TData>(this ComponentNameProvider componentNameProvider)
+        public static ComponentDescriptor GetFromComponentType<TData>(this IComponentNameProvider componentNameProvider)
         {
             return componentNameProvider.GetFromComponentType(typeof(TData));
         }
 
-        public static string GetComponentName(this ComponentNameProvider componentNameProvider, Type componentType)
+        public static string GetComponentName(this IComponentNameProvider componentNameProvider, Type componentType)
         {
             var descriptor = componentNameProvider.GetFromComponentType(componentType);
             return descriptor.ComponentName;
         }
 
-        public static string GetComponentName<TComponent>(this ComponentNameProvider componentNameProvider)
+        public static string GetComponentName<TComponent>(this IComponentNameProvider componentNameProvider)
         {
             return componentNameProvider.GetComponentName(typeof(TComponent));
         }
 
-        public static string GetComponentNameOrDefault(this ComponentNameProvider componentNameProvider, Type componentType, string defaultValue = DefaultComponentName)
+        public static string GetComponentNameOrDefault(this IComponentNameProvider componentNameProvider, Type componentType, string defaultValue = DefaultComponentName)
         {
             return componentNameProvider.GetComponentNameOrDefault(componentType, () => defaultValue);
         }
 
-        public static string GetComponentNameOrDefault(this ComponentNameProvider componentNameProvider, Type componentType, Func<string> defaultValueFactory)
+        public static string GetComponentNameOrDefault(this IComponentNameProvider componentNameProvider, Type componentType, Func<string> defaultValueFactory)
         {
             if (componentNameProvider.TryGetFromComponentType(componentType, out var descriptor))
             {
@@ -114,17 +112,17 @@ namespace DistributedWebCrawler.Core
             return defaultValueFactory();
         }
 
-        public static string GetComponentNameOrDefault<TComponent>(this ComponentNameProvider componentNameProvider, string defaultValue = DefaultComponentName)
+        public static string GetComponentNameOrDefault<TComponent>(this IComponentNameProvider componentNameProvider, string defaultValue = DefaultComponentName)
         {
             return componentNameProvider.GetComponentNameOrDefault(typeof(TComponent), defaultValue);
         }
 
-        public static string GetComponentNameOrDefault<TComponent>(this ComponentNameProvider componentNameProvider, Func<string> defaultValueFactory)
+        public static string GetComponentNameOrDefault<TComponent>(this IComponentNameProvider componentNameProvider, Func<string> defaultValueFactory)
         {
             return componentNameProvider.GetComponentNameOrDefault(typeof(TComponent), defaultValueFactory);
         }
 
-        public static ComponentDescriptor GetFromTypeArguments(this ComponentNameProvider componentNameProvider, Type successType, Type failureType)
+        public static ComponentDescriptor GetFromTypeArguments(this IComponentNameProvider componentNameProvider, Type successType, Type failureType)
         {
             if (!componentNameProvider.TryGetFromTypeArguments(successType, failureType, out var result))
             {
@@ -134,18 +132,18 @@ namespace DistributedWebCrawler.Core
             return result;
         }
 
-        public static string GetComponentName(this ComponentNameProvider componentNameProvider, Type successType, Type failureType)
+        public static string GetComponentName(this IComponentNameProvider componentNameProvider, Type successType, Type failureType)
         {
             var descriptor = componentNameProvider.GetFromTypeArguments(successType, failureType);
             return descriptor.ComponentName;
         }
 
-        public static string GetComponentNameOrDefault(this ComponentNameProvider componentNameProvider, Type successType, Type failureType, string defaultValue = DefaultComponentName)
+        public static string GetComponentNameOrDefault(this IComponentNameProvider componentNameProvider, Type successType, Type failureType, string defaultValue = DefaultComponentName)
         {
             return componentNameProvider.GetComponentNameOrDefault(successType, failureType, () => defaultValue);
         }
 
-        public static string GetComponentNameOrDefault(this ComponentNameProvider componentNameProvider, Type successType, Type failureType, Func<string> defaultValueFactory)
+        public static string GetComponentNameOrDefault(this IComponentNameProvider componentNameProvider, Type successType, Type failureType, Func<string> defaultValueFactory)
         {
             if (componentNameProvider.TryGetFromTypeArguments(successType, failureType, out var descriptor))
             {
@@ -155,12 +153,12 @@ namespace DistributedWebCrawler.Core
             return defaultValueFactory();
         }
 
-        public static string GetComponentNameOrDefault<TSuccess, TFailure>(this ComponentNameProvider componentNameProvider, string defaultValue = DefaultComponentName)
+        public static string GetComponentNameOrDefault<TSuccess, TFailure>(this IComponentNameProvider componentNameProvider, string defaultValue = DefaultComponentName)
         {
             return componentNameProvider.GetComponentNameOrDefault(typeof(TSuccess), typeof(TFailure), () => defaultValue);
         }
 
-        public static string GetComponentNameOrDefault<TSuccess, TFailure>(this ComponentNameProvider componentNameProvider, Func<string> defaultValueFactory)
+        public static string GetComponentNameOrDefault<TSuccess, TFailure>(this IComponentNameProvider componentNameProvider, Func<string> defaultValueFactory)
         {
             return componentNameProvider.GetComponentNameOrDefault(typeof(TSuccess), typeof(TFailure), defaultValueFactory);
         }

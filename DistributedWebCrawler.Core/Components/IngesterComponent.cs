@@ -50,7 +50,7 @@ namespace DistributedWebCrawler.Core.Components
             IContentStore contentStore,
             IKeyValueStore keyValueStore,
             ILogger<IngesterComponent> logger,
-            ComponentNameProvider componentNameProvider) 
+            IComponentNameProvider componentNameProvider) 
             : base(ingestRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, ingesterSettings)
         {
             _ingesterSettings = ingesterSettings;

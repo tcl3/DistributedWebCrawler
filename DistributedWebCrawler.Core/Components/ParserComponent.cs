@@ -27,7 +27,7 @@ namespace DistributedWebCrawler.Core.Components
             IContentStore contentStore,
             IKeyValueStore keyValueStore,
             ILogger<ParserComponent> logger,
-            ComponentNameProvider componentNameProvider)
+            IComponentNameProvider componentNameProvider)
             : base(parseRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, parserSettings)
         {
             _schedulerRequestProducer = schedulerRequestProducer;

@@ -38,7 +38,8 @@ namespace DistributedWebCrawler.Core.Components
             IEventDispatcher<TSuccess, TFailure> eventReceiver,
             IKeyValueStore keyValueStore,
             ILogger logger,
-            ComponentNameProvider componentNameProvider, TaskQueueSettings taskQueueSettings)
+            IComponentNameProvider componentNameProvider, 
+            TaskQueueSettings taskQueueSettings)
         {
             _consumer = consumer;
             _eventDispatcher = eventReceiver;

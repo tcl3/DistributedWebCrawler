@@ -55,7 +55,7 @@ namespace DistributedWebCrawler.Core.Components
             IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
             IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
-            ComponentNameProvider componentNameProvider,
+            IComponentNameProvider componentNameProvider,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest> robotsRequestProducer,
             IProducer<IngestRequest> ingestRequestProducer)

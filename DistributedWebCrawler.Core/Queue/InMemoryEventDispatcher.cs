@@ -10,10 +10,10 @@ namespace DistributedWebCrawler.Core.Queue
         where TFailure : notnull, IErrorCode
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
-        private readonly ComponentNameProvider _componentNameProvider;
+        private readonly IComponentNameProvider _componentNameProvider;
 
         public InMemoryEventDispatcher(InMemoryEventStore<TSuccess, TFailure> eventStore,
-            ComponentNameProvider componentNameProvider)
+            IComponentNameProvider componentNameProvider)
         {
             _eventStore = eventStore;
             _componentNameProvider = componentNameProvider;

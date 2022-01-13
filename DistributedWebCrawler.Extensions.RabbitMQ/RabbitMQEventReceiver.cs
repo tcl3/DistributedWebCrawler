@@ -17,7 +17,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
         private readonly ExchangeNameProvider<TSuccess, TFailure> _exchangeNameProvider;
-        private readonly ComponentNameProvider _componentNameProvider;
+        private readonly IComponentNameProvider _componentNameProvider;
         private readonly IPersistentConnection _connection;
         private readonly ISerializer _serializer;
         private readonly ILogger _logger;
@@ -26,7 +26,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         public RabbitMQEventReceiver(InMemoryEventStore<TSuccess, TFailure> eventStore,
             ExchangeNameProvider<TSuccess, TFailure> exchangeNameProvider,
-            ComponentNameProvider componentNameProvider,
+            IComponentNameProvider componentNameProvider,
             IPersistentConnection connection,
             ISerializer serializer,
             ILogger<RabbitMQEventReceiver<TSuccess, TFailure>> logger)

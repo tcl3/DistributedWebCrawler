@@ -23,7 +23,7 @@ namespace DistributedWebCrawler.Core.Components
             IEventDispatcher<RobotsDownloaderSuccess, ErrorCode<RobotsDownloaderFailure>> eventDispatcher,
             IKeyValueStore keyValueStore,
             ILogger<RobotsDownloaderComponent> logger,
-            ComponentNameProvider componentNameProvider,
+            IComponentNameProvider componentNameProvider,
             IProducer<SchedulerRequest> schedulerRequestProducer,
             IRobotsCacheWriter robotsCacheWriter,
             RobotsTxtSettings settings) 
