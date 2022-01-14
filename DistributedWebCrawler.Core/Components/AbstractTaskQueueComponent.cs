@@ -29,10 +29,10 @@ namespace DistributedWebCrawler.Core.Components
 
         protected bool IsStarted { get; private set; }
 
-        protected string Name { get; }
+        private readonly Lazy<string> _name;
+        protected string Name => _name.Value;
 
         private readonly TaskCompletionSource _taskCompletionSource;
-
 
         protected AbstractTaskQueueComponent(IConsumer<TRequest> consumer,
             IEventDispatcher<TSuccess, TFailure> eventReceiver,
@@ -50,8 +50,11 @@ namespace DistributedWebCrawler.Core.Components
             _pauseSemaphore = new SemaphoreSlim(0);
             _taskCompletionSource = new();
 
-            var componentType = GetType();
-            Name = componentNameProvider.GetComponentName(componentType);
+            _name = new Lazy<string>(() =>
+            {
+                var componentType = GetType();
+                return componentNameProvider.GetComponentName(componentType);
+            });
         }
 
         public CrawlerComponentStatus Status
