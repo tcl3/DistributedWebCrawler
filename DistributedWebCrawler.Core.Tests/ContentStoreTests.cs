@@ -16,7 +16,7 @@ namespace DistributedWebCrawler.Core.Tests
 
         [Theory]
         [MoqAutoData]
-        public async Task GetTest([Frozen] Mock<IKeyValueStore> keyValueStoreMock, ContentStore sut, Guid id)
+        public async Task GetContentShouldCallKeyValueStore([Frozen] Mock<IKeyValueStore> keyValueStoreMock, ContentStore sut, Guid id)
         {
             var resultContent = await sut.GetContentAsync(id, _cts.Token);
             keyValueStoreMock.Verify(x => x.GetAsync(It.IsAny<string>()), Times.Once());
@@ -24,7 +24,7 @@ namespace DistributedWebCrawler.Core.Tests
 
         [Theory]
         [MoqAutoData]
-        public async Task PutTest([Frozen] Mock<IKeyValueStore> keyValueStoreMock, ContentStore sut)
+        public async Task SaveContentShouldCallKeyValueStore([Frozen] Mock<IKeyValueStore> keyValueStoreMock, ContentStore sut)
         {
             var id = await sut.SaveContentAsync(TestContent, _cts.Token);
             keyValueStoreMock.Verify(x => x.PutAsync(It.IsAny<string>(), TestContent, null), Times.Once());
@@ -32,7 +32,7 @@ namespace DistributedWebCrawler.Core.Tests
 
         [Theory]
         [MoqAutoData]
-        public async Task RemoveTest([Frozen] Mock<IKeyValueStore> keyValueStoreMock, ContentStore sut, Guid id)
+        public async Task RemoveShouldCallKeyValueStore([Frozen] Mock<IKeyValueStore> keyValueStoreMock, ContentStore sut, Guid id)
         {
             await sut.RemoveAsync(id, _cts.Token);
             keyValueStoreMock.Verify(x => x.RemoveAsync(It.IsAny<string>()), Times.Once());
