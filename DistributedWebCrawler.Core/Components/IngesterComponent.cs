@@ -24,8 +24,8 @@ namespace DistributedWebCrawler.Core.Components
         private readonly IContentStore _contentStore;
         private readonly ILogger<IngesterComponent> _logger;
 
-        private readonly IEnumerable<MediaTypePattern> _mediaTypesToInclude;
-        private readonly IEnumerable<MediaTypePattern> _mediaTypesToExclude;
+        private readonly Lazy<IEnumerable<MediaTypePattern>> _mediaTypesToInclude;
+        private readonly Lazy<IEnumerable<MediaTypePattern>> _mediaTypesToExclude;
 
         private static readonly HashSet<string> ParseableMediaTypes = new() { MediaTypeNames.Text.Html, MediaTypeNames.Text.Plain };
 
@@ -59,8 +59,8 @@ namespace DistributedWebCrawler.Core.Components
             _contentStore = contentStore;
             _logger = logger;
 
-            _mediaTypesToInclude = GetMediaTypes(ingesterSettings.IncludeMediaTypes);
-            _mediaTypesToExclude = GetMediaTypes(ingesterSettings.ExcludeMediaTypes);
+            _mediaTypesToInclude = new Lazy<IEnumerable<MediaTypePattern>>(() => GetMediaTypes(ingesterSettings.IncludeMediaTypes));
+            _mediaTypesToExclude = new Lazy<IEnumerable<MediaTypePattern>>(() => GetMediaTypes(ingesterSettings.ExcludeMediaTypes));
         }
 
         // TODO - move this to a custom configuration validator
@@ -135,13 +135,13 @@ namespace DistributedWebCrawler.Core.Components
                     {
                         _logger.LogWarning($"Invalid Content-Type header for '{currentUri}' - {contentTypeHeader.MediaType}");
                     }
-                    else if (_mediaTypesToInclude.Any() && !_mediaTypesToInclude.Any(x => x.Match(contentType)))
+                    else if (_mediaTypesToInclude.Value.Any() && !_mediaTypesToInclude.Value.Any(x => x.Match(contentType)))
                     {
                         _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) not present in include list");
                         var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
                         return Failed(item, ingestFailure);
                     }
-                    else if (_mediaTypesToExclude.Any() && _mediaTypesToExclude.Any(x => x.Match(contentType)))
+                    else if (_mediaTypesToExclude.Value.Any() && _mediaTypesToExclude.Value.Any(x => x.Match(contentType)))
                     {
                         _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) present in exclude list");
                         var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
