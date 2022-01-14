@@ -41,7 +41,9 @@ namespace DistributedWebCrawler.Core.Queue
         {
             add
             {
-                OnFailedAsyncHandler += ConvertItemFailedArgs(value);
+                var convertedDelegate = ConvertItemFailedArgs(value);
+                _delegateLookup.TryAdd(value, convertedDelegate);
+                OnFailedAsyncHandler += convertedDelegate;
             }
             remove
             {
