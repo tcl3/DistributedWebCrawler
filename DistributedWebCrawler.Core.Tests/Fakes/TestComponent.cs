@@ -19,7 +19,7 @@ namespace DistributedWebCrawler.Core.Tests.Fakes
 
     public enum TestFailure
     {
-
+        DefaultValue = 0,
     }
 
     [ComponentName("Test")]
