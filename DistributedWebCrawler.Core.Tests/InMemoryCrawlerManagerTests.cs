@@ -5,7 +5,6 @@ using DistributedWebCrawler.Core.Tests.Attributes;
 using Moq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,7 +12,6 @@ namespace DistributedWebCrawler.Core.Tests
 {
     public class InMemoryCrawlerManagerTests
     {
-
         [MoqAutoData]
         [Theory]
         public async Task StartShouldCallAllCrawlerComponents(
@@ -26,7 +24,7 @@ namespace DistributedWebCrawler.Core.Tests
             foreach (var crawlerComponent in crawlerComponents)
             {
                 var componentMock = Mock.Get(crawlerComponent);
-                componentMock.Verify(x => x.StartAsync(crawlerRunningState), Times.Once());
+                componentMock.Verify(x => x.StartAsync(crawlerRunningState, default), Times.Once());
             }
         }
 

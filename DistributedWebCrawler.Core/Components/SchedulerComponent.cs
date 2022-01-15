@@ -86,27 +86,27 @@ namespace DistributedWebCrawler.Core.Components
                 : Enumerable.Empty<DomainPattern>();
         }
 
-        protected override Task ComponentStartAsync(CrawlerRunningState startState)
+        protected override Task ComponentStartAsync(CrawlerRunningState startState, CancellationToken cancellationToken)
         {
-            var queueLoopTask = base.ComponentStartAsync(startState);
-            var schedulerLoopTask = Task.Run(SchedulerLoop);
-            return Task.WhenAll(new[] { queueLoopTask, schedulerLoopTask });
+            var queueLoopTask = base.ComponentStartAsync(startState, cancellationToken);
+            var schedulerLoopTask = Task.Run(() => SchedulerLoop(cancellationToken), cancellationToken);
+            return Task.WhenAll(new[] { queueLoopTask, schedulerLoopTask});
         }
 
-        private async Task SchedulerLoop()
+        private async Task SchedulerLoop(CancellationToken cancellationToken)
         {
-            while (Status != CrawlerComponentStatus.Completed)
+            while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
                     if (_ingestRequestProducer.Count > IngestQueueMaxItems)
                     {
                         // TODO: Replace this arbitrary delay with something better
-                        await Task.Delay(100).ConfigureAwait(false);
+                        await Task.Delay(100, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
 
-                    var entry = await _nextPathForHostQueue.DequeueAsync().ConfigureAwait(false);
+                    var entry = await _nextPathForHostQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
 
                     var schedulerRequest = entry.SchedulerRequest;
 

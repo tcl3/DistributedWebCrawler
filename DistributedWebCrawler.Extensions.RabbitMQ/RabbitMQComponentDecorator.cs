@@ -33,7 +33,8 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return _inner.ResumeAsync();
         }
 
-        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
+        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running, 
+            CancellationToken cancellationToken = default)
         {
             if (_receiveChannel == null)
             {

@@ -70,7 +70,7 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
+        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running, CancellationToken cancellationToken = default)
         {
             if (IsStarted)
             {
@@ -81,13 +81,7 @@ namespace DistributedWebCrawler.Core.Components
 
             _logger.LogInformation($"{Name} component started");
 
-            _ = ComponentStartAsync(startState)
-                .ContinueWith(t =>
-                {
-                    if (t.IsCanceled) _taskCompletionSource.SetCanceled();
-                    else if (t.Exception != null) _taskCompletionSource.SetException(t.Exception);
-                    else _taskCompletionSource.SetResult();
-                }, TaskScheduler.Current);
+            _ = ComponentStartAndHandleExceptionAsync(startState, cancellationToken);                
 
             return Task.CompletedTask;
         }
@@ -103,19 +97,44 @@ namespace DistributedWebCrawler.Core.Components
             return CrawlerComponentStatus.Busy;
         }
 
-        protected virtual async Task ComponentStartAsync(CrawlerRunningState startState)
+        private async Task ComponentStartAndHandleExceptionAsync(CrawlerRunningState startState, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await ComponentStartAsync(startState, cancellationToken).ConfigureAwait(false);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    _taskCompletionSource.SetCanceled(cancellationToken);
+                }
+                else
+                {
+                    _taskCompletionSource.SetResult();
+                }
+                
+            }
+            catch (OperationCanceledException ex)
+            {
+                _taskCompletionSource.SetCanceled(ex.CancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _taskCompletionSource.SetException(ex);
+            }
+        }
+
+        protected virtual async Task ComponentStartAsync(CrawlerRunningState startState, CancellationToken cancellationToken)
         {
             if (startState == CrawlerRunningState.Paused)
             {
                 await PauseAsync().ConfigureAwait(false);
             }
 
-            await Task.Run(QueueLoop).ConfigureAwait(false);            
-        }
+            await Task.Run(() => ItemProcessingLoop(cancellationToken), cancellationToken).ConfigureAwait(false);
+        }       
         
-        private async Task QueueLoop()
+        private async Task ItemProcessingLoop(CancellationToken cancellationToken)
         {
-            while (Status != CrawlerComponentStatus.Completed)
+            while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
             {                
                 await _itemSemaphore.WaitAsync().ConfigureAwait(false);
 
@@ -126,11 +145,11 @@ namespace DistributedWebCrawler.Core.Components
 
                 var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
                 
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(_taskQueueSettings.QueueItemTimeoutSeconds));
-                var cancellationToken = cancellationTokenSource.Token;
+                var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(_taskQueueSettings.QueueItemTimeoutSeconds));
+                var processItemCancellationToken = cts.Token;
 
-                var task = ProcessItemAsync(currentItem, cancellationToken);
+                var task = ProcessItemAsync(currentItem, processItemCancellationToken);
 
                 _ = task.ContinueWith(r =>
                 {
