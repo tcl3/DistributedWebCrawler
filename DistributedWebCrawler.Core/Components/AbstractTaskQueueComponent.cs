@@ -154,27 +154,19 @@ namespace DistributedWebCrawler.Core.Components
                 _ = task.ContinueWith(r =>
                 {
                     _itemSemaphore.Release();
-                }, TaskScheduler.Current);
+                }, CancellationToken.None, TaskContinuationOptions.NotOnRanToCompletion, TaskScheduler.Current);
 
-                _ = task.ContinueWith(async t =>
+                _ = task.ContinueWith(t =>
                 {
-                    var queuedItem = t.Result;
-
-                    if (queuedItem.Status == QueuedItemStatus.Success && queuedItem is QueuedItemResult<TSuccess> successResult)
+                    try
                     {
-                        await _eventDispatcher.NotifyCompletedAsync(currentItem, successResult.Result).ConfigureAwait(false);
-                    }
-                    else if (queuedItem.Status == QueuedItemStatus.Failed && queuedItem is QueuedItemResult<TFailure> failureResult)
+                        var queuedItem = t.Result;
+                        _ = NotifyAsync(currentItem, queuedItem);
+                    } finally
                     {
-                        await _eventDispatcher.NotifyFailedAsync(currentItem, failureResult.Result).ConfigureAwait(false);
+                        _itemSemaphore.Release();
                     }
-                    else if (queuedItem.Status == QueuedItemStatus.Waiting)
-                    {
-                        await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem).ConfigureAwait(false);
-                    }
-
-                    var componentStatus = GetComponentStatus();
-                    await _eventDispatcher.NotifyComponentStatusUpdateAsync(componentStatus).ConfigureAwait(false);
+                    
                 }, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
 
                 _ = task.ContinueWith(r =>
@@ -199,6 +191,25 @@ namespace DistributedWebCrawler.Core.Components
 
                 }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Current);
             }
+        }
+
+        private async Task NotifyAsync(TRequest currentItem, QueuedItemResult queuedItem)
+        {
+            if (queuedItem.Status == QueuedItemStatus.Success && queuedItem is QueuedItemResult<TSuccess> successResult)
+            {
+                await _eventDispatcher.NotifyCompletedAsync(currentItem, successResult.Result).ConfigureAwait(false);
+            }
+            else if (queuedItem.Status == QueuedItemStatus.Failed && queuedItem is QueuedItemResult<TFailure> failureResult)
+            {
+                await _eventDispatcher.NotifyFailedAsync(currentItem, failureResult.Result).ConfigureAwait(false);
+            }
+            else if (queuedItem.Status == QueuedItemStatus.Waiting)
+            {
+                await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem).ConfigureAwait(false);
+            }
+
+            var componentStatus = GetComponentStatus();
+            await _eventDispatcher.NotifyComponentStatusUpdateAsync(componentStatus).ConfigureAwait(false);
         }
 
         public async Task RequeueAsync<TInnerRequest>(Guid requestId, IProducer<TInnerRequest> producer, CancellationToken cancellationToken)
