@@ -1,11 +1,11 @@
-﻿using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
-    internal class IngesterBuilder : ComponentBuilder<IngestRequest, IngesterSettings>, IIngesterBuilder
+    internal class IngesterBuilder : ComponentBuilder<IngestRequest, AnnotatedIngesterSettings>, IIngesterBuilder
     {
         public IngesterBuilder(IServiceCollection services) : base(services)
         {

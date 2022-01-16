@@ -6,21 +6,17 @@ namespace DistributedWebCrawler.Core.Configuration
 {
     public class SchedulerSettings : TaskQueueSettings
     {
-        [Range(1, int.MaxValue)]
-        public int MaxConcurrentSchedulerRequests { get; init; }
 
         [Required]
-        public bool? RespectsRobotsTxt { get; init; }
+        public virtual bool? RespectsRobotsTxt { get; init; }
 
         [Range(0, int.MaxValue, ErrorMessage = nameof(MaxCrawlDepth) + " must be a non-negative integer")]
-        public int? MaxCrawlDepth { get; init; }
+        public virtual int? MaxCrawlDepth { get; init; }
         
         [Range(0, int.MaxValue, ErrorMessage = nameof(MaxCrawlDepth) + " must be a positive integer")]
-        public int SameDomainCrawlDelayMillis { get; init; }
+        public virtual int SameDomainCrawlDelayMillis { get; init; }
         
-        public IEnumerable<string>? ExcludeDomains { get; init; } 
-        public IEnumerable<string>? IncludeDomains { get; init; }
-
-        internal override int MaxConcurrentItems => MaxConcurrentSchedulerRequests;
+        public virtual IEnumerable<string>? ExcludeDomains { get; init; } 
+        public virtual IEnumerable<string>? IncludeDomains { get; init; }
     }
 }

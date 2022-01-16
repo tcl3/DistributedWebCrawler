@@ -1,9 +1,8 @@
-﻿using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection.Interfaces
 {
-    public interface IIngesterBuilder : IComponentBuilder<IngesterSettings>
+    public interface IIngesterBuilder : IComponentBuilder<AnnotatedIngesterSettings>
     {
     }
 }

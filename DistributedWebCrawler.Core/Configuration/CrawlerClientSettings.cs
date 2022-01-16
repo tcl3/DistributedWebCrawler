@@ -8,22 +8,22 @@ namespace DistributedWebCrawler.Core.Configuration
     {
         [Required]
         [MinLength(1)]
-        public string UserAgentString { get; init; } = string.Empty;
-        public string? AcceptLanguage { get; init; }
+        public virtual string UserAgentString { get; init; } = string.Empty;
+        public virtual string? AcceptLanguage { get; init; }
 
         [Range(1, int.MaxValue, ErrorMessage = nameof(RequestTimeoutSeconds) + " must be a positive integer")]
-        public int RequestTimeoutSeconds { get; init; }
+        public virtual int RequestTimeoutSeconds { get; init; }
 
         [Range(1, int.MaxValue, ErrorMessage = nameof(ConnectTimeoutSeconds) + " must be a positive integer")]
-        public int ConnectTimeoutSeconds { get; init; }
+        public virtual int ConnectTimeoutSeconds { get; init; }
 
         [Range(1, int.MaxValue, ErrorMessage = nameof(ResponseDrainTimeoutSeconds) + " must be a positive integer")]
-        public int ResponseDrainTimeoutSeconds { get; init; }
+        public virtual int ResponseDrainTimeoutSeconds { get; init; }
 
         [Range(1, int.MaxValue, ErrorMessage = nameof(MaxConnectionsPerServer) + " must be a positive integer")]
-        public int MaxConnectionsPerServer { get; init; }
+        public virtual int MaxConnectionsPerServer { get; init; }
 
         [DefaultValue(true)]
-        public bool AllowRequestCompression { get; init; } = true;
+        public virtual bool AllowRequestCompression { get; init; } = true;
     }
 }

@@ -1,8 +1,8 @@
-﻿using DistributedWebCrawler.Core.Configuration;
+﻿using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection.Interfaces
 {
-    public interface ISchedulerBuilder : IComponentBuilder<SchedulerSettings>
+    public interface ISchedulerBuilder : IComponentBuilder<AnnotatedSchedulerSettings>
     {
 
     }

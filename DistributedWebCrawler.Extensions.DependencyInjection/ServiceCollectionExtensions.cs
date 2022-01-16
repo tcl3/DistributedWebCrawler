@@ -88,13 +88,29 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
         }
 
         public static IServiceCollection AddSettings<TSettings>(this IServiceCollection services,
-            IConfiguration configuration)  where TSettings : class
+            IConfiguration configuration)  
+            where TSettings : class
         {
             services.AddOptions<TSettings>()
                 .Bind(configuration)
                 .ValidateDataAnnotations();
 
-            return services.AddSingleton<TSettings>(x => x.GetRequiredService<IOptions<TSettings>>().Value);
+            services.AddSingleton<TSettings>(x => x.GetRequiredService<IOptions<TSettings>>().Value);
+
+            AddAnnotatedSettingsBaseType<TSettings>(services);
+            
+            return services;
+        }
+
+        private static void AddAnnotatedSettingsBaseType<TSettings>(IServiceCollection services)
+            where TSettings : class
+        {
+            var baseType = typeof(TSettings).BaseType;
+
+            if (baseType != null && baseType != typeof(object) && !baseType.IsAbstract)
+            {
+                services.TryAddSingleton(baseType, x => x.GetRequiredService<IOptions<TSettings>>().Value);
+            }
         }
 
         public static IServiceCollection AddSettings<TSettings>(this IServiceCollection services, 

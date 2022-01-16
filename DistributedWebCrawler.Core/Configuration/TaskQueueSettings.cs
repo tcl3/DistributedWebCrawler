@@ -7,8 +7,9 @@ namespace DistributedWebCrawler.Core.Configuration
     public abstract class TaskQueueSettings
     {
         [Range(1, 1 * TimeConstants.SecondsPerDay)]
-        public int QueueItemTimeoutSeconds { get; init; }
+        public virtual int QueueItemTimeoutSeconds { get; init; }
 
-        internal abstract int MaxConcurrentItems { get; }
+        [Range(1, int.MaxValue)]
+        public virtual int MaxConcurrentItems { get; init; }
     }
 }

@@ -1,10 +1,8 @@
-﻿using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Interfaces;
-using Microsoft.Extensions.Configuration;
+﻿using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection.Interfaces
 {
-    public interface IRobotsDownloaderBuilder : IComponentBuilder<RobotsTxtSettings>
+    public interface IRobotsDownloaderBuilder : IComponentBuilder<AnnotatedRobotsTxtSettings>
     {
     }
 }
