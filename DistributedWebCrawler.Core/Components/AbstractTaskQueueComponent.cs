@@ -138,6 +138,11 @@ namespace DistributedWebCrawler.Core.Components
             {                
                 await _itemSemaphore.WaitAsync().ConfigureAwait(false);
 
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 if (_isPaused)
                 {
                     await _pauseSemaphore.WaitAsync().ConfigureAwait(false);
