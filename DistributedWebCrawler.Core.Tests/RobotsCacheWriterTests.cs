@@ -19,16 +19,12 @@ namespace DistributedWebCrawler.Core.Tests
 
         private readonly CancellationTokenSource _cts = new(TimeSpan.FromSeconds(1));
 
-        [HttpClientAutoData]
+        [HttpClientAutoData(content: MockRobotsContent)]
         [Theory]
         public async Task AddRobotsShouldReturnContentWhenRequestIsSuccessful(
             [Frozen] Mock<IKeyValueStore> keyValueStoreMock,
-            [Frozen] HttpResponseMessage response, 
             RobotsCacheWriter sut)
         {
-            response.Content = new StringContent(MockRobotsContent);
-            response.StatusCode = HttpStatusCode.OK;
-
             var expireAfter = TimeSpan.FromTicks(1);
 
             var content = await sut.AddOrUpdateRobotsForHostAsync(MockUri, expireAfter, _cts.Token);
@@ -37,15 +33,12 @@ namespace DistributedWebCrawler.Core.Tests
             Assert.Equal(MockRobotsContent, content);
         }
 
-        [HttpClientAutoData]
+        [HttpClientAutoData(statusCode: HttpStatusCode.NotFound)]
         [Theory]
         public async Task AddRobotsShouldReturnEmptyStringWhenRequestFails(
             [Frozen] Mock<IKeyValueStore> keyValueStoreMock,
-            [Frozen] HttpResponseMessage response,
             RobotsCacheWriter sut)
         {
-            response.StatusCode = HttpStatusCode.NotFound;
-
             var expireAfter = TimeSpan.FromTicks(1);
 
             var content = await sut.AddOrUpdateRobotsForHostAsync(MockUri, expireAfter, _cts.Token);
