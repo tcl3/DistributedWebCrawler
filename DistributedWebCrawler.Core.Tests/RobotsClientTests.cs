@@ -13,63 +13,48 @@ namespace DistributedWebCrawler.Core.Tests
     public class RobotsClientTests
     {
         private static readonly Uri MockUri = new Uri("http://mock.test/");
+
         private readonly CancellationTokenSource _cts = new(TimeSpan.FromSeconds(1));
 
-        [HttpClientAutoData]
+        [HttpClientAutoData(content: "nonEmpty")]
         [Theory]
-        public async Task TryGetRobotsShouldReturnTrueWhenContentIsReturned([Frozen] HttpResponseMessage response, RobotsClient sut)
+        public async Task TryGetRobotsShouldReturnTrueWhenContentIsReturned(RobotsClient sut)
+        {
+            await TryGetRobotsTest(sut, expectedReturnValue: true);
+        }
+
+        [HttpClientAutoData(content: "")]
+        [Theory]
+        public async Task TryGetRobotsShouldReturnFalseWhenContentIsEmpty(RobotsClient sut)
+        {
+            await TryGetRobotsTest(sut, expectedReturnValue: false);
+        }
+
+        [HttpClientAutoData(statusCode: HttpStatusCode.NotFound)]
+        [Theory]
+        public async Task TryGetRobotsShouldReturnFalseWhenHttpStatusCodeIsNotOk(RobotsClient sut)
+        {
+            await TryGetRobotsTest(sut, expectedReturnValue: false);
+        }
+
+        [ExceptionThrowingHttpClientAutoData]
+        [Theory]
+        public async Task TryGetRobotsShouldReturnFalseWhenHttpExceptionThrown(RobotsClient sut)
+        {
+            await TryGetRobotsTest(sut, expectedReturnValue: false);
+        }
+
+        private async Task TryGetRobotsTest(RobotsClient sut, bool expectedReturnValue)
         {
             var callbackCalled = new CallbackSentinel();
 
-            response.StatusCode = HttpStatusCode.OK;
-            response.Content = new StringContent("nonEmpty");
+            var result = await sut.TryGetRobotsAsync(MockUri, GetRobotsCallback(callbackCalled), _cts.Token);
 
-            await sut.TryGetRobotsAsync(MockUri, GetRobotsCallback(callbackCalled), _cts.Token);
-
-            Assert.True(callbackCalled.Value);
+            Assert.Equal(expectedReturnValue, result);
+            Assert.Equal(expectedReturnValue, callbackCalled.Value);
         }
 
-        [HttpClientAutoData]
-        [Theory]
-        public async Task TryGetRobotsShouldReturnFalseWhenContentIsEmpty([Frozen] HttpResponseMessage response, RobotsClient sut)
-        {
-            var callbackCalled = new CallbackSentinel();
-
-            response.StatusCode = HttpStatusCode.OK;
-            response.Content = new StringContent("");
-
-            await sut.TryGetRobotsAsync(MockUri, GetRobotsCallback(callbackCalled), _cts.Token);
-
-            Assert.False(callbackCalled.Value);
-        }
-
-        [HttpClientAutoData]
-        [Theory]
-        public async Task TryGetRobotsShouldReturnFalseWhenHttpStatusCodeIsNotOk([Frozen] HttpResponseMessage response, RobotsClient sut)
-        {
-            var callbackCalled = new CallbackSentinel();
-
-            response.StatusCode = HttpStatusCode.NotFound;
-
-            await sut.TryGetRobotsAsync(MockUri, GetRobotsCallback(callbackCalled), _cts.Token);
-
-            Assert.False(callbackCalled.Value);
-        }
-
-        [HttpClientAutoData]
-        [Theory]
-        public async Task TryGetRobotsShouldReturnFalseWhenHttpExceptionThrown([Frozen] FakeHttpMessageHandler testMessageHandler, RobotsClient sut)
-        {
-            var callbackCalled = new CallbackSentinel();
-
-            testMessageHandler.SetException(new HttpRequestException("Test exception"));
-
-            await sut.TryGetRobotsAsync(MockUri, GetRobotsCallback(callbackCalled), _cts.Token);
-
-            Assert.False(callbackCalled.Value);
-        }
-
-        private Func<string, Task> GetRobotsCallback(CallbackSentinel sentinel)
+        private static Func<string, Task> GetRobotsCallback(CallbackSentinel sentinel)
         {
             return robotsContent =>
             {
