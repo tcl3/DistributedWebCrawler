@@ -136,7 +136,7 @@ namespace DistributedWebCrawler.Core.Components
         {
             while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
             {                
-                await _itemSemaphore.WaitAsync().ConfigureAwait(false);
+                await _itemSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -145,7 +145,12 @@ namespace DistributedWebCrawler.Core.Components
 
                 if (_isPaused)
                 {
-                    await _pauseSemaphore.WaitAsync().ConfigureAwait(false);
+                    await _pauseSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
                 }
 
                 var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
