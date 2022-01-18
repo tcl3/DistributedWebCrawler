@@ -58,7 +58,8 @@ namespace DistributedWebCrawler.Core.Components
             IComponentNameProvider componentNameProvider,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest> robotsRequestProducer,
-            IProducer<IngestRequest> ingestRequestProducer)
+            IProducer<IngestRequest> ingestRequestProducer,
+            IDomainParser domainParser)
             : base(consumer, eventDispatcher, keyValueStore, logger, componentNameProvider, schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
@@ -67,6 +68,7 @@ namespace DistributedWebCrawler.Core.Components
             _robotsCacheReader = robotsCacheReader;
             _robotsRequestProducer = robotsRequestProducer;
             _ingestRequestProducer = ingestRequestProducer;
+            _domainParser = domainParser;
 
             _visitedUris = new();
             _visitedPathsLookup = new();
@@ -74,8 +76,6 @@ namespace DistributedWebCrawler.Core.Components
             _activeQueueEntries = new();
             _nextPathForHostQueue = new();
             _activeDomains = new();
-
-            _domainParser = new DomainParser(new WebTldRuleProvider());
 
             _domainsToInclude = _schedulerSettings.IncludeDomains != null 
                 ? _schedulerSettings.IncludeDomains.Select(str => new DomainPattern(str))

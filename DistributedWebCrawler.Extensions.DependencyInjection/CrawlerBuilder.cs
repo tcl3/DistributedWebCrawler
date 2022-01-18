@@ -7,6 +7,7 @@ using DistributedWebCrawler.Core.Robots;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Nager.PublicSuffix;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -75,6 +76,9 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
         public ICrawlerBuilder WithScheduler(Action<ISchedulerBuilder> schedulerBuilderAction)
         {
             _services.AddSingleton<ICrawlerComponent, SchedulerComponent>();
+            
+            _services.TryAddSingleton<IDomainParser>(_ => new DomainParser(new WebTldRuleProvider()));
+
             schedulerBuilderAction?.Invoke(_schedulerBuilder);
             return this;
         }
