@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace DistributedWebCrawler.Core.Configuration
+namespace DistributedWebCrawler.Extensions.DependencyInjection.Configuration
 {
     public class CrawlerClientSettings
     {
