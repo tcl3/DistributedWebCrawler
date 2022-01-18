@@ -21,7 +21,8 @@ namespace DistributedWebCrawler.Core.Tests
         [MoqAutoData]
         public async Task GetRobotsTextShouldReturnFalseWhenUriNotCached([Frozen] Mock<IKeyValueStore> keyValueStoreMock, RobotsCacheReader sut)
         {
-            keyValueStoreMock.Setup(x => x.GetAsync(It.IsAny<string>())).Returns(() => Task.FromResult<string?>(null));
+            keyValueStoreMock.Setup(x => x.GetAsync(It.IsAny<string>()))
+                .ReturnsAsync(() => null);
 
             var ifExistsActionCalled = false;
             var result = await sut.GetRobotsTxtAsync(MockUri, robots => ifExistsActionCalled = true, _cts.Token);
@@ -35,7 +36,8 @@ namespace DistributedWebCrawler.Core.Tests
         [MoqAutoData]
         public async Task GetRobotsTextShouldReturnTrueWhenUriIsCached([Frozen] Mock<IKeyValueStore> keyValueStoreMock, RobotsCacheReader sut)
         {
-            keyValueStoreMock.Setup(x => x.GetAsync(It.IsAny<string>())).Returns(() => Task.FromResult<string?>(MockRobotsTxtContent));
+            keyValueStoreMock.Setup(x => x.GetAsync(It.IsAny<string>()))
+                .ReturnsAsync(() => MockRobotsTxtContent);
 
             var ifExistsActionCalled = false;
             var result = await sut.GetRobotsTxtAsync(MockUri, robots => ifExistsActionCalled = true, _cts.Token);
