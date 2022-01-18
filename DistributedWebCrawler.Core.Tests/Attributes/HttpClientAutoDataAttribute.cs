@@ -24,4 +24,12 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
 
         }
     }
+
+    internal class CancelledHttpClientAutoDataAttribute : MoqAutoDataAttribute
+    {
+        public CancelledHttpClientAutoDataAttribute() : base(new CancelledHttpClientCustomization())
+        {
+
+        }
+    }
 }

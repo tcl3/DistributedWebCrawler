@@ -17,9 +17,10 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
         private readonly string? _locationHeaderValue;
         private readonly string? _contentTypeHeaderValue;
         private readonly string? _exceptionMessage;
+        private readonly bool _isCancelled;
 
         public HttpClientCustomization(
-            HttpStatusCode statusCode = HttpStatusCode.OK, 
+            HttpStatusCode statusCode = HttpStatusCode.OK,
             string content = "",
             string? locationHeaderValue = null,
             string? contentTypeHeaderValue = null)
@@ -30,19 +31,35 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
             _contentTypeHeaderValue = contentTypeHeaderValue;
         }
 
-        public HttpClientCustomization(string? exceptionMessage)
+        public HttpClientCustomization(string? httpExceptionMessage)
         {
-            _exceptionMessage = exceptionMessage ?? "Test exception";
+            _exceptionMessage = httpExceptionMessage ?? "Test exception";
+        }
+
+        protected HttpClientCustomization(bool isCancelled)
+        {
+            _isCancelled = isCancelled;
         }
 
         public void Customize(IFixture fixture)
         {
-            if (_exceptionMessage != null)
+            fixture.Customize<FakeHttpMessageHandler>(composer => 
             {
-                fixture.Customize<FakeHttpMessageHandler>(composer => composer
-                    .Do(x => x.SetException(new HttpRequestException(_exceptionMessage)))
-                );
-            }
+                IPostprocessComposer<FakeHttpMessageHandler> result = composer;
+
+                if (_exceptionMessage != null)
+                {
+                    var exception = new HttpRequestException(_exceptionMessage);
+                    result = result.Do(x => x.SetException(exception));
+                }
+                
+                if (_isCancelled)
+                {
+                    result = result.Do(x => x.SetCancelled(true));
+                }
+
+                return result;
+            });
 
             fixture.Customize<HttpResponseMessage>(composer =>
             {
@@ -54,7 +71,7 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
 
                 if (_content != null)
                 {
-                    result = result.With(x => x.Content, _contentTypeHeaderValue == null 
+                    result = result.With(x => x.Content, _contentTypeHeaderValue == null
                         ? new StringContent(_content)
                         : new StringContent(_content, Encoding.UTF8, _contentTypeHeaderValue)
                     );
@@ -113,6 +130,14 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
             {
                 return request is Type type && type == typeof(HttpClient);
             }
+        }
+    }
+
+    internal class CancelledHttpClientCustomization : HttpClientCustomization 
+    {
+        public CancelledHttpClientCustomization() : base(isCancelled: true)
+        {
+
         }
     }
 }
