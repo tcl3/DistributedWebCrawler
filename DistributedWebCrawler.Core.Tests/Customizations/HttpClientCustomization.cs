@@ -5,85 +5,20 @@ using DistributedWebCrawler.Core.Tests.Fakes;
 using System;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 
 namespace DistributedWebCrawler.Core.Tests.Customizations
 {
-    internal class HttpClientCustomization : ICustomization
+    internal class HttpClientCustomization<THandler> : ICustomization
+        where THandler : HttpMessageHandler
     {
-        private readonly HttpStatusCode? _statusCode;
-        private readonly string? _content;
-        private readonly string? _locationHeaderValue;
-        private readonly string? _contentTypeHeaderValue;
-        private readonly string? _exceptionMessage;
-        private readonly bool _isCancelled;
-
-        public HttpClientCustomization(
-            HttpStatusCode statusCode = HttpStatusCode.OK,
-            string content = "",
-            string? locationHeaderValue = null,
-            string? contentTypeHeaderValue = null)
+        public virtual void Customize(IFixture fixture)
         {
-            _statusCode = statusCode;
-            _content = content;
-            _locationHeaderValue = locationHeaderValue;
-            _contentTypeHeaderValue = contentTypeHeaderValue;
-        }
-
-        public HttpClientCustomization(string? httpExceptionMessage)
-        {
-            _exceptionMessage = httpExceptionMessage ?? "Test exception";
-        }
-
-        protected HttpClientCustomization(bool isCancelled)
-        {
-            _isCancelled = isCancelled;
-        }
-
-        public void Customize(IFixture fixture)
-        {
-            fixture.Customize<FakeHttpMessageHandler>(composer => 
-            {
-                IPostprocessComposer<FakeHttpMessageHandler> result = composer;
-
-                if (_exceptionMessage != null)
-                {
-                    var exception = new HttpRequestException(_exceptionMessage);
-                    result = result.Do(x => x.SetException(exception));
-                }
-                
-                if (_isCancelled)
-                {
-                    result = result.Do(x => x.SetCancelled(true));
-                }
-
-                return result;
-            });
-
-            fixture.Customize<HttpResponseMessage>(composer =>
-            {
-                IPostprocessComposer<HttpResponseMessage> result = composer;
-                if (_statusCode != null)
-                {
-                    result = result.With(x => x.StatusCode, _statusCode.Value);
-                }
-
-                if (_content != null)
-                {
-                    result = result.With(x => x.Content, _contentTypeHeaderValue == null
-                        ? new StringContent(_content)
-                        : new StringContent(_content, Encoding.UTF8, _contentTypeHeaderValue)
-                    );
-                }
-
-                if (_locationHeaderValue != null)
-                {
-                    result = result.Do(x => x.Headers.Location = new Uri(_locationHeaderValue));
-                }
-
-                return result;
-            });
+            // This type relay is picked up in the case where THandler is a DelegatingHandler
+            // In that case FakeHttpMessageHandler will be set as its InnerHandler
+            fixture.Customizations.Add(new TypeRelay(
+                typeof(HttpMessageHandler),
+                typeof(FakeHttpMessageHandler)));
 
             fixture.Customizations.Add(new HttpClientSpecimenBuilder());
         }
@@ -118,7 +53,7 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
                     return new NoSpecimen();
                 }
 
-                var messageHandler = context.Create<FakeHttpMessageHandler>();
+                var messageHandler = context.Create<THandler>();
 
                 return new HttpClient(messageHandler);
             }
@@ -133,11 +68,52 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
         }
     }
 
-    internal class CancelledHttpClientCustomization : HttpClientCustomization 
+    internal class HttpClientCustomization : HttpClientCustomization<FakeHttpMessageHandler>
     {
-        public CancelledHttpClientCustomization() : base(isCancelled: true)
-        {
+        private readonly HttpStatusCode? _statusCode;
+        private readonly string? _content;
+        private readonly string? _locationHeaderValue;
+        private readonly string? _contentTypeHeaderValue;
 
+        public HttpClientCustomization(
+            HttpStatusCode statusCode = HttpStatusCode.OK,
+            string content = "",
+            string? locationHeaderValue = null,
+            string? contentTypeHeaderValue = null)
+        {
+            _statusCode = statusCode;
+            _content = content;
+            _locationHeaderValue = locationHeaderValue;
+            _contentTypeHeaderValue = contentTypeHeaderValue;
+        }
+
+        public override void Customize(IFixture fixture)
+        {
+            fixture.Customize<HttpResponseMessage>(composer =>
+            {
+                IPostprocessComposer<HttpResponseMessage> result = composer;
+                if (_statusCode != null)
+                {
+                    result = result.With(x => x.StatusCode, _statusCode.Value);
+                }
+
+                if (_content != null)
+                {
+                    result = result.With(x => x.Content, _contentTypeHeaderValue == null
+                        ? new StringContent(_content)
+                        : new StringContent(_content, Encoding.UTF8, _contentTypeHeaderValue)
+                    );
+                }
+
+                if (_locationHeaderValue != null)
+                {
+                    result = result.Do(x => x.Headers.Location = new Uri(_locationHeaderValue));
+                }
+
+                return result;
+            });
+
+            base.Customize(fixture);
         }
     }
 }

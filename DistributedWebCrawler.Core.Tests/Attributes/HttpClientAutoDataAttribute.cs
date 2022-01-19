@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Tests.Customizations;
+﻿using AutoFixture;
+using DistributedWebCrawler.Core.Tests.Customizations;
 using System.Net;
 
 namespace DistributedWebCrawler.Core.Tests.Attributes
@@ -19,7 +20,11 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
     internal class ExceptionThrowingHttpClientAutoDataAttribute : MoqAutoDataAttribute
     {
         public ExceptionThrowingHttpClientAutoDataAttribute(string? exceptionMessage = null)
-            : base(new HttpClientCustomization(exceptionMessage))
+            : base(new ICustomization[]
+            {
+                new FakeHttpMessageHandlerCustomization(exceptionMessage),
+                new HttpClientCustomization()
+            })
         {
 
         }
@@ -27,7 +32,11 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
 
     internal class CancelledHttpClientAutoDataAttribute : MoqAutoDataAttribute
     {
-        public CancelledHttpClientAutoDataAttribute() : base(new CancelledHttpClientCustomization())
+        public CancelledHttpClientAutoDataAttribute() : base(new ICustomization[]
+            {
+                new FakeHttpMessageHandlerCustomization(isCancelled: true),
+                new HttpClientCustomization()
+            })
         {
 
         }
