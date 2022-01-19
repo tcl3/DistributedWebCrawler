@@ -1,9 +1,11 @@
-﻿using System;
+﻿using DistributedWebCrawler.Core.Tests.Collections;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace DistributedWebCrawler.Core.Tests
 {
+    [Collection(nameof(SystemClockDependentCollection))]
     public class InMemoryKeyValueStoreTests
     {
         private const string TestKey = "key";

@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Queue;
+using DistributedWebCrawler.Core.Tests.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +9,7 @@ using Xunit;
 
 namespace DistributedWebCrawler.Core.Tests
 {
+    [Collection(nameof(SystemClockDependentCollection))]
     public class InMemoryDateTimePriorityQueueTests
     {
         private readonly CancellationTokenSource _cts = new(TimeSpan.FromSeconds(1));
