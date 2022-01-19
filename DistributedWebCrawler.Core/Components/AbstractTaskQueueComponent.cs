@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-
     public abstract class AbstractTaskQueueComponent<TRequest, TSuccess, TFailure> : ICrawlerComponent
         where TRequest : RequestBase
         where TFailure : IErrorCode
@@ -172,7 +171,8 @@ namespace DistributedWebCrawler.Core.Components
                     {
                         var queuedItem = t.Result;
                         _ = NotifyAsync(currentItem, queuedItem);
-                    } finally
+                    } 
+                    finally
                     {
                         _itemSemaphore.Release();
                     }
@@ -222,9 +222,14 @@ namespace DistributedWebCrawler.Core.Components
             await _eventDispatcher.NotifyComponentStatusUpdateAsync(componentStatus).ConfigureAwait(false);
         }
 
-        public async Task RequeueAsync<TInnerRequest>(Guid requestId, IProducer<TInnerRequest> producer, CancellationToken cancellationToken)
+        public async Task RequeueAsync<TInnerRequest>(Guid requestId, IProducer<TInnerRequest> producer, CancellationToken cancellationToken = default)
             where TInnerRequest : RequestBase
         {
+            if (!IsStarted)
+            {
+                throw new InvalidOperationException($"Cannot call {nameof(RequeueAsync)} before {nameof(StartAsync)}");
+            }
+
             var requestKey = requestId.ToString("N");
             var request = await _outstandingItemsStore.GetAsync<TInnerRequest>(requestKey).ConfigureAwait(false);
             if (request == null)
