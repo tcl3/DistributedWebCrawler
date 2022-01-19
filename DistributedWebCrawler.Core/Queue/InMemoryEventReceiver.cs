@@ -3,7 +3,8 @@ using DistributedWebCrawler.Core.Interfaces;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class InMemoryEventReceiver<TSuccess, TFailure> : IEventReceiver<TSuccess, TFailure>
+    public class InMemoryEventReceiver<TSuccess, TFailure> : 
+        IEventReceiver<TSuccess, TFailure>, IEventReceiver
         where TSuccess : notnull
         where TFailure : notnull, IErrorCode
     {

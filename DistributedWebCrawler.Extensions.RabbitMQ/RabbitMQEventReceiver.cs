@@ -12,7 +12,8 @@ using BasicDeliverAsyncEventHandler = RabbitMQ.Client.Events.AsyncEventHandler<R
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {
-    public class RabbitMQEventReceiver<TSuccess, TFailure> : IEventReceiver<TSuccess, TFailure>
+    public class RabbitMQEventReceiver<TSuccess, TFailure> : 
+        IEventReceiver<TSuccess, TFailure>, IEventReceiver
         where TSuccess : notnull
         where TFailure : notnull, IErrorCode
     {

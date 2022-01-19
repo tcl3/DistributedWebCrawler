@@ -9,11 +9,11 @@ namespace DistributedWebCrawler.Core.Interfaces
         event ComponentEventHandler<ComponentStatus> OnComponentUpdateAsync;
     }
 
-    public interface IEventReceiver<TSuccess, TFailure> : IEventReceiver
+    public interface IEventReceiver<TSuccess, TFailure>
         where TSuccess : notnull
         where TFailure : notnull, IErrorCode
     {
-        new event ItemCompletedEventHandler<TSuccess> OnCompletedAsync;
-        new event ItemFailedEventHandler<TFailure> OnFailedAsync;
+        event ItemCompletedEventHandler<TSuccess> OnCompletedAsync;
+        event ItemFailedEventHandler<TFailure> OnFailedAsync;
     }
 }
