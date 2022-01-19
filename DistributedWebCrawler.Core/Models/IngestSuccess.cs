@@ -25,14 +25,22 @@ namespace DistributedWebCrawler.Core.Model
 
         public IEnumerable<RedirectResult> Redirects { get; init; } = Enumerable.Empty<RedirectResult>();
 
-        public static IngestSuccess Success(Uri uri, DateTimeOffset requestStartTime, Guid contentId, int contentLength, string mediaType, IEnumerable<RedirectResult>? redirects = null)
+        public static IngestSuccess Success(
+            Uri uri, 
+            DateTimeOffset requestStartTime, 
+            Guid contentId, 
+            int contentLength, 
+            string mediaType, 
+            HttpStatusCode statusCode, 
+            IEnumerable<RedirectResult>? redirects = null)
         {
             return new IngestSuccess(uri, requestStartTime)
             { 
                 ContentId = contentId,
                 ContentLength = contentLength,
                 MediaType = mediaType,
-                Redirects = redirects ?? Enumerable.Empty<RedirectResult>()
+                HttpStatusCode = statusCode,
+                Redirects = redirects ?? Enumerable.Empty<RedirectResult>(),                
             };
         }
     }

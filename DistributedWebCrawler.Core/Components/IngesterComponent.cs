@@ -157,7 +157,13 @@ namespace DistributedWebCrawler.Core.Components
 
                 var contentId = await _contentStore.SaveContentAsync(urlContent, cancellationToken).ConfigureAwait(false);
 
-                var ingestResult = IngestSuccess.Success(currentUri, requestStartTime, contentId, urlContent.Length, mediaType, handleRedirectsResult.Redirects);
+                var ingestResult = IngestSuccess.Success(currentUri, 
+                    requestStartTime, 
+                    contentId, 
+                    urlContent.Length, 
+                    mediaType, 
+                    response.StatusCode,
+                    handleRedirectsResult.Redirects);
 
                 if (ingestResult.ContentId.HasValue && ingestResult.MediaType != null)
                 {
