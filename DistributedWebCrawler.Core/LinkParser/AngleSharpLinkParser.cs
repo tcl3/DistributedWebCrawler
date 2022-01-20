@@ -30,7 +30,7 @@ namespace DistributedWebCrawler.Core.LinkParser
                 })
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Distinct()
-                .Select(text => new Hyperlink {  Href = text });
+                .Select(text => new Hyperlink { Href = text });
 
             return hyperlinks;
         }
