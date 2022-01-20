@@ -113,5 +113,15 @@ namespace DistributedWebCrawler.Core.Tests
             var sut = new ComponentNameProvider(TestComponentDescriptors);
             Assert.Throws<KeyNotFoundException>(() => sut.GetFromComponentType<object>());
         }
+
+        [Fact]
+        public void ConstructShouldFailWithDuplicateDescriptors()
+        {
+            var testDescriptorListWithDuplicates = Enumerable.Repeat(TestComponentDescriptors, 2)
+                .SelectMany(x => x)
+                .ToList();
+            
+            Assert.Throws<InvalidOperationException>(() => new ComponentNameProvider(testDescriptorListWithDuplicates));
+        }
     }
 }
