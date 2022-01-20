@@ -23,7 +23,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly SemaphoreSlim _itemSemaphore;
 
         private volatile bool _isPaused;
-        
+
         private readonly SemaphoreSlim _pauseSemaphore;
 
         protected bool IsStarted { get; private set; }
@@ -37,7 +37,7 @@ namespace DistributedWebCrawler.Core.Components
             IEventDispatcher<TSuccess, TFailure> eventReceiver,
             IKeyValueStore keyValueStore,
             ILogger logger,
-            IComponentNameProvider componentNameProvider, 
+            IComponentNameProvider componentNameProvider,
             TaskQueueSettings taskQueueSettings)
         {
             _consumer = consumer;
@@ -80,7 +80,7 @@ namespace DistributedWebCrawler.Core.Components
 
             _logger.LogInformation($"{Name} component started");
 
-            _ = ComponentStartAndHandleExceptionAsync(startState, cancellationToken);                
+            _ = ComponentStartAndHandleExceptionAsync(startState, cancellationToken);
 
             return Task.CompletedTask;
         }
@@ -109,7 +109,7 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     _taskCompletionSource.SetResult();
                 }
-                
+
             }
             catch (OperationCanceledException ex)
             {
@@ -129,12 +129,12 @@ namespace DistributedWebCrawler.Core.Components
             }
 
             await Task.Run(() => ItemProcessingLoop(cancellationToken), cancellationToken).ConfigureAwait(false);
-        }       
-        
+        }
+
         private async Task ItemProcessingLoop(CancellationToken cancellationToken)
         {
             while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
-            {                
+            {
                 await _itemSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
                 if (cancellationToken.IsCancellationRequested)
@@ -153,69 +153,54 @@ namespace DistributedWebCrawler.Core.Components
                 }
 
                 var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
-                
+
                 var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cts.CancelAfter(TimeSpan.FromSeconds(_taskQueueSettings.QueueItemTimeoutSeconds));
                 var processItemCancellationToken = cts.Token;
 
-                var task = ProcessItemAsync(currentItem, processItemCancellationToken);
+                _ = ProcessItemAndReleaseSemaphore(currentItem, processItemCancellationToken);
+            }
+        }
 
-                _ = task.ContinueWith(r =>
+        private async Task ProcessItemAndReleaseSemaphore(TRequest item, CancellationToken cancellationToken)
+        {
+            QueuedItemResult? queuedItem = null;
+            try
+            {
+                queuedItem = await ProcessItemAsync(item, cancellationToken).ConfigureAwait(false);
+
+                if (queuedItem != null)
                 {
-                    _itemSemaphore.Release();
-                }, CancellationToken.None, TaskContinuationOptions.NotOnRanToCompletion, TaskScheduler.Current);
-
-                _ = task.ContinueWith(t =>
-                {
-                    try
-                    {
-                        var queuedItem = t.Result;
-                        _ = NotifyAsync(currentItem, queuedItem);
-                    } 
-                    finally
-                    {
-                        _itemSemaphore.Release();
-                    }
-                    
-                }, CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
-
-                _ = task.ContinueWith(r =>
-                {
-                    _logger.LogInformation($"Task cancelled while processing queued item");
-                }, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled, TaskScheduler.Current);
-
-                _ = task.ContinueWith(r =>
-                {
-                    var aggregateException = task.Exception;
-
-                    if (aggregateException == null || aggregateException.InnerExceptions.Count == 0)
-                    {
-                        _logger.LogError($"Uncaught exception in {Name}.");
-                        return;
-                    }
-
-                    foreach (var exception in aggregateException.InnerExceptions)
-                    {
-                        _logger.LogError(exception, $"Uncaught exception in {Name}");
-                    }
-
-                }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Current);
+                    await NotifyAsync(item, queuedItem).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException) 
+            {
+                _logger.LogInformation($"Task cancelled while processing queued item");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Uncaught exception in {Name}");
+            }
+            finally
+            {
+                _itemSemaphore.Release();
             }
         }
 
         private async Task NotifyAsync(TRequest currentItem, QueuedItemResult queuedItem)
         {
-            if (queuedItem.Status == QueuedItemStatus.Success && queuedItem is QueuedItemResult<TSuccess> successResult)
+            switch (queuedItem.Status)
             {
-                await _eventDispatcher.NotifyCompletedAsync(currentItem, successResult.Result).ConfigureAwait(false);
-            }
-            else if (queuedItem.Status == QueuedItemStatus.Failed && queuedItem is QueuedItemResult<TFailure> failureResult)
-            {
-                await _eventDispatcher.NotifyFailedAsync(currentItem, failureResult.Result).ConfigureAwait(false);
-            }
-            else if (queuedItem.Status == QueuedItemStatus.Waiting)
-            {
-                await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem).ConfigureAwait(false);
+                case QueuedItemStatus.Success when queuedItem is QueuedItemResult<TSuccess> successResult:
+                    await _eventDispatcher.NotifyCompletedAsync(currentItem, successResult.Result).ConfigureAwait(false);
+                    break;
+                case QueuedItemStatus.Failed when queuedItem is QueuedItemResult<TFailure> failedResult:
+                    await _eventDispatcher.NotifyFailedAsync(currentItem, failedResult.Result).ConfigureAwait(false);
+                    break;
+                case QueuedItemStatus.Waiting:
+                    await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem).ConfigureAwait(false);
+                    break;
             }
 
             var componentStatus = GetComponentStatus();
