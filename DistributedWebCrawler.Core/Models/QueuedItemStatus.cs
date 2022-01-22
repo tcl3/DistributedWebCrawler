@@ -1,4 +1,4 @@
-﻿namespace DistributedWebCrawler.Core.Components
+﻿namespace DistributedWebCrawler.Core.Models
 {
     public enum QueuedItemStatus
     {

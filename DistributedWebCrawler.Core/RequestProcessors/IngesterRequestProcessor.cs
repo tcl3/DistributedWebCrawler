@@ -4,6 +4,7 @@ using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,24 +14,24 @@ using System.Net.Mime;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DistributedWebCrawler.Core.Components
+namespace DistributedWebCrawler.Core.RequestProcessors
 {
-    [ComponentName(name: "Ingester", successType: typeof(IngestSuccess), failureType: typeof(IngestFailure))]
-    public class IngesterComponent : IRequestProcessor<IngestRequest>
+    [Component(name: "Ingester", successType: typeof(IngestSuccess), failureType: typeof(IngestFailure))]
+    public class IngesterRequestProcessor : IRequestProcessor<IngestRequest>
     {
         private readonly IngesterSettings _ingesterSettings;
         private readonly IProducer<ParseRequest> _parseRequestProducer;
         private readonly CrawlerClient _crawlerClient;
         private readonly IContentStore _contentStore;
-        private readonly ILogger<IngesterComponent> _logger;
+        private readonly ILogger<IngesterRequestProcessor> _logger;
 
         private readonly Lazy<IEnumerable<MediaTypePattern>> _mediaTypesToInclude;
         private readonly Lazy<IEnumerable<MediaTypePattern>> _mediaTypesToExclude;
 
-        private static readonly HashSet<string> ParseableMediaTypes = new() 
-        { 
-            MediaTypeNames.Text.Html, 
-            MediaTypeNames.Text.Plain 
+        private static readonly HashSet<string> ParseableMediaTypes = new()
+        {
+            MediaTypeNames.Text.Html,
+            MediaTypeNames.Text.Plain
         };
 
         private class HandleRedirectResult
@@ -46,12 +47,12 @@ namespace DistributedWebCrawler.Core.Components
             public IEnumerable<RedirectResult> Redirects { get; init; } = Enumerable.Empty<RedirectResult>();
             public HttpResponseMessage Response { get; init; }
         }
-        
-        public IngesterComponent(IngesterSettings ingesterSettings,
+
+        public IngesterRequestProcessor(IngesterSettings ingesterSettings,
             IProducer<ParseRequest> parseRequestProducer,
             CrawlerClient crawlerClient,
             IContentStore contentStore,
-            ILogger<IngesterComponent> logger)
+            ILogger<IngesterRequestProcessor> logger)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;
@@ -81,7 +82,7 @@ namespace DistributedWebCrawler.Core.Components
                 else
                 {
                     throw new ArgumentException($"'{pattern}' is not a valid media type pattern");
-                }                
+                }
             }
 
             return mediaTypePatterns;
@@ -152,11 +153,11 @@ namespace DistributedWebCrawler.Core.Components
 
                 var contentId = await _contentStore.SaveContentAsync(urlContent, cancellationToken).ConfigureAwait(false);
 
-                var ingestResult = IngestSuccess.Success(currentUri, 
-                    requestStartTime, 
-                    contentId, 
-                    urlContent.Length, 
-                    mediaType, 
+                var ingestResult = IngestSuccess.Success(currentUri,
+                    requestStartTime,
+                    contentId,
+                    urlContent.Length,
+                    mediaType,
                     response.StatusCode,
                     handleRedirectsResult.Redirects);
 
@@ -204,9 +205,9 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     _logger.LogInformation($"Max redirect depth ({_ingesterSettings.MaxRedirects}) reached for URI: {uri}");
                     return new HandleRedirectResult(uri, response)
-                    { 
-                        FailureReason = IngestFailureReason.MaxRedirectsReached, 
-                        Redirects = redirects 
+                    {
+                        FailureReason = IngestFailureReason.MaxRedirectsReached,
+                        Redirects = redirects
                     };
                 }
                 var redirectUri = response.Headers.Location;
@@ -229,6 +230,6 @@ namespace DistributedWebCrawler.Core.Components
             return Uri.IsWellFormedUriString(ingestPath, UriKind.Absolute)
                 ? new Uri(ingestPath)
                 : new Uri(baseAddress, ingestPath);
-        } 
+        }
     }
 }

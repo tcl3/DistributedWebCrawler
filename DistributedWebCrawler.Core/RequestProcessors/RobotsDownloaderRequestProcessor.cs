@@ -3,28 +3,28 @@ using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DistributedWebCrawler.Core.Components
+namespace DistributedWebCrawler.Core.RequestProcessors
 {
 
-    [ComponentName(name: "RobotsDownloader", successType: typeof(RobotsDownloaderSuccess), failureType: typeof(ErrorCode<RobotsDownloaderFailure>))]
-
-    public class RobotsDownloaderComponent : IRequestProcessor<RobotsRequest>
+    [Component(name: "RobotsDownloader", successType: typeof(RobotsDownloaderSuccess), failureType: typeof(ErrorCode<RobotsDownloaderFailure>))]
+    public class RobotsDownloaderRequestProcessor : IRequestProcessor<RobotsRequest>
     {
-        private readonly ILogger<RobotsDownloaderComponent> _logger;
+        private readonly ILogger<RobotsDownloaderRequestProcessor> _logger;
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly IRobotsCacheWriter _robotsCache;
         private readonly IKeyValueStore _outstandingItemsStore;
 
         private readonly TimeSpan _expirationTimeSpan;
 
-        public RobotsDownloaderComponent(
-            ILogger<RobotsDownloaderComponent> logger,
+        public RobotsDownloaderRequestProcessor(
+            ILogger<RobotsDownloaderRequestProcessor> logger,
             IProducer<SchedulerRequest> schedulerRequestProducer,
             IKeyValueStore keyValueStore,
             IRobotsCacheWriter robotsCacheWriter,

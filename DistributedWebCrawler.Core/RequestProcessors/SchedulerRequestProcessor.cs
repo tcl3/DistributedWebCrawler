@@ -13,14 +13,15 @@ using DistributedWebCrawler.Core.Queue;
 using System.Threading;
 using DistributedWebCrawler.Core.Attributes;
 using DistributedWebCrawler.Core.Extensions;
+using DistributedWebCrawler.Core.Models;
 
-namespace DistributedWebCrawler.Core.Components
+namespace DistributedWebCrawler.Core.RequestProcessors
 {
-    [ComponentName(name: "Scheduler", successType: typeof(SchedulerSuccess), failureType: typeof(ErrorCode<SchedulerFailure>))]
-    public class SchedulerComponent : IRequestProcessor<SchedulerRequest>
+    [Component(name: "Scheduler", successType: typeof(SchedulerSuccess), failureType: typeof(ErrorCode<SchedulerFailure>))]
+    public class SchedulerRequestProcessor : IRequestProcessor<SchedulerRequest>
     {
         private enum DomainStatus
-        {   
+        {
             Inactive,
             Queued,
             Ingesting
@@ -30,7 +31,7 @@ namespace DistributedWebCrawler.Core.Components
 
         private readonly SchedulerSettings _schedulerSettings;
         private readonly IEventReceiver<IngestSuccess, IngestFailure> _ingestEventReceiver;
-        private readonly ILogger<SchedulerComponent> _logger;
+        private readonly ILogger<SchedulerRequestProcessor> _logger;
         private readonly IRobotsCacheReader _robotsCacheReader;
         private readonly IProducer<RobotsRequest> _robotsRequestProducer;
         private readonly IProducer<IngestRequest> _ingestRequestProducer;
@@ -52,10 +53,10 @@ namespace DistributedWebCrawler.Core.Components
         private Task? _schedulerLoopTask;
         private object _lockObject = new();
 
-        public SchedulerComponent(
+        public SchedulerRequestProcessor(
             SchedulerSettings schedulerSettings,
             IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
-            ILogger<SchedulerComponent> logger,
+            ILogger<SchedulerRequestProcessor> logger,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest> robotsRequestProducer,
             IProducer<IngestRequest> ingestRequestProducer,
@@ -76,7 +77,7 @@ namespace DistributedWebCrawler.Core.Components
             _nextPathForHostQueue = new();
             _activeDomains = new();
 
-            _domainsToInclude = _schedulerSettings.IncludeDomains != null 
+            _domainsToInclude = _schedulerSettings.IncludeDomains != null
                 ? _schedulerSettings.IncludeDomains.Select(str => new DomainPattern(str))
                 : Enumerable.Empty<DomainPattern>();
 
@@ -132,7 +133,7 @@ namespace DistributedWebCrawler.Core.Components
                     {
                         await AddNextUriToSchedulerQueueAsync(entry.Domain, schedulerRequest, addCrawlDelay: true).ConfigureAwait(false);
                     }
-                } 
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unhandled exception in Scheduler thread");
@@ -173,13 +174,13 @@ namespace DistributedWebCrawler.Core.Components
         {
             if (_schedulerLoopTask == null)
             {
-                lock(_lockObject)
+                lock (_lockObject)
                 {
                     if (_schedulerLoopTask == null)
                     {
                         _schedulerLoopTask = Task.Run(() => SchedulerLoop(cancellationToken), cancellationToken);
-                    } 
-                }                
+                    }
+                }
             }
 
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
@@ -189,8 +190,8 @@ namespace DistributedWebCrawler.Core.Components
             }
 
             var visitedPathsForHost = Enumerable.Empty<string>();
-            
-            var domain = _domainParser.IsValidDomain(schedulerRequest.Uri.Host) 
+
+            var domain = _domainParser.IsValidDomain(schedulerRequest.Uri.Host)
                 ? _domainParser.Parse(schedulerRequest.Uri).RegistrableDomain
                 : schedulerRequest.Uri.Host;
 
@@ -290,7 +291,7 @@ namespace DistributedWebCrawler.Core.Components
                         if (!contains) validPaths.Add(path);
                         else _logger.LogDebug($"Excluding '{fullUri}'. Domain is in ExcludeDomains list");
                     }
-                } 
+                }
                 catch (ParseException ex)
                 {
                     _logger.LogError(ex, $"Unable to parse domain from {fullUri}");
@@ -312,7 +313,7 @@ namespace DistributedWebCrawler.Core.Components
             urisToVisit = urisToVisit.Skip(1);
 
             var queueEntry = new SchedulerQueueEntry(nextUriToVisit, domain, schedulerRequest);
-                
+
             var notBefore = SystemClock.DateTimeOffsetNow();
             if (!addCrawlDelay)
             {
@@ -322,11 +323,11 @@ namespace DistributedWebCrawler.Core.Components
             await _nextPathForHostQueue.EnqueueAsync(queueEntry, notBefore, cancellationToken).ConfigureAwait(false);
 
             _activeDomains.AddOrUpdate(queueEntry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Queued);
-            
+
             if (urisToVisit.Any())
             {
                 _queuedPathsLookup.AddOrUpdate(domain, urisToVisit, (key, oldValue) => urisToVisit);
-            } 
+            }
             else
             {
                 _queuedPathsLookup.TryRemove(domain, out _);

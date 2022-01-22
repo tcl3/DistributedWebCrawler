@@ -2,27 +2,28 @@
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DistributedWebCrawler.Core.Components
+namespace DistributedWebCrawler.Core.RequestProcessors
 {
-    [ComponentName(name: "Parser", successType: typeof(ParseSuccess), failureType: typeof(ErrorCode<ParseFailure>))]
-    public class ParserComponent : IRequestProcessor<ParseRequest>
+    [Component(name: "Parser", successType: typeof(ParseSuccess), failureType: typeof(ErrorCode<ParseFailure>))]
+    public class ParserRequestProcessor : IRequestProcessor<ParseRequest>
     {
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly ILinkParser _linkParser;
         private readonly IContentStore _contentStore;
-        private readonly ILogger<ParserComponent> _logger;
+        private readonly ILogger<ParserRequestProcessor> _logger;
 
-        public ParserComponent(
+        public ParserRequestProcessor(
             IProducer<SchedulerRequest> schedulerRequestProducer,
             ILinkParser linkParser,
             IContentStore contentStore,
-            ILogger<ParserComponent> logger)            
+            ILogger<ParserRequestProcessor> logger)
         {
             _schedulerRequestProducer = schedulerRequestProducer;
             _linkParser = linkParser;
@@ -39,7 +40,7 @@ namespace DistributedWebCrawler.Core.Components
         {
             var content = await _contentStore.GetContentAsync(parseRequest.ContentId, cancellationToken).ConfigureAwait(false);
 
-            if (string.IsNullOrEmpty(content)) 
+            if (string.IsNullOrEmpty(content))
             {
                 _logger.LogError($"Item with ID: '{parseRequest.ContentId}', not found in ContentStore");
                 return parseRequest.Failed(ParseFailure.NoItemInContentStore.AsErrorCode());

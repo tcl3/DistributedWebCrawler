@@ -1,7 +1,7 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
-using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +23,7 @@ namespace DistributedWebCrawler.Core.Tests.Fakes
         DefaultValue = 0,
     }
 
-    [ComponentName("Test", typeof(TestSuccess), typeof(ErrorCode<TestFailure>))]
+    [Component("Test", typeof(TestSuccess), typeof(ErrorCode<TestFailure>))]
     public class TestComponent : IRequestProcessor<TestRequest>
     {
 

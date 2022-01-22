@@ -40,7 +40,7 @@ namespace DistributedWebCrawler.Core
                     continue;
                 }
 
-                var componentAttribute = type.GetCustomAttribute<ComponentNameAttribute>();
+                var componentAttribute = type.GetCustomAttribute<ComponentAttribute>();
                 if (componentAttribute == null)
                 {
                     continue;
