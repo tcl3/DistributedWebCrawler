@@ -1,5 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
 using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using System;
 using System.Threading;
@@ -22,20 +23,11 @@ namespace DistributedWebCrawler.Core.Tests.Fakes
         DefaultValue = 0,
     }
 
-    [ComponentName("Test")]
-    public class TestComponentWithNameAttribute : TestComponent
+    [ComponentName("Test", typeof(TestSuccess), typeof(ErrorCode<TestFailure>))]
+    public class TestComponent : IRequestProcessor<TestRequest>
     {
-    }
 
-    public class TestComponent
-        : AbstractTaskQueueComponent<TestRequest, TestSuccess, ErrorCode<TestFailure>>
-    {
-        public TestComponent()
-            : base(null!, null!, null!, null!, null!, null!)
-        {
-        }
-
-        protected override Task<QueuedItemResult> ProcessItemAsync(TestRequest item, CancellationToken cancellationToken)
+        public Task<QueuedItemResult> ProcessItemAsync(TestRequest item, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

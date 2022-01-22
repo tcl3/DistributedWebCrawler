@@ -16,8 +16,8 @@ using DistributedWebCrawler.Core.Extensions;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    [ComponentName("Scheduler")]
-    public class SchedulerComponent : AbstractTaskQueueComponent<SchedulerRequest, SchedulerSuccess, ErrorCode<SchedulerFailure>>
+    [ComponentName(name: "Scheduler", successType: typeof(SchedulerSuccess), failureType: typeof(ErrorCode<SchedulerFailure>))]
+    public class SchedulerComponent : IRequestProcessor<SchedulerRequest>
     {
         private enum DomainStatus
         {   
@@ -49,18 +49,17 @@ namespace DistributedWebCrawler.Core.Components
 
         private const int IngestQueueMaxItems = 500;
 
-        public SchedulerComponent(SchedulerSettings schedulerSettings,
-            IConsumer<SchedulerRequest> consumer,
-            IEventDispatcher<SchedulerSuccess, ErrorCode<SchedulerFailure>> eventDispatcher,
+        private Task? _schedulerLoopTask;
+        private object _lockObject = new();
+
+        public SchedulerComponent(
+            SchedulerSettings schedulerSettings,
             IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
-            IKeyValueStore keyValueStore,
             ILogger<SchedulerComponent> logger,
-            IComponentNameProvider componentNameProvider,
             IRobotsCacheReader robotsCacheReader,
             IProducer<RobotsRequest> robotsRequestProducer,
             IProducer<IngestRequest> ingestRequestProducer,
             IDomainParser domainParser)
-            : base(consumer, eventDispatcher, keyValueStore, logger, componentNameProvider, schedulerSettings)
         {
             _schedulerSettings = schedulerSettings;
             _ingestEventReceiver = ingestEventReceiver;
@@ -86,16 +85,10 @@ namespace DistributedWebCrawler.Core.Components
                 : Enumerable.Empty<DomainPattern>();
         }
 
-        protected override Task ComponentStartAsync(CrawlerRunningState startState, CancellationToken cancellationToken)
-        {
-            var queueLoopTask = base.ComponentStartAsync(startState, cancellationToken);
-            var schedulerLoopTask = Task.Run(() => SchedulerLoop(cancellationToken), cancellationToken);
-            return Task.WhenAll(new[] { queueLoopTask, schedulerLoopTask});
-        }
-
         private async Task SchedulerLoop(CancellationToken cancellationToken)
         {
-            while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
+            //while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -107,6 +100,11 @@ namespace DistributedWebCrawler.Core.Components
                     }
 
                     var entry = await _nextPathForHostQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
 
                     var schedulerRequest = entry.SchedulerRequest;
 
@@ -171,12 +169,23 @@ namespace DistributedWebCrawler.Core.Components
             }
         }
 
-        protected async override Task<QueuedItemResult> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
+        public async Task<QueuedItemResult> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
         {
+            if (_schedulerLoopTask == null)
+            {
+                lock(_lockObject)
+                {
+                    if (_schedulerLoopTask == null)
+                    {
+                        _schedulerLoopTask = Task.Run(() => SchedulerLoop(cancellationToken), cancellationToken);
+                    } 
+                }                
+            }
+
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
             {
                 _logger.LogError($"Not processing {schedulerRequest.Uri}. Maximum crawl depth exceeded (curremt: {schedulerRequest.CurrentCrawlDepth}, max: {_schedulerSettings.MaxCrawlDepth})");
-                return Failed(schedulerRequest, SchedulerFailure.MaximumCrawlDepthReached.AsErrorCode());
+                return schedulerRequest.Failed(SchedulerFailure.MaximumCrawlDepthReached.AsErrorCode());
             }
 
             var visitedPathsForHost = Enumerable.Empty<string>();
@@ -222,7 +231,7 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest.Id);
                     _robotsRequestProducer.Enqueue(robotsRequest);
-                    return Waiting(schedulerRequest);
+                    return schedulerRequest.Waiting();
                 }
             }
 
@@ -239,7 +248,7 @@ namespace DistributedWebCrawler.Core.Components
             if (!pathsToVisit.Any())
             {
                 _logger.LogDebug($"Not processing request for host: {schedulerRequest.Uri}. No unvisited paths");
-                return Success(schedulerRequest, new SchedulerSuccess(schedulerRequest.Uri, Enumerable.Empty<string>()));
+                return schedulerRequest.Success(new SchedulerSuccess(schedulerRequest.Uri, Enumerable.Empty<string>()));
             }
 
             schedulerRequest.Paths = pathsToVisit;
@@ -253,7 +262,7 @@ namespace DistributedWebCrawler.Core.Components
                 await AddNextUriToSchedulerQueueAsync(domain, schedulerRequest, cancellationToken, firstTimeVisit).ConfigureAwait(false);
             }
 
-            return Success(schedulerRequest, new SchedulerSuccess(schedulerRequest.Uri, pathsToVisit));
+            return schedulerRequest.Success(new SchedulerSuccess(schedulerRequest.Uri, pathsToVisit));
         }
 
         private enum PathCompareMode

@@ -1,5 +1,4 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
-using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
@@ -11,24 +10,19 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    [ComponentName("Parser")]
-    public class ParserComponent : AbstractTaskQueueComponent<ParseRequest, ParseSuccess, ErrorCode<ParseFailure>>
+    [ComponentName(name: "Parser", successType: typeof(ParseSuccess), failureType: typeof(ErrorCode<ParseFailure>))]
+    public class ParserComponent : IRequestProcessor<ParseRequest>
     {
         private readonly IProducer<SchedulerRequest> _schedulerRequestProducer;
         private readonly ILinkParser _linkParser;
         private readonly IContentStore _contentStore;
         private readonly ILogger<ParserComponent> _logger;
 
-        public ParserComponent(ParserSettings parserSettings,
-            IConsumer<ParseRequest> parseRequestConsumer,
-            IEventDispatcher<ParseSuccess, ErrorCode<ParseFailure>> eventDispatcher,
+        public ParserComponent(
             IProducer<SchedulerRequest> schedulerRequestProducer,
             ILinkParser linkParser,
             IContentStore contentStore,
-            IKeyValueStore keyValueStore,
-            ILogger<ParserComponent> logger,
-            IComponentNameProvider componentNameProvider)
-            : base(parseRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, parserSettings)
+            ILogger<ParserComponent> logger)            
         {
             _schedulerRequestProducer = schedulerRequestProducer;
             _linkParser = linkParser;
@@ -36,7 +30,7 @@ namespace DistributedWebCrawler.Core.Components
             _logger = logger;
         }
 
-        protected override Task<QueuedItemResult> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
+        public Task<QueuedItemResult> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
         {
             return Task.Run(async () => await ProcessItemInternalAsync(parseRequest, cancellationToken).ConfigureAwait(false), cancellationToken);
         }
@@ -48,14 +42,14 @@ namespace DistributedWebCrawler.Core.Components
             if (string.IsNullOrEmpty(content)) 
             {
                 _logger.LogError($"Item with ID: '{parseRequest.ContentId}', not found in ContentStore");
-                return Failed(parseRequest, ParseFailure.NoItemInContentStore.AsErrorCode());
+                return parseRequest.Failed(ParseFailure.NoItemInContentStore.AsErrorCode());
             }
 
             var links = (await _linkParser.ParseLinksAsync(content).ConfigureAwait(false)).ToList();
 
             if (!links.Any())
             {
-                return Failed(parseRequest, ParseFailure.NoLinksFound.AsErrorCode());
+                return parseRequest.Failed(ParseFailure.NoLinksFound.AsErrorCode());
             }
 
             _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri}");
@@ -82,7 +76,7 @@ namespace DistributedWebCrawler.Core.Components
                 _schedulerRequestProducer.Enqueue(schedulerRequest);
             }
 
-            return Success(parseRequest, new ParseSuccess(parseRequest.Uri) { NumberOfLinks = links.Count });
+            return parseRequest.Success(new ParseSuccess(parseRequest.Uri) { NumberOfLinks = links.Count });
         }
 
 

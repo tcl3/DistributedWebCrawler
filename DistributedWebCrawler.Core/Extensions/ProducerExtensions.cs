@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Extensions
@@ -104,6 +105,19 @@ namespace DistributedWebCrawler.Core.Extensions
             var callbackHandler = CallbackHandler<TSuccess, TFailure>.Instance;
 
             callbackHandler.AddCallback(item.Id, eventReceiver, completedHandler, failedHandler);
+        }
+        public static async Task RequeueAsync<TRequest>(this IProducer<TRequest> producer, Guid requestId, IKeyValueStore outstandingItemsStore, CancellationToken cancellationToken = default)
+            where TRequest : RequestBase
+        {
+            var requestKey = requestId.ToString("N");
+            var request = await outstandingItemsStore.GetAsync<TRequest>(requestKey).ConfigureAwait(false);
+            if (request == null)
+            {
+                throw new KeyNotFoundException($"Request of type {typeof(TRequest).Name} and ID: {requestId} not found in KeyValueStore");
+            }
+
+            producer.Enqueue(request);
+            await outstandingItemsStore.RemoveAsync(requestKey).ConfigureAwait(false);
         }
     }
 }

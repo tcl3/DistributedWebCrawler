@@ -42,7 +42,8 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 
         public static IServiceCollection AddCrawlerManager(this IServiceCollection services, Type eventReceiverType, IEnumerable<Assembly>? componentAssemblies = null)
         {
-            componentAssemblies ??= new[] { typeof(AbstractTaskQueueComponent<,,>).Assembly };
+            // FIXME: marker interface
+            componentAssemblies ??= new[] { typeof(TaskQueueComponent<,,,>).Assembly };
 
             var componentDescriptors = ComponentDescriptor.FromAssemblies(componentAssemblies);
 

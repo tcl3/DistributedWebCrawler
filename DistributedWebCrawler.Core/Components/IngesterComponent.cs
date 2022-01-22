@@ -15,8 +15,8 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    [ComponentName("Ingester")]
-    public class IngesterComponent : AbstractTaskQueueComponent<IngestRequest, IngestSuccess, IngestFailure>
+    [ComponentName(name: "Ingester", successType: typeof(IngestSuccess), failureType: typeof(IngestFailure))]
+    public class IngesterComponent : IRequestProcessor<IngestRequest>
     {
         private readonly IngesterSettings _ingesterSettings;
         private readonly IProducer<ParseRequest> _parseRequestProducer;
@@ -27,31 +27,31 @@ namespace DistributedWebCrawler.Core.Components
         private readonly Lazy<IEnumerable<MediaTypePattern>> _mediaTypesToInclude;
         private readonly Lazy<IEnumerable<MediaTypePattern>> _mediaTypesToExclude;
 
-        private static readonly HashSet<string> ParseableMediaTypes = new() { MediaTypeNames.Text.Html, MediaTypeNames.Text.Plain };
+        private static readonly HashSet<string> ParseableMediaTypes = new() 
+        { 
+            MediaTypeNames.Text.Html, 
+            MediaTypeNames.Text.Plain 
+        };
 
         private class HandleRedirectResult
         {
-            public HandleRedirectResult(Uri uri)
+            public HandleRedirectResult(Uri uri, HttpResponseMessage response)
             {
                 Uri = uri;
+                Response = response;
             }
 
             public Uri Uri { get; init; }
             public IngestFailureReason? FailureReason { get; init; }
             public IEnumerable<RedirectResult> Redirects { get; init; } = Enumerable.Empty<RedirectResult>();
-            public HttpResponseMessage? Response { get; init; }
+            public HttpResponseMessage Response { get; init; }
         }
         
         public IngesterComponent(IngesterSettings ingesterSettings,
-            IConsumer<IngestRequest> ingestRequestConsumer,
-            IEventDispatcher<IngestSuccess, IngestFailure> eventDispatcher,
             IProducer<ParseRequest> parseRequestProducer,
             CrawlerClient crawlerClient,
             IContentStore contentStore,
-            IKeyValueStore keyValueStore,
-            ILogger<IngesterComponent> logger,
-            IComponentNameProvider componentNameProvider) 
-            : base(ingestRequestConsumer, eventDispatcher, keyValueStore, logger, componentNameProvider, ingesterSettings)
+            ILogger<IngesterComponent> logger)
         {
             _ingesterSettings = ingesterSettings;
             _parseRequestProducer = parseRequestProducer;
@@ -87,13 +87,13 @@ namespace DistributedWebCrawler.Core.Components
             return mediaTypePatterns;
         }
 
-        protected async override Task<QueuedItemResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
+        public async Task<QueuedItemResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
         {
             var requestStartTime = SystemClock.DateTimeOffsetNow();
             if (item.MaxDepthReached)
             {
                 _logger.LogDebug($"Not sending request to parser for {item.Uri}");
-                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.MaxDepthReached));
+                return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.MaxDepthReached));
             }
 
             try
@@ -105,12 +105,7 @@ namespace DistributedWebCrawler.Core.Components
                 if (handleRedirectsResult.FailureReason.HasValue)
                 {
                     var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, handleRedirectsResult.FailureReason.Value, redirects: handleRedirectsResult.Redirects);
-                    return Failed(item, ingestFailure);
-                }
-
-                if (handleRedirectsResult.Response == null)
-                {
-                    throw new InvalidOperationException("HandleRedirectResult Response to have a value");
+                    return item.Failed(ingestFailure);
                 }
 
                 var response = handleRedirectsResult.Response;
@@ -119,13 +114,13 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     _logger.LogInformation($"Failed to retrieve URI {currentUri} . Status code {(int)response.StatusCode}");
                     var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.Http4xxError, httpStatusCode: response.StatusCode);
-                    return Failed(item, ingestFailure);
+                    return item.Failed(ingestFailure);
                 }
 
                 if (response.Content.Headers.ContentLength > _ingesterSettings.MaxContentLengthBytes)
                 {
                     _logger.LogInformation($"Content length for {currentUri} ({response.Content.Headers.ContentLength} bytes) is longer than the maximum allowed ({_ingesterSettings.MaxContentLengthBytes} bytes)");
-                    return Failed(item, IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.ContentTooLarge));
+                    return item.Failed(IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.ContentTooLarge));
                 }
 
                 var contentTypeHeader = response.Content.Headers.ContentType;
@@ -139,13 +134,13 @@ namespace DistributedWebCrawler.Core.Components
                     {
                         _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) not present in include list");
                         var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
-                        return Failed(item, ingestFailure);
+                        return item.Failed(ingestFailure);
                     }
                     else if (_mediaTypesToExclude.Value.Any() && _mediaTypesToExclude.Value.Any(x => x.Match(contentType)))
                     {
                         _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) present in exclude list");
                         var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
-                        return Failed(item, ingestFailure);
+                        return item.Failed(ingestFailure);
                     }
                 }
 
@@ -178,22 +173,22 @@ namespace DistributedWebCrawler.Core.Components
                     }
                 }
 
-                return Success(item, ingestResult);
+                return item.Success(ingestResult);
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, $"Error when getting for URI {item.Uri}. {ex.Message}");
-                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.NetworkConnectivityError, httpStatusCode: ex.StatusCode));
+                return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.NetworkConnectivityError, httpStatusCode: ex.StatusCode));
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, $"Error processing URL for URI {item.Uri}. {ex.Message}");
-                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
+                return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError($"Timeout while getting URL for URI {item.Uri}. {ex.Message}");
-                return Failed(item, IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.RequestTimeout));
+                return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.RequestTimeout));
             }
         }
 
@@ -208,7 +203,7 @@ namespace DistributedWebCrawler.Core.Components
                 if (currentRedirectDepth++ >= _ingesterSettings.MaxRedirects)
                 {
                     _logger.LogInformation($"Max redirect depth ({_ingesterSettings.MaxRedirects}) reached for URI: {uri}");
-                    return new HandleRedirectResult(uri)
+                    return new HandleRedirectResult(uri, response)
                     { 
                         FailureReason = IngestFailureReason.MaxRedirectsReached, 
                         Redirects = redirects 
@@ -226,7 +221,7 @@ namespace DistributedWebCrawler.Core.Components
                 uri = redirectUriAbsolute;
             }
 
-            return new HandleRedirectResult(uri) { Response = response, Redirects = redirects };
+            return new HandleRedirectResult(uri, response) { Redirects = redirects };
         }
 
         private static Uri PathToAbsoluteUri(Uri baseAddress, string ingestPath)

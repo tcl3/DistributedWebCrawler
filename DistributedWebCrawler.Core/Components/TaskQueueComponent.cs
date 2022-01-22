@@ -11,10 +11,12 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Components
 {
-    public abstract class AbstractTaskQueueComponent<TRequest, TSuccess, TFailure> : ICrawlerComponent
+    public class TaskQueueComponent<TRequest, TSuccess, TFailure, TSettings> : ICrawlerComponent
         where TRequest : RequestBase
         where TFailure : IErrorCode
+        where TSettings : TaskQueueSettings
     {
+        private readonly IRequestProcessor<TRequest> _requestProcessor;
         private readonly IConsumer<TRequest> _consumer;
         private readonly IEventDispatcher<TSuccess, TFailure> _eventDispatcher;
         private readonly IKeyValueStore _outstandingItemsStore;
@@ -33,25 +35,28 @@ namespace DistributedWebCrawler.Core.Components
 
         private readonly TaskCompletionSource _taskCompletionSource;
 
-        protected AbstractTaskQueueComponent(IConsumer<TRequest> consumer,
+        public TaskQueueComponent(
+            IRequestProcessor<TRequest> requestProcessor,
+            IConsumer<TRequest> consumer,
             IEventDispatcher<TSuccess, TFailure> eventReceiver,
             IKeyValueStore keyValueStore,
-            ILogger logger,
+            ILogger<TaskQueueComponent<TRequest, TSuccess, TFailure, TSettings>> logger,
             IComponentNameProvider componentNameProvider,
-            TaskQueueSettings taskQueueSettings)
+            TSettings settings)
         {
+            _requestProcessor = requestProcessor;
             _consumer = consumer;
             _eventDispatcher = eventReceiver;
             _outstandingItemsStore = keyValueStore.WithKeyPrefix("TaskQueueOutstandingItems");
             _logger = logger;
-            _taskQueueSettings = taskQueueSettings;
-            _itemSemaphore = new SemaphoreSlim(taskQueueSettings.MaxConcurrentItems, taskQueueSettings.MaxConcurrentItems);
+            _taskQueueSettings = settings;
+            _itemSemaphore = new SemaphoreSlim(settings.MaxConcurrentItems, settings.MaxConcurrentItems);
             _pauseSemaphore = new SemaphoreSlim(0);
             _taskCompletionSource = new();
 
             _name = new Lazy<string>(() =>
             {
-                var componentType = GetType();
+                var componentType = requestProcessor.GetType();
                 return componentNameProvider.GetComponentName(componentType);
             });
         }
@@ -167,7 +172,7 @@ namespace DistributedWebCrawler.Core.Components
             QueuedItemResult? queuedItem = null;
             try
             {
-                queuedItem = await ProcessItemAsync(item, cancellationToken).ConfigureAwait(false);
+                queuedItem = await _requestProcessor.ProcessItemAsync(item, cancellationToken).ConfigureAwait(false);
 
                 if (queuedItem != null)
                 {
@@ -207,25 +212,6 @@ namespace DistributedWebCrawler.Core.Components
             await _eventDispatcher.NotifyComponentStatusUpdateAsync(componentStatus).ConfigureAwait(false);
         }
 
-        public async Task RequeueAsync<TInnerRequest>(Guid requestId, IProducer<TInnerRequest> producer, CancellationToken cancellationToken = default)
-            where TInnerRequest : RequestBase
-        {
-            if (!IsStarted)
-            {
-                throw new InvalidOperationException($"Cannot call {nameof(RequeueAsync)} before {nameof(StartAsync)}");
-            }
-
-            var requestKey = requestId.ToString("N");
-            var request = await _outstandingItemsStore.GetAsync<TInnerRequest>(requestKey).ConfigureAwait(false);
-            if (request == null)
-            {
-                throw new KeyNotFoundException($"Request of type {typeof(TInnerRequest).Name} and ID: {requestId} not found in KeyValueStore");
-            }
-
-            producer.Enqueue(request);
-            await _outstandingItemsStore.RemoveAsync(requestKey).ConfigureAwait(false);
-        }
-
         public Task PauseAsync()
         {
             if (!IsStarted)
@@ -261,22 +247,5 @@ namespace DistributedWebCrawler.Core.Components
                 MaxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems
             };
         }
-
-        protected static QueuedItemResult<TSuccess> Success(RequestBase request, TSuccess result)
-        {
-            return new QueuedItemResult<TSuccess>(request.Id, QueuedItemStatus.Success, result);
-        }
-
-        protected static QueuedItemResult<TFailure> Failed(RequestBase request, TFailure result)
-        {
-            return new QueuedItemResult<TFailure>(request.Id, QueuedItemStatus.Failed, result);
-        }
-
-        protected static QueuedItemResult Waiting(RequestBase request)
-        {
-            return new QueuedItemResult(request.Id, QueuedItemStatus.Waiting);
-        }
-
-        protected abstract Task<QueuedItemResult> ProcessItemAsync(TRequest item, CancellationToken cancellationToken);
     }
 }

@@ -12,7 +12,7 @@ namespace DistributedWebCrawler.Core.Tests
     {
 
     }
-    
+
     public abstract class ComponentNameProviderTests<TComponent, TSuccess, TFailure>
     {
         private static readonly IEnumerable<ComponentDescriptor> TestComponentDescriptors;
@@ -88,7 +88,7 @@ namespace DistributedWebCrawler.Core.Tests
         public void GetComponentNameOrDefaultTest()
         {
             var sut = new ComponentNameProvider(TestComponentDescriptors);
-            
+
             var defaultValueFromFactoryReult = sut.GetComponentNameOrDefault<object>(() => TestDefaultValue);
             Assert.Equal(TestDefaultValue, defaultValueFromFactoryReult);
 
@@ -120,7 +120,7 @@ namespace DistributedWebCrawler.Core.Tests
             var testDescriptorListWithDuplicates = Enumerable.Repeat(TestComponentDescriptors, 2)
                 .SelectMany(x => x)
                 .ToList();
-            
+
             Assert.Throws<InvalidOperationException>(() => new ComponentNameProvider(testDescriptorListWithDuplicates));
         }
     }

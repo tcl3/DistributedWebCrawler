@@ -4,6 +4,7 @@ using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Robots;
+using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -61,22 +62,25 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
         public ICrawlerBuilder WithIngester(Action<IIngesterBuilder> ingesterBuilderAction)
         {
-            _services.AddSingleton<ICrawlerComponent, IngesterComponent>();
+            _services.AddSingleton<ICrawlerComponent, TaskQueueComponent<IngestRequest, IngestSuccess, IngestFailure, AnnotatedIngesterSettings>>();
+            _services.AddSingleton<IRequestProcessor<IngestRequest>, IngesterComponent>();
             ingesterBuilderAction?.Invoke(_ingesterBuilder);
             return this;
         }
 
         public ICrawlerBuilder WithParser(Action<IParserBuilder> parserBuilderAction)
         {
-            _services.AddSingleton<ICrawlerComponent, ParserComponent>();
+            _services.AddSingleton<ICrawlerComponent, TaskQueueComponent<ParseRequest, ParseSuccess, ErrorCode<ParseFailure>, AnnotatedParserSettings>>();
+            _services.AddSingleton<IRequestProcessor<ParseRequest>, ParserComponent>();
             parserBuilderAction?.Invoke(_parserBuilder);
             return this;
         }
 
         public ICrawlerBuilder WithScheduler(Action<ISchedulerBuilder> schedulerBuilderAction)
         {
-            _services.AddSingleton<ICrawlerComponent, SchedulerComponent>();
-            
+            _services.AddSingleton<ICrawlerComponent, TaskQueueComponent<SchedulerRequest, SchedulerSuccess, ErrorCode<SchedulerFailure>, AnnotatedSchedulerSettings>>();
+            _services.AddSingleton<IRequestProcessor<SchedulerRequest>, SchedulerComponent>();
+
             _services.TryAddSingleton<IDomainParser>(_ => new DomainParser(new WebTldRuleProvider()));
 
             schedulerBuilderAction?.Invoke(_schedulerBuilder);
@@ -85,7 +89,9 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
         public ICrawlerBuilder WithRobotsDownloader(Action<IRobotsDownloaderBuilder> robotsDownloaderAction)
         {
-            _services.AddSingleton<ICrawlerComponent, RobotsDownloaderComponent>();
+            _services.AddSingleton<ICrawlerComponent, TaskQueueComponent<RobotsRequest, RobotsDownloaderSuccess, ErrorCode<RobotsDownloaderFailure>, AnnotatedRobotsTxtSettings>>();
+            _services.AddSingleton<IRequestProcessor<RobotsRequest>, RobotsDownloaderComponent>();
+
             _services.AddSingleton<IRobotsCacheWriter, RobotsCacheWriter>();
             robotsDownloaderAction?.Invoke(_robotsDownloaderBuilder);
             return this;
