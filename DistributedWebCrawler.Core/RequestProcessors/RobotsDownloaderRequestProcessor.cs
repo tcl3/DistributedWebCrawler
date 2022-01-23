@@ -6,7 +6,6 @@ using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Models;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -38,7 +37,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             _expirationTimeSpan = TimeSpan.FromSeconds(settings.CacheIntervalSeconds);
         }
 
-        public async Task<QueuedItemResult> ProcessItemAsync(RobotsRequest item, CancellationToken cancellationToken)
+        public async Task<QueuedItemResult> ProcessItemAsync(RobotsRequest item, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation($"Processing robots.txt request for {item.Uri}");
 

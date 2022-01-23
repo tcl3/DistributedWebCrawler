@@ -1,5 +1,4 @@
 ﻿using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
 using Microsoft.Extensions.Logging;
@@ -170,7 +169,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             }
         }
 
-        public async Task<QueuedItemResult> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken)
+        public async Task<QueuedItemResult> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken = default)
         {
             if (_schedulerLoopTask == null)
             {

@@ -31,7 +31,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             _logger = logger;
         }
 
-        public Task<QueuedItemResult> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken)
+        public Task<QueuedItemResult> ProcessItemAsync(ParseRequest parseRequest, CancellationToken cancellationToken = default)
         {
             return Task.Run(async () => await ProcessItemInternalAsync(parseRequest, cancellationToken).ConfigureAwait(false), cancellationToken);
         }

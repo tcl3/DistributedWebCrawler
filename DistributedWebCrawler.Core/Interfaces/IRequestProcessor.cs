@@ -7,6 +7,6 @@ namespace DistributedWebCrawler.Core.Interfaces
 {
     public interface IRequestProcessor<TRequest> where TRequest : RequestBase
     {
-        Task<QueuedItemResult> ProcessItemAsync(TRequest item, CancellationToken cancellationToken);
+        Task<QueuedItemResult> ProcessItemAsync(TRequest item, CancellationToken cancellationToken = default);
     }
 }

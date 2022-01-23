@@ -88,7 +88,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             return mediaTypePatterns;
         }
 
-        public async Task<QueuedItemResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken)
+        public async Task<QueuedItemResult> ProcessItemAsync(IngestRequest item, CancellationToken cancellationToken = default)
         {
             var requestStartTime = SystemClock.DateTimeOffsetNow();
             if (item.MaxDepthReached)
