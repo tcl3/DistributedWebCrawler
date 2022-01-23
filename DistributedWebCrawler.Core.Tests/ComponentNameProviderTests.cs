@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DistributedWebCrawler.Core.Tests
 {
-    public class ComponentNameProviderTests : ComponentNameProviderTests<TestComponent, TestSuccess, ErrorCode<TestFailure>>
+    public class ComponentNameProviderTests : ComponentNameProviderTests<TestRequestProcessor, TestSuccess, ErrorCode<TestFailure>>
     {
 
     }
@@ -32,7 +32,7 @@ namespace DistributedWebCrawler.Core.Tests
         public void GetComponentNameFromComponentTypeTest()
         {
             var sut = new ComponentNameProvider(TestComponentDescriptors);
-            var result = sut.GetComponentName<TestComponent>();
+            var result = sut.GetComponentName<TestRequestProcessor>();
             Assert.Equal(TestComponentName, result);
         }
 
@@ -95,7 +95,7 @@ namespace DistributedWebCrawler.Core.Tests
             var defaultValueFromValueReult = sut.GetComponentNameOrDefault<object>(TestDefaultValue);
             Assert.Equal(TestDefaultValue, defaultValueFromValueReult);
 
-            var componentNameResult = sut.GetComponentNameOrDefault<TestComponent>(() => TestDefaultValue);
+            var componentNameResult = sut.GetComponentNameOrDefault<TestRequestProcessor>(() => TestDefaultValue);
             Assert.Equal(TestComponentName, componentNameResult);
         }
 
@@ -103,7 +103,7 @@ namespace DistributedWebCrawler.Core.Tests
         public void GetFromComponentTypeTest()
         {
             var sut = new ComponentNameProvider(TestComponentDescriptors);
-            var result = sut.GetFromComponentType<TestComponent>();
+            var result = sut.GetFromComponentType<TestRequestProcessor>();
             Assert.Equal(TestComponentDescriptors.First(), result);
         }
 

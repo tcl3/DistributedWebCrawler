@@ -9,7 +9,7 @@ namespace DistributedWebCrawler.Core.Tests
         [Fact]
         public void FromAssembliesShouldReturnAllComponentsInAssembly()
         {
-            var expectedComponentTypes = new[] { typeof(TestComponent)};
+            var expectedComponentTypes = new[] { typeof(TestRequestProcessor)};
             var componentDescriptors = ComponentDescriptor.FromAssemblies(new[] { typeof(TestComponentMarkerInterface).Assembly }).ToList();
 
             Assert.Equal(expectedComponentTypes.Length, componentDescriptors.Count);
