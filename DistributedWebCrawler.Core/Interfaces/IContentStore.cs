@@ -6,8 +6,8 @@ namespace DistributedWebCrawler.Core.Interfaces
 {
     public interface IContentStore
     {
-        Task<Guid> SaveContentAsync(string content, CancellationToken cancellationToken);
-        Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken);
-        Task RemoveAsync(Guid id, CancellationToken cancellationToken);
+        Task<Guid> SaveContentAsync(string content, CancellationToken cancellationToken = default);
+        Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken = default);
+        Task RemoveAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }

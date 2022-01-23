@@ -17,17 +17,17 @@ namespace DistributedWebCrawler.Core
             _keyValueStore = keyValueStore.WithKeyPrefix(KeyPrefix);
         }
 
-        public async Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken)
+        public async Task<string> GetContentAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _keyValueStore.GetAsync(id.ToString("N")).ConfigureAwait(false) ?? string.Empty;
         }
 
-        public Task RemoveAsync(Guid id, CancellationToken cancellationToken)
+        public Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return _keyValueStore.RemoveAsync(id.ToString("N"));
         }
 
-        public async Task<Guid> SaveContentAsync(string content, CancellationToken cancellationToken)
+        public async Task<Guid> SaveContentAsync(string content, CancellationToken cancellationToken = default)
         {
             var id = Guid.NewGuid();
             await _keyValueStore.PutAsync(id.ToString("N"), content).ConfigureAwait(false);
