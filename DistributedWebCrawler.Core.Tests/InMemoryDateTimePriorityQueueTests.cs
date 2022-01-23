@@ -12,41 +12,43 @@ namespace DistributedWebCrawler.Core.Tests
     [Collection(nameof(SystemClockDependentCollection))]
     public class InMemoryDateTimePriorityQueueTests
     {
-        private readonly CancellationTokenSource _cts = new(TimeSpan.FromSeconds(1));
-
         private const int NumberOfItemsToAdd = 100;
 
         [Fact]
         public async Task DequeueShouldReturnEnqueuedItem()
         {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
             var sut = new InMemoryDateTimePriorityQueue<int>();
 
             var itemToEnqueue = 1;
 
-            var enqueueSuccess = await sut.EnqueueAsync(itemToEnqueue, DateTimeOffset.Now, _cts.Token);
+            var enqueueSuccess = await sut.EnqueueAsync(itemToEnqueue, DateTimeOffset.Now, cts.Token);
             Assert.True(enqueueSuccess);
             
-            var dequeuedItem = await sut.DequeueAsync(_cts.Token);            
+            var dequeuedItem = await sut.DequeueAsync(cts.Token);            
             Assert.Equal(itemToEnqueue, dequeuedItem);
         }
 
         [Fact]
         public async Task DequeuedItemsShouldBeInPriorityOrder()
         {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
             var startTime = DateTimeOffset.Now;
             var sut = new InMemoryDateTimePriorityQueue<int>();
 
             var itemsToEnqueue = Enumerable.Range(0, NumberOfItemsToAdd);
             foreach (var itemToEnqueue in itemsToEnqueue)
             {
-                var enqueueSuccess = await sut.EnqueueAsync(itemToEnqueue, startTime.AddMilliseconds(-itemToEnqueue), _cts.Token);
+                var enqueueSuccess = await sut.EnqueueAsync(itemToEnqueue, startTime.AddMilliseconds(-itemToEnqueue), cts.Token);
                 Assert.True(enqueueSuccess);
             }            
 
             var dequeueTasks = new List<Task<int>>();
             for (int i = 0; i < itemsToEnqueue.Count(); i++) 
             { 
-                dequeueTasks.Add(sut.DequeueAsync(_cts.Token));
+                dequeueTasks.Add(sut.DequeueAsync(cts.Token));
             }
 
             var results = await Task.WhenAll(dequeueTasks);
@@ -57,6 +59,8 @@ namespace DistributedWebCrawler.Core.Tests
         [Fact]
         public async Task DequeueBeforeEnqueueShouldReturnEnqueuedItems()
         {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
             var startTime = DateTimeOffset.Now;
             var sut = new InMemoryDateTimePriorityQueue<int>();
 
@@ -65,12 +69,12 @@ namespace DistributedWebCrawler.Core.Tests
             var dequeueTasks = new List<Task<int>>();
             for (int i = 0; i < itemsToEnqueue.Count(); i++)
             {
-                dequeueTasks.Add(sut.DequeueAsync(_cts.Token));
+                dequeueTasks.Add(sut.DequeueAsync(cts.Token));
             }
             
             foreach (var itemToEnqueue in itemsToEnqueue)
             {
-                var enqueueSuccess = await sut.EnqueueAsync(itemToEnqueue, startTime.AddMilliseconds(-itemToEnqueue), _cts.Token);
+                var enqueueSuccess = await sut.EnqueueAsync(itemToEnqueue, startTime.AddMilliseconds(-itemToEnqueue), cts.Token);
                 Assert.True(enqueueSuccess);
             }
 
@@ -85,6 +89,8 @@ namespace DistributedWebCrawler.Core.Tests
         [Fact]
         public async Task DequeueShouldNotReturnUntilEnqueueDateIsReached()
         {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
             var fixedTime = DateTimeOffset.Now;
             var enqueuePriority = fixedTime.AddMilliseconds(1);
             try
@@ -99,9 +105,9 @@ namespace DistributedWebCrawler.Core.Tests
                 var sut = new InMemoryDateTimePriorityQueue<int>();
 
                 var itemToEnqueue = 1;
-                await sut.EnqueueAsync(itemToEnqueue, enqueuePriority, _cts.Token);
+                await sut.EnqueueAsync(itemToEnqueue, enqueuePriority, cts.Token);
 
-                var dequeuedItem = await sut.DequeueAsync(_cts.Token);
+                var dequeuedItem = await sut.DequeueAsync(cts.Token);
 
                 Assert.Equal(itemToEnqueue, dequeuedItem);
             } 
