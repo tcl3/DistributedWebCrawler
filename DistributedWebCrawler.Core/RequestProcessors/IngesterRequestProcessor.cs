@@ -125,13 +125,9 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                 }
 
                 var contentTypeHeader = response.Content.Headers.ContentType;
-                if (contentTypeHeader?.MediaType != null)
+                if (contentTypeHeader?.MediaType != null && MediaTypePattern.TryCreate(contentTypeHeader.MediaType, out var contentType))
                 {
-                    if (contentTypeHeader.MediaType.Contains('*') || !MediaTypePattern.TryCreate(contentTypeHeader.MediaType, out var contentType))
-                    {
-                        _logger.LogWarning($"Invalid Content-Type header for '{currentUri}' - {contentTypeHeader.MediaType}");
-                    }
-                    else if (_mediaTypesToInclude.Value.Any() && !_mediaTypesToInclude.Value.Any(x => x.Match(contentType)))
+                    if (_mediaTypesToInclude.Value.Any() && !_mediaTypesToInclude.Value.Any(x => x.Match(contentType)))
                     {
                         _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) not present in include list");
                         var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
