@@ -7,4 +7,10 @@ namespace DistributedWebCrawler.Core.Tests.Collections
     {
 
     }
+
+    [CollectionDefinition(nameof(RequestProcessorCollection), DisableParallelization = false)]
+    public class RequestProcessorCollection
+    {
+
+    }
 }
