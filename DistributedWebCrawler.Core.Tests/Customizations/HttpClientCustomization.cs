@@ -99,10 +99,16 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
 
                 if (_content != null)
                 {
-                    result = result.With(x => x.Content, _contentTypeHeaderValue == null
-                        ? new StringContent(_content)
-                        : new StringContent(_content, Encoding.UTF8, _contentTypeHeaderValue)
-                    );
+                    var content = new StringContent(_content);
+                    
+                    // Done this way so that potentially invalid content types can be used
+                    if (_contentTypeHeaderValue != null)
+                    {
+                        content.Headers.Remove("Content-Type");
+                        content.Headers.TryAddWithoutValidation("Content-Type", _contentTypeHeaderValue);
+                    }
+
+                    result = result.With(x => x.Content, content);
                 }
 
                 if (_locationHeaderValue != null)
