@@ -16,7 +16,7 @@ namespace DistributedWebCrawler.Extensions.Redis
         public async Task PutAsync(string key, string value, TimeSpan? expireAfter)
         {
             var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
-            database.StringSetAsync(key, value, expireAfter);
+            _ = database.StringSetAsync(key, value, expireAfter);
         }
 
         public async Task<string?> GetAsync(string key)
@@ -29,7 +29,7 @@ namespace DistributedWebCrawler.Extensions.Redis
         public async Task RemoveAsync(string key)
         {
             var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
-            database.KeyDeleteAsync(key);
+            _ = database.KeyDeleteAsync(key);
         }
 
         public async Task PutAsync<TData>(string key, TData value, TimeSpan? expireAfter = null) 
@@ -39,7 +39,7 @@ namespace DistributedWebCrawler.Extensions.Redis
 
             var database = await _connectionMultiplexerPool.GetDatabaseAsync().ConfigureAwait(false);
 
-            database.StringSetAsync(key, bytes, expireAfter);
+            _ = database.StringSetAsync(key, bytes, expireAfter);
         }
 
         public async Task<TData?> GetAsync<TData>(string key)
