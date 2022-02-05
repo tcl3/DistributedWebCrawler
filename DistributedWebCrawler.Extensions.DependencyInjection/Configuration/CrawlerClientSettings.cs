@@ -17,6 +17,12 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection.Configuration
         [Range(1, int.MaxValue, ErrorMessage = nameof(ConnectTimeoutSeconds) + " must be a positive integer")]
         public virtual int ConnectTimeoutSeconds { get; init; }
 
+        [Range(1, int.MaxValue, ErrorMessage = nameof(PooledConnectionLifetimeSeconds) + " must be a positive integer")]
+        public virtual int PooledConnectionLifetimeSeconds { get; init; }
+        
+        [Range(1, int.MaxValue, ErrorMessage = nameof(PooledConnectionIdleTimeoutSeconds) + " must be a positive integer")]
+        public virtual int PooledConnectionIdleTimeoutSeconds { get; init; }
+
         [Range(1, int.MaxValue, ErrorMessage = nameof(ResponseDrainTimeoutSeconds) + " must be a positive integer")]
         public virtual int ResponseDrainTimeoutSeconds { get; init; }
 

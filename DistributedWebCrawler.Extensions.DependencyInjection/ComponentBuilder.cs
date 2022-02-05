@@ -47,8 +47,10 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
                         AllowAutoRedirect = allowAutoRedirect,
                         AutomaticDecompression = clientSettings.AllowRequestCompression ? DecompressionMethods.All : DecompressionMethods.None,
                         ConnectTimeout = TimeSpan.FromSeconds(clientSettings.ConnectTimeoutSeconds),
-                        ResponseDrainTimeout = TimeSpan.FromSeconds(clientSettings.ResponseDrainTimeoutSeconds),
                         MaxConnectionsPerServer = clientSettings.MaxConnectionsPerServer,
+                        PooledConnectionIdleTimeout = TimeSpan.FromSeconds(clientSettings.PooledConnectionIdleTimeoutSeconds),
+                        PooledConnectionLifetime = TimeSpan.FromSeconds(clientSettings.PooledConnectionLifetimeSeconds),
+                        ResponseDrainTimeout = TimeSpan.FromSeconds(clientSettings.ResponseDrainTimeoutSeconds),
                     };
                 });
 
