@@ -3,7 +3,7 @@
 namespace DistributedWebCrawler.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-    internal class ComponentAttribute : Attribute
+    public class ComponentAttribute : Attribute
     {
         public string ComponentName { get; }
         public Type SuccessType { get; }
