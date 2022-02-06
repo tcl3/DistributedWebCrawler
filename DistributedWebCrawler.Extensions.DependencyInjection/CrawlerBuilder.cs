@@ -81,6 +81,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
         {
             _services.AddSingleton<ICrawlerComponent, TaskQueueComponent<SchedulerRequest, SchedulerSuccess, ErrorCode<SchedulerFailure>, AnnotatedSchedulerSettings>>();
             _services.AddSingleton<IRequestProcessor<SchedulerRequest>, SchedulerRequestProcessor>();
+            _services.AddSingleton<ISchedulerIngestQueue, SchedulerIngestQueue>();
 
             _services.TryAddSingleton<IDomainParser>(_ => new DomainParser(new WebTldRuleProvider()));
 
