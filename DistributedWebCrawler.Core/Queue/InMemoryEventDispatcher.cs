@@ -2,6 +2,7 @@
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
@@ -11,39 +12,33 @@ namespace DistributedWebCrawler.Core.Queue
         where TFailure : notnull, IErrorCode
     {
         private readonly InMemoryEventStore<TSuccess, TFailure> _eventStore;
-        private readonly IComponentNameProvider _componentNameProvider;
 
-        public InMemoryEventDispatcher(InMemoryEventStore<TSuccess, TFailure> eventStore,
-            IComponentNameProvider componentNameProvider)
+        public InMemoryEventDispatcher(InMemoryEventStore<TSuccess, TFailure> eventStore)
         {
             _eventStore = eventStore;
-            _componentNameProvider = componentNameProvider;
         }
 
-        public async Task NotifyCompletedAsync(RequestBase item, TSuccess result)
+        public async Task NotifyCompletedAsync(RequestBase item, NodeInfo nodeInfo, TSuccess result)
         {
             if (_eventStore.OnCompletedAsyncHandler != null)
             {
-                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
-                await _eventStore.OnCompletedAsyncHandler(this, new ItemCompletedEventArgs<TSuccess>(item.Id, componentName, result)).ConfigureAwait(false);
+                await _eventStore.OnCompletedAsyncHandler(this, new ItemCompletedEventArgs<TSuccess>(item.Id, nodeInfo, result)).ConfigureAwait(false);
             }
         }
 
-        public async Task NotifyFailedAsync(RequestBase item, TFailure result)
+        public async Task NotifyFailedAsync(RequestBase item, NodeInfo nodeInfo, TFailure result)
         {
             if (_eventStore.OnFailedAsyncHandler != null)
             {
-                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
-                await _eventStore.OnFailedAsyncHandler(this, new ItemFailedEventArgs<TFailure>(item.Id, componentName, result)).ConfigureAwait(false);
+                await _eventStore.OnFailedAsyncHandler(this, new ItemFailedEventArgs<TFailure>(item.Id, nodeInfo, result)).ConfigureAwait(false);
             }
         }
 
-        public async Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus)
+        public async Task NotifyComponentStatusUpdateAsync(NodeInfo nodeInfo, ComponentStatus componentStatus)
         {
             if (_eventStore.OnComponentUpdateAsyncHandler != null)
             {
-                var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
-                await _eventStore.OnComponentUpdateAsyncHandler(this, new ComponentEventArgs<ComponentStatus>(componentName, componentStatus)).ConfigureAwait(false);
+                await _eventStore.OnComponentUpdateAsyncHandler(this, new ComponentEventArgs<ComponentStatus>(nodeInfo, componentStatus)).ConfigureAwait(false);
             }
         }
     }

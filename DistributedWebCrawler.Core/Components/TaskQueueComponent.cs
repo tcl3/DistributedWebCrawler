@@ -31,8 +31,9 @@ namespace DistributedWebCrawler.Core.Components
 
         protected bool IsStarted { get; private set; }
 
-        private readonly Lazy<string> _name;
-        protected string Name => _name.Value;
+        private readonly Lazy<NodeInfo> _nodeInfo;
+
+        protected NodeInfo NodeInfo => _nodeInfo.Value;
 
         private readonly TaskCompletionSource _taskCompletionSource;
 
@@ -55,11 +56,13 @@ namespace DistributedWebCrawler.Core.Components
             _pauseSemaphore = new SemaphoreSlim(0);
             _taskCompletionSource = new();
 
-            _name = new Lazy<string>(() =>
+            _nodeInfo = new Lazy<NodeInfo>(() =>
             {
                 var componentType = requestProcessor.GetType();
-                return componentNameProvider.GetComponentName(componentType);
-            });
+                var componentName = componentNameProvider.GetComponentName(componentType);
+                var nodeId = Guid.NewGuid();
+                return new NodeInfo(componentName, nodeId);
+            });            
         }
 
         public CrawlerComponentStatus Status
@@ -79,12 +82,12 @@ namespace DistributedWebCrawler.Core.Components
         {
             if (IsStarted)
             {
-                throw new InvalidOperationException($"Cannot start {Name} when already started");
+                throw new InvalidOperationException($"Cannot start {NodeInfo.ComponentName} when already started");
             }
 
             IsStarted = true;
 
-            _logger.LogInformation($"{Name} component started");
+            _logger.LogInformation($"{NodeInfo.ComponentName} component started");
 
             _ = ComponentStartAndHandleExceptionAsync(startState, cancellationToken);
 
@@ -115,7 +118,6 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     _taskCompletionSource.SetResult();
                 }
-
             }
             catch (OperationCanceledException ex)
             {
@@ -170,10 +172,9 @@ namespace DistributedWebCrawler.Core.Components
 
         private async Task ProcessItemAndReleaseSemaphore(TRequest item, CancellationToken cancellationToken)
         {
-            QueuedItemResult? queuedItem = null;
             try
             {
-                queuedItem = await _requestProcessor.ProcessItemAsync(item, cancellationToken).ConfigureAwait(false);
+                var queuedItem = await _requestProcessor.ProcessItemAsync(item, cancellationToken).ConfigureAwait(false);
 
                 if (queuedItem != null)
                 {
@@ -186,7 +187,7 @@ namespace DistributedWebCrawler.Core.Components
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Uncaught exception in {Name}");
+                _logger.LogError(ex, $"Uncaught exception in {NodeInfo.ComponentName} (NodeId: {NodeInfo.NodeId})");
             }
             finally
             {
@@ -199,10 +200,10 @@ namespace DistributedWebCrawler.Core.Components
             switch (queuedItem.Status)
             {
                 case QueuedItemStatus.Success when queuedItem is QueuedItemResult<TSuccess> successResult:
-                    await _eventDispatcher.NotifyCompletedAsync(currentItem, successResult.Result).ConfigureAwait(false);
+                    await _eventDispatcher.NotifyCompletedAsync(currentItem, NodeInfo, successResult.Result).ConfigureAwait(false);
                     break;
                 case QueuedItemStatus.Failed when queuedItem is QueuedItemResult<TFailure> failedResult:
-                    await _eventDispatcher.NotifyFailedAsync(currentItem, failedResult.Result).ConfigureAwait(false);
+                    await _eventDispatcher.NotifyFailedAsync(currentItem, NodeInfo, failedResult.Result).ConfigureAwait(false);
                     break;
                 case QueuedItemStatus.Waiting:
                     await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem).ConfigureAwait(false);
@@ -210,7 +211,7 @@ namespace DistributedWebCrawler.Core.Components
             }
 
             var componentStatus = GetComponentStatus();
-            await _eventDispatcher.NotifyComponentStatusUpdateAsync(componentStatus).ConfigureAwait(false);
+            await _eventDispatcher.NotifyComponentStatusUpdateAsync(NodeInfo, componentStatus).ConfigureAwait(false);
         }
 
         public Task PauseAsync()

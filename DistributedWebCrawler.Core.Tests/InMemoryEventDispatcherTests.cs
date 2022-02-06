@@ -2,6 +2,7 @@
 using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.Core.Tests.Attributes;
 using DistributedWebCrawler.Core.Tests.Fakes;
@@ -25,8 +26,9 @@ namespace DistributedWebCrawler.Core.Tests
         [Theory]
         public async Task EnsureEventFiresWhenNotifyCompletedIsCalled(
             [Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore,
-            InMemoryEventDispatcher<TSuccess, TFailure> sut, 
-            TestRequest request, 
+            InMemoryEventDispatcher<TSuccess, TFailure> sut,
+            TestRequest request,
+            NodeInfo nodeInfo,
             TSuccess result)
         {
             var eventCalled = false;
@@ -39,7 +41,7 @@ namespace DistributedWebCrawler.Core.Tests
 
                 return Task.CompletedTask;
             };
-            await sut.NotifyCompletedAsync(request, result);
+            await sut.NotifyCompletedAsync(request, nodeInfo, result);
             Assert.True(eventCalled);
         }
 
@@ -49,6 +51,7 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore,
             InMemoryEventDispatcher<TSuccess, TFailure> sut,
             TestRequest request,
+            NodeInfo nodeInfo,
             TFailure result)
         {
             var eventCalled = false;
@@ -62,7 +65,7 @@ namespace DistributedWebCrawler.Core.Tests
                 return Task.CompletedTask;
             };
 
-            await sut.NotifyFailedAsync(request, result);
+            await sut.NotifyFailedAsync(request, nodeInfo, result);
             Assert.True(eventCalled);
         }
 
@@ -71,6 +74,7 @@ namespace DistributedWebCrawler.Core.Tests
         public async Task EnsureEventFiresWhenNotifyComponentUpdateIsCalled(
             [Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore,
             InMemoryEventDispatcher<TSuccess, TFailure> sut,
+            NodeInfo nodeInfo,
             ComponentStatus result)
         {
             var eventCalled = false;
@@ -84,7 +88,7 @@ namespace DistributedWebCrawler.Core.Tests
                 return Task.CompletedTask;
             };
 
-            await sut.NotifyComponentStatusUpdateAsync(result);
+            await sut.NotifyComponentStatusUpdateAsync(nodeInfo, result);
             Assert.True(eventCalled);
         } 
     }

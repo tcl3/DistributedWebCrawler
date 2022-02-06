@@ -1,6 +1,7 @@
 ﻿using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.ManagerAPI.Hubs;
 using DistributedWebCrawler.ManagerAPI.Models;
@@ -15,7 +16,7 @@ namespace DistributedWebCrawler.ManagerAPI
     public class ComponentHubEventListener
     {
         private readonly HashSet<IEventReceiver> _receivers;
-        private readonly ConcurrentDictionary<string, Lazy<ComponentStatsBuilder>> _builderLookup;
+        private readonly ConcurrentDictionary<Guid, Lazy<ComponentStatsBuilder>> _builderLookup;
         private readonly IHubContext<CrawlerHub, IComponentEventsHub> _hubContext;
         
         private const int HubUpdateIntervalMillis = 1000;
@@ -86,28 +87,28 @@ namespace DistributedWebCrawler.ManagerAPI
 
         private Task OnComponentUpdateAsync(object? sender, ComponentEventArgs<ComponentStatus> e)
         {
-            var builder = GetBuilder(e.ComponentName);
+            var builder = GetBuilder(e.NodeInfo);
             builder.AddComponentStatusUpdate(e.Result);
             return Task.CompletedTask;
         }
 
         private Task OnFailedAsync(object? sender, ItemFailedEventArgs e)
         {
-            var builder = GetBuilder(e.ComponentName);
+            var builder = GetBuilder(e.NodeInfo);
             builder.AddFailedItem(e);
             return Task.CompletedTask;
         }
 
         private Task OnCompletedAsync(object? sender, ItemCompletedEventArgs e)
         {
-            var builder = GetBuilder(e.ComponentName);
+            var builder = GetBuilder(e.NodeInfo);
             builder.AddCompletedItem(e);
             return Task.CompletedTask;
         }
         
-        private ComponentStatsBuilder GetBuilder(string componentName)
+        private ComponentStatsBuilder GetBuilder(NodeInfo nodeInfo)
         {
-            var lazyValue = _builderLookup.GetOrAdd(componentName, name => new(() => new ComponentStatsBuilder(name)));
+            var lazyValue = _builderLookup.GetOrAdd(nodeInfo.NodeId, name => new(() => new ComponentStatsBuilder(nodeInfo)));
             return lazyValue.Value;
         }
 
@@ -139,14 +140,16 @@ namespace DistributedWebCrawler.ManagerAPI
             private const int RecentItemCount = 10;
 
             public string ComponentName { get; }
+            public Guid NodeId { get; }
 
-            public ComponentStatsBuilder(string componentName)
+            public ComponentStatsBuilder(NodeInfo nodeInfo)
             {                
                 _errorCounts = new();
                 _completedItems = new();
                 _failedItems = new();
 
-                ComponentName = componentName;
+                ComponentName = nodeInfo.ComponentName;
+                NodeId = nodeInfo.NodeId;
             }
 
             public void Reset()

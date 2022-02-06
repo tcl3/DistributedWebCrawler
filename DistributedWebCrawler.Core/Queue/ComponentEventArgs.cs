@@ -1,29 +1,30 @@
-﻿using System;
+﻿using DistributedWebCrawler.Core.Models;
+using System;
 
 namespace DistributedWebCrawler.Core.Queue
 {
     public class ComponentEventArgs : EventArgs
     {
-        public ComponentEventArgs(string componentName, object result)
+        public ComponentEventArgs(NodeInfo nodeInfo, object result)
         {
-            ComponentName = componentName;
+            NodeInfo = nodeInfo;
             Result = result;
         }
 
-        public string ComponentName { get; }
+        public NodeInfo NodeInfo { get; }
         public object Result { get; }
     }
 
     public class ComponentEventArgs<TResult> : EventArgs
         where TResult : notnull
     {
-        public ComponentEventArgs(string componentName, TResult result)
+        public ComponentEventArgs(NodeInfo nodeInfo, TResult result)
         {
-            ComponentName = componentName;
+            NodeInfo = nodeInfo;
             Result = result;
         }
 
-        public string ComponentName { get; }
+        public NodeInfo NodeInfo { get; }
 
         public TResult Result { get; }
     }

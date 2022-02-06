@@ -90,7 +90,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             await WaitForCancellationAsync(sut);
 
-            eventDispatcherMock.Verify(x => x.NotifyCompletedAsync(request, It.IsAny<TestSuccess>()), Times.Once());
+            eventDispatcherMock.Verify(x => x.NotifyCompletedAsync(request, It.IsAny<NodeInfo>(), It.IsAny<TestSuccess>()), Times.Once());
         }
 
         [Theory]
@@ -105,7 +105,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             await WaitForCancellationAsync(sut);
 
-            eventDispatcherMock.Verify(x => x.NotifyFailedAsync(request, It.IsAny<ErrorCode<TestFailure>>()), Times.Once());
+            eventDispatcherMock.Verify(x => x.NotifyFailedAsync(request, It.IsAny<NodeInfo>(), It.IsAny<ErrorCode<TestFailure>>()), Times.Once());
         }
 
         [Theory]

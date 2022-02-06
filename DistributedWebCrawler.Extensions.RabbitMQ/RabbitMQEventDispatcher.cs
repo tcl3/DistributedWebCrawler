@@ -1,6 +1,7 @@
 ﻿using DistributedWebCrawler.Core.Components;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Queue;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
@@ -22,38 +23,39 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             _serializer = serializer;
         }
 
-        public Task NotifyCompletedAsync(RequestBase item, TSuccess result)
+        public Task NotifyCompletedAsync(RequestBase item, NodeInfo nodeInfo, TSuccess result)
         {
-            return PublishCompletedItemAsync(item, result);
+            return PublishCompletedItemAsync(item, nodeInfo, result);
         }
 
-        public Task NotifyFailedAsync(RequestBase item, TFailure result)
+        public Task NotifyFailedAsync(RequestBase item, NodeInfo nodeInfo, TFailure result)
         {
-            return PublishCompletedItemAsync(item, result);
+            return PublishCompletedItemAsync(item, nodeInfo, result);
         }
 
-        public Task NotifyComponentStatusUpdateAsync(ComponentStatus componentStatus)
+        public Task NotifyComponentStatusUpdateAsync(NodeInfo nodeInfo, ComponentStatus componentStatus)
         {
-            return PublishAsync<ComponentStatus>(componentStatus);
+            return PublishAsync<ComponentStatus>(nodeInfo, componentStatus);
         }
 
-        private Task PublishCompletedItemAsync<TResult>(RequestBase item, TResult result)
+        private Task PublishCompletedItemAsync<TResult>(RequestBase item, NodeInfo nodeInfo, TResult result)
             where TResult : notnull        
         {
             var eventArgs = new CompletedItem<TResult>(item.Id, result);
-            return PublishAsync<TResult>(eventArgs);
+            return PublishAsync<TResult>(nodeInfo, eventArgs);
         }
 
-        private Task PublishAsync<TResult>(object result)
+        private Task PublishAsync<TResult>(NodeInfo nodeInfo, object result)
             where TResult : notnull
         {
             var exchangeName = _exchangeNameProvider.GetExchangeName<TResult>();
-            return PublishAsync(exchangeName, result);
+            return PublishAsync(exchangeName, nodeInfo, result);
         }
 
-        private Task PublishAsync<TData>(string exchangeName, TData data)
+        private Task PublishAsync<TData>(string exchangeName, NodeInfo nodeInfo, TData data)
         {
-            var bytes = _serializer.Serialize(data);
+            var message = new RabbitMQMessage<TData>(nodeInfo.NodeId, data);
+            var bytes = _serializer.Serialize(message);
 
             _channelPool.PublishFanout(bytes, exchangeName);
 
