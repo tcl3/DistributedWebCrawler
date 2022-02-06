@@ -4,6 +4,7 @@ using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.ManagerAPI.Hubs;
 using Microsoft.AspNetCore.ResponseCompression;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
+using DistributedWebCrawler.Extensions.DnsClient;
 
 namespace DistributedWebCrawler.ManagerAPI
 {
@@ -30,6 +31,7 @@ namespace DistributedWebCrawler.ManagerAPI
 
             if (configuration.GetValue<bool>("DevMode"))
             {
+                services.UseCustomDns(configuration.GetSection("DnsResolverSettings"));
                 services.AddInMemoryCrawlerManager();
                 services.AddInMemoryCrawlerWithDefaultSettings(configuration);
             } 

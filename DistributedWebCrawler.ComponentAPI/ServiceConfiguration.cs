@@ -8,6 +8,7 @@ using DistributedWebCrawler.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.Extensions.Redis;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
+using DistributedWebCrawler.Extensions.DnsClient;
 
 namespace DistributedWebCrawler.ComponentAPI
 {
@@ -23,6 +24,9 @@ namespace DistributedWebCrawler.ComponentAPI
 
             var roles = GetRoles(configuration);
             var crawlerConfiguration = configuration.GetSection("CrawlerSettings");
+
+            services.UseCustomDns(crawlerConfiguration.GetSection("DnsResolverSettings"));
+
             var crawlerAction = BuildCrawler(roles, crawlerConfiguration);
             services.AddCrawler(crawlerAction);
 

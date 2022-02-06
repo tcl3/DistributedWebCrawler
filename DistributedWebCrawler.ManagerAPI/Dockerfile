@@ -10,6 +10,7 @@ COPY ["DistributedWebCrawler.ManagerAPI/DistributedWebCrawler.ManagerAPI.csproj"
 COPY ["DistributedWebCrawler.Extensions.RabbitMQ/DistributedWebCrawler.Extensions.RabbitMQ.csproj", "DistributedWebCrawler.Extensions.RabbitMQ/"]
 COPY ["DistributedWebCrawler.Core/DistributedWebCrawler.Core.csproj", "DistributedWebCrawler.Core/"]
 COPY ["DistributedWebCrawler.Extensions.DependencyInjection/DistributedWebCrawler.Extensions.DependencyInjection.csproj", "DistributedWebCrawler.Extensions.DependencyInjection/"]
+COPY ["DistributedWebCrawler.Extensions.DnsClient/DistributedWebCrawler.Extensions.DnsClient.csproj", "DistributedWebCrawler.Extensions.DnsClient/"]
 RUN dotnet restore "DistributedWebCrawler.ManagerAPI/DistributedWebCrawler.ManagerAPI.csproj"
 COPY . .
 WORKDIR "/src/DistributedWebCrawler.ManagerAPI"

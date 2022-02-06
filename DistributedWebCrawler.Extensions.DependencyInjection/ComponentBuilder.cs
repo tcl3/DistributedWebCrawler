@@ -3,10 +3,12 @@ using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.StreamManager;
 using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -37,15 +39,20 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
         IComponentBuilder<TSettings> IComponentBuilder<TSettings>.WithClient<TClient>(IConfiguration configuration, bool allowAutoRedirect)
         {
+            Services.TryAddSingleton<IStreamManager, StreamManager>();
             Services.AddSettings<CrawlerClientSettings>(configuration);
             Services.AddHttpClientWithSettings<TClient, CrawlerClientSettings>(ConfigureClient)
                 .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
                 {
+                    var streamManager = serviceProvider.GetRequiredService<IStreamManager>();
                     var clientSettings = serviceProvider.GetRequiredService<CrawlerClientSettings>();
                     return new SocketsHttpHandler
                     {
                         AllowAutoRedirect = allowAutoRedirect,
-                        AutomaticDecompression = clientSettings.AllowRequestCompression ? DecompressionMethods.All : DecompressionMethods.None,
+                        AutomaticDecompression = clientSettings.AllowRequestCompression 
+                            ? DecompressionMethods.All 
+                            : DecompressionMethods.None,
+                        ConnectCallback = streamManager.ConnectCallback,
                         ConnectTimeout = TimeSpan.FromSeconds(clientSettings.ConnectTimeoutSeconds),
                         MaxConnectionsPerServer = clientSettings.MaxConnectionsPerServer,
                         PooledConnectionIdleTimeout = TimeSpan.FromSeconds(clientSettings.PooledConnectionIdleTimeoutSeconds),
