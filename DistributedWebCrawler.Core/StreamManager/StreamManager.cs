@@ -1,5 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -12,7 +13,7 @@ namespace DistributedWebCrawler.Core.StreamManager
 {
     public class StreamManager : IStreamManager
     {
-        private readonly List<ByteCountingStream> _streamLookup;
+        private readonly ConcurrentDictionary<ByteCountingStream, bool> _streamLookup;
         private readonly StreamStats _streamStats;
         private readonly IDnsResolver? _customDnsResolver;
 
@@ -48,7 +49,7 @@ namespace DistributedWebCrawler.Core.StreamManager
                 var stream = new NetworkStream(socket, ownsSocket: true);
 
                 var wrappedStream = new ByteCountingStream(this, _streamStats, stream);
-                _streamLookup.Add(wrappedStream);
+                _streamLookup.TryAdd(wrappedStream, true);
                 return wrappedStream;
             }
             catch
@@ -60,7 +61,7 @@ namespace DistributedWebCrawler.Core.StreamManager
 
         internal void DisposeStream(ByteCountingStream stream)
         {
-            _streamLookup.Remove(stream);
+            _streamLookup.TryRemove(stream, out _);
         }
     }
 }
