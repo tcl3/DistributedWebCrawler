@@ -24,7 +24,8 @@ namespace DistributedWebCrawler.Core
         public IEnumerable<IEventReceiver> GetAll()
         {
             var receivers = _serviceProvider(typeof(IEnumerable<IEventReceiver>));
-            return (IEnumerable<IEventReceiver>) receivers;
+            var receiverCollection = (IEnumerable<IEventReceiver>) receivers;
+            return new HashSet<IEventReceiver>(receiverCollection);
         }
     }
 }
