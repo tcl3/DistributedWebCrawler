@@ -1,7 +1,6 @@
 ﻿using AutoFixture.Xunit2;
 using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Tests.Attributes;
 using DistributedWebCrawler.Core.Tests.Fakes;

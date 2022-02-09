@@ -3,7 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace DistributedWebCrawler.Core.Model
+namespace DistributedWebCrawler.Core.Models
 {
     public struct ErrorCode<TError> : IErrorCode<TError>
         where TError : Enum

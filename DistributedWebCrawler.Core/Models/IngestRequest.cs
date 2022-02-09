@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 
-namespace DistributedWebCrawler.Core.Model
+namespace DistributedWebCrawler.Core.Models
 {
     public class IngestRequest : RequestBase
     {

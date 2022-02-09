@@ -1,5 +1,5 @@
 ﻿using DistributedWebCrawler.Core.LinkParser;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

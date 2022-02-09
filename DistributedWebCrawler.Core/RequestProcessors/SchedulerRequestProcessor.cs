@@ -1,6 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
@@ -11,7 +11,6 @@ using Nager.PublicSuffix;
 using System.Threading;
 using DistributedWebCrawler.Core.Attributes;
 using DistributedWebCrawler.Core.Extensions;
-using DistributedWebCrawler.Core.Models;
 
 namespace DistributedWebCrawler.Core.RequestProcessors
 {

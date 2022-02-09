@@ -1,7 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
 using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Models;
 using Microsoft.Extensions.Logging;
 using System;

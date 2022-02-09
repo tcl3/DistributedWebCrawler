@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Queue;
 using System.Threading.Tasks;
 

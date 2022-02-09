@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Components;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Queue;

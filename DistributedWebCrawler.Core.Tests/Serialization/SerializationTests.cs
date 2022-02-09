@@ -1,6 +1,4 @@
-﻿using AutoFixture.Xunit2;
-using DistributedWebCrawler.Core.Components;
-using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Tests.Attributes;
 using DistributedWebCrawler.Core.Tests.Fakes;
 using FluentAssertions;

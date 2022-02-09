@@ -1,8 +1,5 @@
-﻿using DistributedWebCrawler.Core.Components;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
-using DistributedWebCrawler.Core.Models;
-using DistributedWebCrawler.Core.Queue;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {

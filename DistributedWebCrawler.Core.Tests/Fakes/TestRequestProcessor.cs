@@ -1,13 +1,13 @@
 ﻿using DistributedWebCrawler.Core.Attributes;
-using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DistributedWebCrawler.Core.Components;
 
 namespace DistributedWebCrawler.Core.Tests.Fakes
 {
@@ -43,8 +43,11 @@ namespace DistributedWebCrawler.Core.Tests.Fakes
             IEventDispatcher<TestSuccess, ErrorCode<TestFailure>> eventReceiver, 
             IKeyValueStore keyValueStore, 
             ILogger<TaskQueueComponent<TestRequest, TestSuccess, ErrorCode<TestFailure>, TestSettings>> logger, 
-            IComponentNameProvider componentNameProvider, TestSettings settings) 
-            : base(requestProcessor, consumer, eventReceiver, keyValueStore, logger, componentNameProvider, settings)
+            IComponentNameProvider componentNameProvider, 
+            INodeStatusProvider nodeStatusProvider,
+            TestSettings settings) 
+            : base(requestProcessor, consumer, eventReceiver, keyValueStore, logger, 
+                  componentNameProvider, nodeStatusProvider, settings)
         {
         }
     }

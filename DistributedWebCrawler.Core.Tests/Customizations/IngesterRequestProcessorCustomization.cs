@@ -1,6 +1,6 @@
 ﻿using AutoFixture;
 using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 
 namespace DistributedWebCrawler.Core.Tests.Customizations
 {

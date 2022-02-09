@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.DependencyInjection;

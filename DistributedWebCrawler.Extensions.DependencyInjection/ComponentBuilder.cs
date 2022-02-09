@@ -2,7 +2,7 @@
 using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.StreamManager;
 using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;

@@ -1,7 +1,7 @@
 ﻿using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Extensions.RabbitMQ.Interfaces;
 using Microsoft.Extensions.Logging;
 using Polly;

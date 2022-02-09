@@ -1,5 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Queue;
 using System;
 using System.Collections.Concurrent;

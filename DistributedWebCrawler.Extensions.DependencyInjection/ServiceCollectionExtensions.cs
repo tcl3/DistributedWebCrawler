@@ -1,6 +1,5 @@
-﻿using DistributedWebCrawler.Core.Components;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.Core.Seeding;
 using DistributedWebCrawler.Extensions.DependencyInjection;
@@ -13,6 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DistributedWebCrawler.Core.Components;
 
 namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 {

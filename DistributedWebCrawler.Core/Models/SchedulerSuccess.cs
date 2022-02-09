@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace DistributedWebCrawler.Core.Model
+namespace DistributedWebCrawler.Core.Models
 {
     public class SchedulerSuccess
     {

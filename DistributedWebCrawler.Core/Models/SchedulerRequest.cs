@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 
-namespace DistributedWebCrawler.Core.Model
+namespace DistributedWebCrawler.Core.Models
 {
     public class SchedulerRequest : RequestBase
     {

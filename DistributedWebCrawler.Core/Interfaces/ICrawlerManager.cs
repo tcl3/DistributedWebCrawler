@@ -1,5 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Enums;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using System;
 using System.Threading.Tasks;
 

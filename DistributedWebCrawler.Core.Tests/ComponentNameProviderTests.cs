@@ -1,5 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Extensions;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Tests.Fakes;
 using System;
 using System.Collections.Generic;

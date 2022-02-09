@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DistributedWebCrawler.Core.Model
+namespace DistributedWebCrawler.Core.Models
 {
     public class ParseRequest : RequestBase
     {

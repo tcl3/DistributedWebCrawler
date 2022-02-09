@@ -2,7 +2,7 @@
 using AutoFixture.Xunit2;
 using DistributedWebCrawler.Core.Configuration;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Seeding;
 using DistributedWebCrawler.Core.Tests.Attributes;
 using FluentAssertions;

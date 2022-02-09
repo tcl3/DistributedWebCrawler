@@ -1,6 +1,5 @@
-﻿using DistributedWebCrawler.Core.Components;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 using System;
 using System.Collections;
 using System.Collections.Generic;

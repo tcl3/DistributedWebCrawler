@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Components;
+﻿using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Interfaces;
 
 namespace DistributedWebCrawler.Core.Queue

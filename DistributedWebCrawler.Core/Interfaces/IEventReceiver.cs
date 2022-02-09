@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Components;
+﻿using DistributedWebCrawler.Core.Models;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {

@@ -1,8 +1,7 @@
 ﻿using DistributedWebCrawler.Core;
-using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.RequestProcessors;
 using DistributedWebCrawler.Core.Robots;
 using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
@@ -12,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Nager.PublicSuffix;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DistributedWebCrawler.Core.Components;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {

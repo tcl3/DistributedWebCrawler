@@ -1,6 +1,4 @@
-﻿using DistributedWebCrawler.Core.Components;
-using DistributedWebCrawler.Core.Model;
-using DistributedWebCrawler.Core.Models;
+﻿using DistributedWebCrawler.Core.Models;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces

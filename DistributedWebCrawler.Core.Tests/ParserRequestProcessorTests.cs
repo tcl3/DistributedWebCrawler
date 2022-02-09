@@ -1,6 +1,5 @@
 ﻿using AutoFixture.Xunit2;
 using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Model;
 using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.RequestProcessors;
 using DistributedWebCrawler.Core.Tests.Attributes;

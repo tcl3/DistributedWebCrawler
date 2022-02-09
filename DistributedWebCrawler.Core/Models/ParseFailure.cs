@@ -1,4 +1,4 @@
-﻿namespace DistributedWebCrawler.Core.Model
+﻿namespace DistributedWebCrawler.Core.Models
 {
     public enum ParseFailure
     {

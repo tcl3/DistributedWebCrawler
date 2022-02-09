@@ -1,4 +1,4 @@
-﻿using DistributedWebCrawler.Core.Model;
+﻿using DistributedWebCrawler.Core.Models;
 using System;
 
 namespace DistributedWebCrawler.Core.Extensions
