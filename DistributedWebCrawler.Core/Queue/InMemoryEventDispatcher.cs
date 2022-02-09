@@ -16,7 +16,7 @@ namespace DistributedWebCrawler.Core.Queue
             _eventStore = eventStore;
         }
 
-        public async Task NotifyCompletedAsync(RequestBase item, NodeInfo nodeInfo, TSuccess result)
+        public async Task NotifyCompletedAsync(RequestBase item, ComponentInfo nodeInfo, TSuccess result)
         {
             if (_eventStore.OnCompletedAsyncHandler != null)
             {
@@ -24,7 +24,7 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public async Task NotifyFailedAsync(RequestBase item, NodeInfo nodeInfo, TFailure result)
+        public async Task NotifyFailedAsync(RequestBase item, ComponentInfo nodeInfo, TFailure result)
         {
             if (_eventStore.OnFailedAsyncHandler != null)
             {
@@ -32,7 +32,7 @@ namespace DistributedWebCrawler.Core.Queue
             }
         }
 
-        public async Task NotifyComponentStatusUpdateAsync(NodeInfo nodeInfo, ComponentStatus componentStatus)
+        public async Task NotifyComponentStatusUpdateAsync(ComponentInfo nodeInfo, ComponentStatus componentStatus)
         {
             if (_eventStore.OnComponentUpdateAsyncHandler != null)
             {

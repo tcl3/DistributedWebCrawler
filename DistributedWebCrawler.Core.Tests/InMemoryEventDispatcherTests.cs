@@ -26,7 +26,7 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore,
             InMemoryEventDispatcher<TSuccess, TFailure> sut,
             TestRequest request,
-            NodeInfo nodeInfo,
+            ComponentInfo nodeInfo,
             TSuccess result)
         {
             var eventCalled = false;
@@ -49,7 +49,7 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore,
             InMemoryEventDispatcher<TSuccess, TFailure> sut,
             TestRequest request,
-            NodeInfo nodeInfo,
+            ComponentInfo nodeInfo,
             TFailure result)
         {
             var eventCalled = false;
@@ -72,7 +72,7 @@ namespace DistributedWebCrawler.Core.Tests
         public async Task EnsureEventFiresWhenNotifyComponentUpdateIsCalled(
             [Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore,
             InMemoryEventDispatcher<TSuccess, TFailure> sut,
-            NodeInfo nodeInfo,
+            ComponentInfo nodeInfo,
             ComponentStatus result)
         {
             var eventCalled = false;

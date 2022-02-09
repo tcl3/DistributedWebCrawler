@@ -1,5 +1,6 @@
-import React, { Component } from "react";
+import React from "react";
 import Table from "react-bootstrap/Table";
+import { NodeStatusStats } from "../types/NodeStatusStats";
 import { ComponentStats } from "./AppComponent";
 
 export interface ComponentSummaryTableProps {
@@ -11,29 +12,75 @@ export interface HasContentLength {
 }
 
 export interface BytesDownloadedStats {
-  totalDownloaded: number;
-  totalDownloadedSinceLastUpdate: number;
+  totalIngested: number,
+  totalIngestedSinceLastUpdate: number,
+  totalDownloaded: number,
+  totalUploaded: number,
+  totalDownloadedSinceLastUpdate: number,
+  totalUploadedSinceLastUpdate: number,
 }
 
 const getBytesDownloaded = (
   componentStats: ComponentStats[]
 ): BytesDownloadedStats => {
   const result = {
+    totalIngested: 0,
+    totalIngestedSinceLastUpdate: 0,
     totalDownloaded: 0,
+    totalUploaded: 0,
     totalDownloadedSinceLastUpdate: 0,
+    totalUploadedSinceLastUpdate: 0,
   };
+  const nodeStatuses: {[key: string]: NodeStatusStats } = {};
   for (const stats of componentStats) {
-    const totalBytes = stats.completedItemStats.totalBytes;
-    const totalBytesSinceLastUpdate =
-      stats.completedItemStats.totalBytesSinceLastUpdate;
+    const totalBytesIngested = stats.completedItemStats.totalBytesIngested;
+    const totalBytesIngestedSinceLastUpdate =
+      stats.completedItemStats.totalBytesIngestedSinceLastUpdate;
 
-    if (totalBytes) {
-      result.totalDownloaded += totalBytes;
+    if (stats.componentStatusStats && stats.componentStatusStats.nodeStatus) {
+      Object.entries(stats.componentStatusStats.nodeStatus).forEach(entry => {
+        const [key, value] = entry;
+        if (!nodeStatuses[key]) {
+          nodeStatuses[key] = value;
+        }
+      });
+  }
+
+    if (totalBytesIngested) {
+      result.totalIngested += totalBytesIngested;
     }
 
-    if (totalBytesSinceLastUpdate) {
-      result.totalDownloadedSinceLastUpdate += totalBytesSinceLastUpdate;
+    if (totalBytesIngestedSinceLastUpdate) {
+      result.totalIngestedSinceLastUpdate += totalBytesIngestedSinceLastUpdate;
     }
+  }
+
+  let totalBytesDownloaded = 0;
+  let totalBytesUploaded = 0;
+  let totalBytesDownloadedSinceLastUpdate = 0;
+  let totalBytesUploadedSinceLastUpdate = 0;
+
+  Object.values(nodeStatuses).forEach(nodeStatus => {
+    totalBytesDownloaded += nodeStatus.totalBytesDownloaded;
+    totalBytesUploaded += nodeStatus.totalBytesUploaded;
+    totalBytesDownloadedSinceLastUpdate += nodeStatus.totalBytesDownloadedSinceLastUpdate;
+    totalBytesUploadedSinceLastUpdate += nodeStatus.totalBytesUploadedSinceLastUpdate;
+  });
+
+  if (totalBytesDownloaded) {
+    result.totalDownloaded += totalBytesDownloaded;
+  }
+
+  if (totalBytesUploaded) {
+    result.totalUploaded += totalBytesUploaded;
+  }
+
+  if (totalBytesDownloadedSinceLastUpdate) {
+    result.totalDownloadedSinceLastUpdate += totalBytesDownloadedSinceLastUpdate;
+  }
+
+  if (totalBytesUploadedSinceLastUpdate) {
+    result.totalUploadedSinceLastUpdate += totalBytesUploadedSinceLastUpdate;
   }
 
   return result;
@@ -114,8 +161,21 @@ const ComponentSummaryTable: React.FC<ComponentSummaryTableProps> = ({
         </tbody>
       </Table>
       <div>
+        Ingest speed:{" "}
+        {getBytesString(bytesDownloaded.totalIngestedSinceLastUpdate)}/s
+      </div>
+      <div></div>
+      <div>
         Download speed:{" "}
         {getBytesString(bytesDownloaded.totalDownloadedSinceLastUpdate)}/s
+      </div>
+      <div>
+        Upload speed:{" "}
+        {getBytesString(bytesDownloaded.totalUploadedSinceLastUpdate)}/s
+      </div>
+      <div></div>
+      <div>
+        Total ingested: {getBytesString(bytesDownloaded.totalIngested)}
       </div>
       <div>
         Total downloaded: {getBytesString(bytesDownloaded.totalDownloaded)}

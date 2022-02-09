@@ -46,7 +46,7 @@ namespace DistributedWebCrawler.ManagerAPI
 
         private void SendUpdateToHub(ComponentStatsBuilder builder)
         {
-            var componentName = builder.ComponentName;
+            var componentName = builder.ComponentInfo.ComponentName;
 
             if (builder.TryBuildCompletedItemStats(out var completedItemStats))
             {
@@ -66,11 +66,12 @@ namespace DistributedWebCrawler.ManagerAPI
 
         public void Register(IEventReceiver eventReceiver)
         {
-            _receivers.Add(eventReceiver);
-
-            eventReceiver.OnCompletedAsync += OnCompletedAsync;
-            eventReceiver.OnFailedAsync += OnFailedAsync;
-            eventReceiver.OnComponentUpdateAsync += OnComponentUpdateAsync;
+            if (_receivers.Add(eventReceiver))
+            {
+                eventReceiver.OnCompletedAsync += OnCompletedAsync;
+                eventReceiver.OnFailedAsync += OnFailedAsync;
+                eventReceiver.OnComponentUpdateAsync += OnComponentUpdateAsync;
+            }
         }
 
         public void Unregister(IEventReceiver eventReceiver)
@@ -85,28 +86,28 @@ namespace DistributedWebCrawler.ManagerAPI
 
         private Task OnComponentUpdateAsync(object? sender, ComponentEventArgs<ComponentStatus> e)
         {
-            var builder = GetBuilder(e.NodeInfo);
+            var builder = GetBuilder(e.ComponentInfo);
             builder.AddComponentStatusUpdate(e.Result);
             return Task.CompletedTask;
         }
 
         private Task OnFailedAsync(object? sender, ItemFailedEventArgs e)
         {
-            var builder = GetBuilder(e.NodeInfo);
+            var builder = GetBuilder(e.ComponentInfo);
             builder.AddFailedItem(e);
             return Task.CompletedTask;
         }
 
         private Task OnCompletedAsync(object? sender, ItemCompletedEventArgs e)
         {
-            var builder = GetBuilder(e.NodeInfo);
+            var builder = GetBuilder(e.ComponentInfo);
             builder.AddCompletedItem(e);
             return Task.CompletedTask;
         }
         
-        private ComponentStatsBuilder GetBuilder(NodeInfo nodeInfo)
+        private ComponentStatsBuilder GetBuilder(ComponentInfo nodeInfo)
         {
-            var lazyValue = _builderLookup.GetOrAdd(nodeInfo.NodeId, name => new(() => new ComponentStatsBuilder(nodeInfo)));
+            var lazyValue = _builderLookup.GetOrAdd(nodeInfo.ComponentId, name => new(() => new ComponentStatsBuilder(nodeInfo)));
             return lazyValue.Value;
         }
 
@@ -116,8 +117,8 @@ namespace DistributedWebCrawler.ManagerAPI
             private long _totalTaskCount;
             private long _totalQueueCount;
 
-            private long _totalBytes;
-            private long _totalBytesSinceLastUpdate;
+            private long _totalBytesIngested;
+            private long _totalBytesIngestedSinceLastUpdate;
             private bool _hasContentLength;
 
             private long _componentUpdateCount;
@@ -135,19 +136,20 @@ namespace DistributedWebCrawler.ManagerAPI
 
             private ConcurrentDictionary<string, int> _errorCounts;
 
+            private readonly ConcurrentDictionary<Guid, NodeStatusBuilder> _nodeStatusBuilderLookup;
+
             private const int RecentItemCount = 10;
 
-            public string ComponentName { get; }
-            public Guid NodeId { get; }
+            public ComponentInfo ComponentInfo { get; }
 
-            public ComponentStatsBuilder(NodeInfo nodeInfo)
+            public ComponentStatsBuilder(ComponentInfo componentInfo)
             {                
                 _errorCounts = new();
                 _completedItems = new();
                 _failedItems = new();
+                _nodeStatusBuilderLookup = new();
 
-                ComponentName = nodeInfo.ComponentName;
-                NodeId = nodeInfo.NodeId;
+                ComponentInfo = componentInfo;
             }
 
             public void Reset()
@@ -161,11 +163,16 @@ namespace DistributedWebCrawler.ManagerAPI
                     _completedItemCount = 0;
                     _failedItemCount = 0;
 
-                    _totalBytesSinceLastUpdate = 0;
+                    _totalBytesIngestedSinceLastUpdate = 0;
 
                     _completedItems.Clear();
                     _failedItems.Clear();
                     _errorCounts.Clear();
+                    
+                    foreach (var builder in _nodeStatusBuilderLookup.Values)
+                    {
+                        builder.Reset();
+                    }
                 }
             }
 
@@ -177,36 +184,42 @@ namespace DistributedWebCrawler.ManagerAPI
                 if (args.Result is IngestSuccess ingestResult)
                 {
                     _hasContentLength = true;
-                    Interlocked.Add(ref _totalBytes, ingestResult.ContentLength);
-                    Interlocked.Add(ref _totalBytesSinceLastUpdate, ingestResult.ContentLength);
+                    Interlocked.Add(ref _totalBytesIngested, ingestResult.ContentLength);
+                    Interlocked.Add(ref _totalBytesIngestedSinceLastUpdate, ingestResult.ContentLength);
                 }
 
                 // TODO: common ContentLength interface
                 else if (args.Result is RobotsDownloaderSuccess robotsResult)
                 {
                     _hasContentLength = true;
-                    Interlocked.Add(ref _totalBytes, robotsResult.ContentLength);
-                    Interlocked.Add(ref _totalBytesSinceLastUpdate, robotsResult.ContentLength);
+                    Interlocked.Add(ref _totalBytesIngested, robotsResult.ContentLength);
+                    Interlocked.Add(ref _totalBytesIngestedSinceLastUpdate, robotsResult.ContentLength);
                 }
+
                 _completedItems.Add(args.Result);
             }
 
             public void AddFailedItem(ItemFailedEventArgs args)
             {
-                Interlocked.Increment(ref _failedItemCount);
                 Interlocked.Increment(ref _totalFailedItemCount);
                 _errorCounts.AddOrUpdate(args.Result.Error.ToString(), 0, (key, oldValue) => oldValue + 1);
                 _failedItems.Add(args.Result);
+
+                Interlocked.Increment(ref _failedItemCount);
             }
 
             public void AddComponentStatusUpdate(ComponentStatus componentStatus)
             {
-                Interlocked.Increment(ref _componentUpdateCount);
                 Interlocked.Increment(ref _totalComponentUpdateCount);
 
                 _maxTasks = componentStatus.MaxConcurrentTasks;
                 Interlocked.Add(ref _totalTaskCount, componentStatus.TasksInUse);
                 Interlocked.Add(ref _totalQueueCount, componentStatus.QueueCount);
+
+                var builder = _nodeStatusBuilderLookup.GetOrAdd(componentStatus.NodeStatus.NodeId, new NodeStatusBuilder());
+                builder.UpdateNodeStatus(componentStatus.NodeStatus);
+
+                Interlocked.Increment(ref _componentUpdateCount);
             }
 
             public bool TryBuildCompletedItemStats([NotNullWhen(returnValue: true)] out CompletedItemStats? completedItemStats)
@@ -220,8 +233,8 @@ namespace DistributedWebCrawler.ManagerAPI
                 completedItemStats = new CompletedItemStats(_completedItemCount, _totalCompletedItemCount)
                 {
                     RecentItems = _completedItems.TakeLast(RecentItemCount).ToList(),
-                    TotalBytes = _hasContentLength ? _totalBytes : null,
-                    TotalBytesSinceLastUpdate = _hasContentLength ? _totalBytesSinceLastUpdate : null
+                    TotalBytesIngested = _hasContentLength ? _totalBytesIngested : null,
+                    TotalBytesIngestedSinceLastUpdate = _hasContentLength ? _totalBytesIngestedSinceLastUpdate : null
                 };
 
                 return true;
@@ -256,10 +269,58 @@ namespace DistributedWebCrawler.ManagerAPI
                 {
                     AverageTasksInUse = (int)Math.Round(_totalTaskCount / (double)_componentUpdateCount),
                     AverageQueueCount = (int)Math.Round(_totalQueueCount / (double)_componentUpdateCount),
-                    MaxTasks = _maxTasks
+                    MaxTasks = _maxTasks,
+                    NodeStatus = _nodeStatusBuilderLookup.ToArray().ToDictionary(keySelector => keySelector.Key, elementSelector => elementSelector.Value.Build())
                 };
 
                 return true;
+            }
+        }
+
+        private class NodeStatusBuilder
+        {
+            private long _totalBytesDownloadedSinceLastUpdate;
+            private long _totalBytesUploadedSinceLastUpdate;
+            private long _totalBytesDownloaded;
+            private long _totalBytesUploaded;
+
+            private long _totalBytesUploadedSinceLastReset;
+            private long _totalBytesDownloadedSinceLastReset;
+
+            public void UpdateNodeStatus(NodeStatus nodeStatus)
+            {
+                if (nodeStatus.TotalBytesDownloaded > _totalBytesDownloaded)
+                {
+                    _totalBytesDownloaded = nodeStatus.TotalBytesDownloaded;
+                    _totalBytesDownloadedSinceLastUpdate = nodeStatus.TotalBytesDownloaded - _totalBytesDownloadedSinceLastReset;
+                }
+
+                if (nodeStatus.TotalBytesUploaded > _totalBytesUploaded)
+                {
+                    _totalBytesUploaded = nodeStatus.TotalBytesUploaded;
+                    _totalBytesUploadedSinceLastUpdate = nodeStatus.TotalBytesUploaded - _totalBytesUploadedSinceLastReset;
+                }                
+            }
+
+            public NodeStatusStats Build()
+            {
+                return new NodeStatusStats
+                {
+                    TotalBytesDownloaded = _totalBytesDownloaded,
+                    TotalBytesUploaded = _totalBytesUploaded,
+                    TotalBytesDownloadedSinceLastUpdate = _totalBytesDownloadedSinceLastUpdate,
+                    TotalBytesUploadedSinceLastUpdate = _totalBytesUploadedSinceLastUpdate,
+                };
+            }
+
+            public void Reset()
+            {
+                _totalBytesUploadedSinceLastReset = _totalBytesUploaded;
+                _totalBytesDownloadedSinceLastReset = _totalBytesDownloaded;
+                _totalBytesDownloadedSinceLastUpdate = 0;
+                _totalBytesUploadedSinceLastUpdate = 0;
+                _totalBytesDownloaded = 0;
+                _totalBytesUploaded = 0;
             }
         }
     }

@@ -9,6 +9,8 @@
         public int AverageTasksInUse { get; init; }
         public int AverageQueueCount { get; init; }
         public int MaxTasks { get; init; }
+
+        public Dictionary<Guid, NodeStatusStats> NodeStatus { get; init; } = new Dictionary<Guid, NodeStatusStats>();
     }
 
 }

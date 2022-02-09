@@ -6,7 +6,7 @@ namespace DistributedWebCrawler.Core.Queue
 {
     public class ItemCompletedEventArgs : ComponentEventArgs
     {
-        public ItemCompletedEventArgs(Guid id, NodeInfo nodeInfo, object result) : base(nodeInfo, result)
+        public ItemCompletedEventArgs(Guid id, ComponentInfo nodeInfo, object result) : base(nodeInfo, result)
         {
             Id = id;
         }
@@ -17,7 +17,7 @@ namespace DistributedWebCrawler.Core.Queue
     public class ItemCompletedEventArgs<TResult> : ItemCompletedEventArgs
         where TResult : notnull
     {
-        public ItemCompletedEventArgs(Guid id, NodeInfo nodeInfo, TResult result) : base(id, nodeInfo, result)
+        public ItemCompletedEventArgs(Guid id, ComponentInfo nodeInfo, TResult result) : base(id, nodeInfo, result)
         {
          
         }
@@ -27,7 +27,7 @@ namespace DistributedWebCrawler.Core.Queue
 
     public class ItemFailedEventArgs : ComponentEventArgs<IErrorCode>
     {
-        public ItemFailedEventArgs(Guid id, NodeInfo nodeInfo, IErrorCode result) : base(nodeInfo, result)
+        public ItemFailedEventArgs(Guid id, ComponentInfo nodeInfo, IErrorCode result) : base(nodeInfo, result)
         {
             Id = id;
         }
@@ -38,7 +38,7 @@ namespace DistributedWebCrawler.Core.Queue
     public class ItemFailedEventArgs<TFailure> : ItemFailedEventArgs
         where TFailure : notnull, IErrorCode
     {
-        public ItemFailedEventArgs(Guid id, NodeInfo nodeInfo, TFailure result) : base(id, nodeInfo, result)
+        public ItemFailedEventArgs(Guid id, ComponentInfo nodeInfo, TFailure result) : base(id, nodeInfo, result)
         {
         }
 

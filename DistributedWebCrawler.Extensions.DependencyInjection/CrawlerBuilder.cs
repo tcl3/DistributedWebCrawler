@@ -37,6 +37,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
         private static void RegisterCommonDefaultDependencies(IServiceCollection services)
         {
+            services.TryAddSingleton<INodeStatusProvider, NodeStatusProvider>();
             services.TryAddSingleton<IComponentNameProvider, ComponentNameProvider>();
             services.TryAddSingleton<IContentStore, ContentStore>();
             services.TryAddSingleton<IRobotsCacheReader, RobotsCacheReader>();

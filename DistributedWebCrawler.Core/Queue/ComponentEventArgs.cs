@@ -5,26 +5,26 @@ namespace DistributedWebCrawler.Core.Queue
 {
     public class ComponentEventArgs : EventArgs
     {
-        public ComponentEventArgs(NodeInfo nodeInfo, object result)
+        public ComponentEventArgs(ComponentInfo nodeInfo, object result)
         {
-            NodeInfo = nodeInfo;
+            ComponentInfo = nodeInfo;
             Result = result;
         }
 
-        public NodeInfo NodeInfo { get; }
+        public ComponentInfo ComponentInfo { get; }
         public object Result { get; }
     }
 
     public class ComponentEventArgs<TResult> : EventArgs
         where TResult : notnull
     {
-        public ComponentEventArgs(NodeInfo nodeInfo, TResult result)
+        public ComponentEventArgs(ComponentInfo componentInfo, TResult result)
         {
-            NodeInfo = nodeInfo;
+            ComponentInfo = componentInfo;
             Result = result;
         }
 
-        public NodeInfo NodeInfo { get; }
+        public ComponentInfo ComponentInfo { get; }
 
         public TResult Result { get; }
     }

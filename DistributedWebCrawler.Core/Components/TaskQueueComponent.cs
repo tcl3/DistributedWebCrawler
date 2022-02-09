@@ -20,6 +20,7 @@ namespace DistributedWebCrawler.Core.Components
         private readonly IEventDispatcher<TSuccess, TFailure> _eventDispatcher;
         private readonly IKeyValueStore _outstandingItemsStore;
         private readonly ILogger _logger;
+        private readonly INodeStatusProvider _nodeStatusProvider;
         private readonly TaskQueueSettings _taskQueueSettings;
         private readonly SemaphoreSlim _itemSemaphore;
 
@@ -29,9 +30,9 @@ namespace DistributedWebCrawler.Core.Components
 
         protected bool IsStarted { get; private set; }
 
-        private readonly Lazy<NodeInfo> _nodeInfo;
+        private readonly Lazy<ComponentInfo> _componentInfo;
 
-        protected NodeInfo NodeInfo => _nodeInfo.Value;
+        protected ComponentInfo ComponentInfo => _componentInfo.Value;
 
         private readonly TaskCompletionSource _taskCompletionSource;
 
@@ -42,6 +43,7 @@ namespace DistributedWebCrawler.Core.Components
             IKeyValueStore keyValueStore,
             ILogger<TaskQueueComponent<TRequest, TSuccess, TFailure, TSettings>> logger,
             IComponentNameProvider componentNameProvider,
+            INodeStatusProvider nodeStatusProvider,
             TSettings settings)
         {
             _requestProcessor = requestProcessor;
@@ -49,17 +51,19 @@ namespace DistributedWebCrawler.Core.Components
             _eventDispatcher = eventReceiver;
             _outstandingItemsStore = keyValueStore.WithKeyPrefix("TaskQueueOutstandingItems");
             _logger = logger;
+            _nodeStatusProvider = nodeStatusProvider;
             _taskQueueSettings = settings;
             _itemSemaphore = new SemaphoreSlim(settings.MaxConcurrentItems, settings.MaxConcurrentItems);
             _pauseSemaphore = new SemaphoreSlim(0);
             _taskCompletionSource = new();
 
-            _nodeInfo = new Lazy<NodeInfo>(() =>
+            _componentInfo = new Lazy<ComponentInfo>(() =>
             {
                 var componentType = requestProcessor.GetType();
                 var componentName = componentNameProvider.GetComponentName(componentType);
-                var nodeId = Guid.NewGuid();
-                return new NodeInfo(componentName, nodeId);
+                var componentId = Guid.NewGuid();
+                var nodeId = _nodeStatusProvider.CurrentNodeStatus.NodeId;
+                return new ComponentInfo(componentName, componentId, nodeId);
             });            
         }
 
@@ -80,12 +84,12 @@ namespace DistributedWebCrawler.Core.Components
         {
             if (IsStarted)
             {
-                throw new InvalidOperationException($"Cannot start {NodeInfo.ComponentName} when already started");
+                throw new InvalidOperationException($"Cannot start {ComponentInfo.ComponentName} when already started");
             }
 
             IsStarted = true;
 
-            _logger.LogInformation($"{NodeInfo.ComponentName} component started");
+            _logger.LogInformation($"{ComponentInfo.ComponentName} component started");
 
             _ = ComponentStartAndHandleExceptionAsync(startState, cancellationToken);
 
@@ -143,12 +147,7 @@ namespace DistributedWebCrawler.Core.Components
             {
                 await _itemSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                if (_isPaused)
+                if (_isPaused && !cancellationToken.IsCancellationRequested)
                 {
                     await _pauseSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
@@ -179,13 +178,13 @@ namespace DistributedWebCrawler.Core.Components
                     await NotifyAsync(item, queuedItem).ConfigureAwait(false);
                 }
             }
-            catch (OperationCanceledException) 
+            catch (OperationCanceledException ex) 
             {
-                _logger.LogInformation($"Task cancelled while processing queued item");
+                _logger.LogInformation(ex, $"Task cancelled while processing queued item");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Uncaught exception in {NodeInfo.ComponentName} (NodeId: {NodeInfo.NodeId})");
+                _logger.LogError(ex, $"Uncaught exception in {ComponentInfo.ComponentName} (ComponentId: {ComponentInfo.ComponentId})");
             }
             finally
             {
@@ -198,10 +197,10 @@ namespace DistributedWebCrawler.Core.Components
             switch (queuedItem.Status)
             {
                 case QueuedItemStatus.Success when queuedItem is QueuedItemResult<TSuccess> successResult:
-                    await _eventDispatcher.NotifyCompletedAsync(currentItem, NodeInfo, successResult.Result).ConfigureAwait(false);
+                    await _eventDispatcher.NotifyCompletedAsync(currentItem, ComponentInfo, successResult.Result).ConfigureAwait(false);
                     break;
                 case QueuedItemStatus.Failed when queuedItem is QueuedItemResult<TFailure> failedResult:
-                    await _eventDispatcher.NotifyFailedAsync(currentItem, NodeInfo, failedResult.Result).ConfigureAwait(false);
+                    await _eventDispatcher.NotifyFailedAsync(currentItem, ComponentInfo, failedResult.Result).ConfigureAwait(false);
                     break;
                 case QueuedItemStatus.Waiting:
                     await _outstandingItemsStore.PutAsync(currentItem.Id.ToString("N"), currentItem).ConfigureAwait(false);
@@ -209,7 +208,7 @@ namespace DistributedWebCrawler.Core.Components
             }
 
             var componentStatus = GetComponentStatus();
-            await _eventDispatcher.NotifyComponentStatusUpdateAsync(NodeInfo, componentStatus).ConfigureAwait(false);
+            await _eventDispatcher.NotifyComponentStatusUpdateAsync(ComponentInfo, componentStatus).ConfigureAwait(false);
         }
 
         public Task PauseAsync()
@@ -240,11 +239,11 @@ namespace DistributedWebCrawler.Core.Components
 
         private ComponentStatus GetComponentStatus()
         {
-            return new ComponentStatus
+            return new ComponentStatus(nodeStatus: _nodeStatusProvider.CurrentNodeStatus)
             {
                 QueueCount = _consumer.Count,
                 TasksInUse = _taskQueueSettings.MaxConcurrentItems - _itemSemaphore.CurrentCount,
-                MaxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems
+                MaxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems,
             };
         }
     }

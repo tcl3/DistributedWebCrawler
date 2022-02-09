@@ -113,7 +113,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private void StartOnFailedNotifier()
         {
-            var argsFactory = (CompletedItem<TFailure> data, NodeInfo nodeInfo) => new ItemFailedEventArgs<TFailure>(data.Id, nodeInfo, data.Result);
+            var argsFactory = (CompletedItem<TFailure> data, ComponentInfo nodeInfo) => new ItemFailedEventArgs<TFailure>(data.Id, nodeInfo, data.Result);
             var handler = (object? obj, ItemFailedEventArgs<TFailure> args) => _eventStore.OnFailedAsyncHandler?.Invoke(obj, args);
             var receiveCallback = OnNotificationReceived<ItemFailedEventArgs<TFailure>, CompletedItem<TFailure>, TFailure>(handler, argsFactory);
             StartNotifierConsumer<TFailure>(receiveCallback);
@@ -121,7 +121,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private void StartOnCompletedNotifier()
         {
-            var argsFactory = (CompletedItem<TSuccess> data, NodeInfo nodeInfo) => new ItemCompletedEventArgs<TSuccess>(data.Id, nodeInfo, data.Result);
+            var argsFactory = (CompletedItem<TSuccess> data, ComponentInfo nodeInfo) => new ItemCompletedEventArgs<TSuccess>(data.Id, nodeInfo, data.Result);
             var handler = (object? obj, ItemCompletedEventArgs<TSuccess> args) => _eventStore.OnCompletedAsyncHandler?.Invoke(obj, args);
             var receiveCallback = OnNotificationReceived<ItemCompletedEventArgs<TSuccess>, CompletedItem<TSuccess>, TSuccess>(handler, argsFactory);
             StartNotifierConsumer<TSuccess>(receiveCallback);
@@ -129,7 +129,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         private void StartComponentStatusUpdateNotifier()
         {
-            var argsFactory = (ComponentStatus data, NodeInfo nodeInfo) => new ComponentEventArgs<ComponentStatus>(nodeInfo, data);
+            var argsFactory = (ComponentStatus data, ComponentInfo nodeInfo) => new ComponentEventArgs<ComponentStatus>(nodeInfo, data);
             var handler = (object? obj, ComponentEventArgs<ComponentStatus> args) => _eventStore.OnComponentUpdateAsyncHandler?.Invoke(obj, args);
             var receiveCallback = OnNotificationReceived<ComponentEventArgs<ComponentStatus>, ComponentStatus, ComponentStatus>(handler, argsFactory);
             StartNotifierConsumer<ComponentStatus>(receiveCallback);
@@ -150,7 +150,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             });
         }
 
-        private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData, TResult>(Func<object?, TArgs, Task?> handler, Func<TData, NodeInfo, TArgs> argsFactory)
+        private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData, TResult>(Func<object?, TArgs, Task?> handler, Func<TData, ComponentInfo, TArgs> argsFactory)
             where TArgs: EventArgs
             where TResult : notnull
         {
@@ -158,7 +158,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             return OnNotificationReceived(exchangeName, handler, argsFactory);
         }
 
-        private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData>(string exchangeName, Func<object?, TArgs, Task?> handler, Func<TData, NodeInfo, TArgs> argsFactory)
+        private BasicDeliverAsyncEventHandler OnNotificationReceived<TArgs, TData>(string exchangeName, Func<object?, TArgs, Task?> handler, Func<TData, ComponentInfo, TArgs> argsFactory)
             where TArgs : EventArgs
         {
             return async (model, ea) =>
@@ -173,8 +173,8 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 if (handler != null)
                 {
                     var componentName = _componentNameProvider.GetComponentNameOrDefault<TSuccess, TFailure>();
-                    var nodeInfo = new NodeInfo(componentName, message.NodeId);
-                    var eventArgs = argsFactory(message.MessageContent, nodeInfo);
+                    var componentInfo = new ComponentInfo(componentName, message.ComponentId, message.NodeId);
+                    var eventArgs = argsFactory(message.MessageContent, componentInfo);
                     var handlerTask = handler(this, eventArgs);
                     if (handlerTask != null)
                     {

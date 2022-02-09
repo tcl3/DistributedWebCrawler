@@ -20,38 +20,38 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             _serializer = serializer;
         }
 
-        public Task NotifyCompletedAsync(RequestBase item, NodeInfo nodeInfo, TSuccess result)
+        public Task NotifyCompletedAsync(RequestBase item, ComponentInfo nodeInfo, TSuccess result)
         {
             return PublishCompletedItemAsync(item, nodeInfo, result);
         }
 
-        public Task NotifyFailedAsync(RequestBase item, NodeInfo nodeInfo, TFailure result)
+        public Task NotifyFailedAsync(RequestBase item, ComponentInfo nodeInfo, TFailure result)
         {
             return PublishCompletedItemAsync(item, nodeInfo, result);
         }
 
-        public Task NotifyComponentStatusUpdateAsync(NodeInfo nodeInfo, ComponentStatus componentStatus)
+        public Task NotifyComponentStatusUpdateAsync(ComponentInfo nodeInfo, ComponentStatus componentStatus)
         {
             return PublishAsync<ComponentStatus>(nodeInfo, componentStatus);
         }
 
-        private Task PublishCompletedItemAsync<TResult>(RequestBase item, NodeInfo nodeInfo, TResult result)
+        private Task PublishCompletedItemAsync<TResult>(RequestBase item, ComponentInfo nodeInfo, TResult result)
             where TResult : notnull        
         {
             var eventArgs = new CompletedItem<TResult>(item.Id, result);
             return PublishAsync<TResult>(nodeInfo, eventArgs);
         }
 
-        private Task PublishAsync<TResult>(NodeInfo nodeInfo, object result)
+        private Task PublishAsync<TResult>(ComponentInfo nodeInfo, object result)
             where TResult : notnull
         {
             var exchangeName = _exchangeNameProvider.GetExchangeName<TResult>();
             return PublishAsync(exchangeName, nodeInfo, result);
         }
 
-        private Task PublishAsync<TData>(string exchangeName, NodeInfo nodeInfo, TData data)
+        private Task PublishAsync<TData>(string exchangeName, ComponentInfo nodeInfo, TData data)
         {
-            var message = new RabbitMQMessage<TData>(nodeInfo.NodeId, data);
+            var message = new RabbitMQMessage<TData>(nodeInfo.ComponentId, nodeInfo.NodeId, data);
             var bytes = _serializer.Serialize(message);
 
             _channelPool.PublishFanout(bytes, exchangeName);

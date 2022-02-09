@@ -2,14 +2,16 @@
 
 namespace DistributedWebCrawler.Core.Models
 {
-    public class NodeInfo
+    public class ComponentInfo
     {
         public string ComponentName { get; }
+        public Guid ComponentId { get; }
         public Guid NodeId { get; }
 
-        public NodeInfo(string componentName, Guid nodeId)
+        public ComponentInfo(string componentName, Guid componentId, Guid nodeId)
         {
             ComponentName = componentName;
+            ComponentId = componentId;
             NodeId = nodeId;
         }
     }

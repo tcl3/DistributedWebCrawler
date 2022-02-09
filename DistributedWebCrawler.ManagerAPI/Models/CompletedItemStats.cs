@@ -5,8 +5,8 @@
         public CompletedItemStats(long sinceLastUpdate, long total) : base(sinceLastUpdate, total)
         {
         }
-        public long? TotalBytesSinceLastUpdate { get; init; }
-        public long? TotalBytes { get; init; }
+        public long? TotalBytesIngestedSinceLastUpdate { get; init; }
+        public long? TotalBytesIngested { get; init; }
 
         public IEnumerable<object> RecentItems { get; init; } = Enumerable.Empty<object>();
     }    
