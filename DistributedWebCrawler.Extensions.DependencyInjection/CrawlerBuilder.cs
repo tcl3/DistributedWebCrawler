@@ -12,6 +12,7 @@ using Nager.PublicSuffix;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.StreamManager;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
@@ -37,6 +38,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
         private static void RegisterCommonDefaultDependencies(IServiceCollection services)
         {
+            services.TryAddSingleton<IStreamManager, StreamManager>();
             services.TryAddSingleton<INodeStatusProvider, NodeStatusProvider>();
             services.TryAddSingleton<IComponentNameProvider, ComponentNameProvider>();
             services.TryAddSingleton<IContentStore, ContentStore>();

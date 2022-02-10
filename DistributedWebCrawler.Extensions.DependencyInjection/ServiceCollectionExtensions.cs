@@ -47,11 +47,11 @@ namespace DistributedWebCrawler.Core.Extensions.DependencyInjection
 
             var componentDescriptors = ComponentDescriptor.FromAssemblies(componentAssemblies);
 
-            services.AddSingleton<IEnumerable<ComponentDescriptor>>(componentDescriptors)
-                .AddSingleton<INodeStatusProvider, NodeStatusProvider>()
-                .AddSingleton<IComponentNameProvider, ComponentNameProvider>()
-                .AddSingleton<ISeeder, CompositeSeeder>()
-                .AddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
+            services.AddSingleton<IEnumerable<ComponentDescriptor>>(componentDescriptors);
+
+            services.TryAddSingleton<IComponentNameProvider, ComponentNameProvider>();
+            services.TryAddSingleton<ISeeder, CompositeSeeder>();
+            services.TryAddSingleton<ICrawlerManager, InMemoryCrawlerManager>();
 
             services.AddSingleton<IEventReceiverFactory>(serviceProvider =>
             {

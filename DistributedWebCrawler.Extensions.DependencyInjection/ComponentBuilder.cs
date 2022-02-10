@@ -39,7 +39,6 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
 
         IComponentBuilder<TSettings> IComponentBuilder<TSettings>.WithClient<TClient>(IConfiguration configuration, bool allowAutoRedirect)
         {
-            Services.TryAddSingleton<IStreamManager, StreamManager>();
             Services.AddSettings<CrawlerClientSettings>(configuration);
             Services.AddHttpClientWithSettings<TClient, CrawlerClientSettings>(ConfigureClient)
                 .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
