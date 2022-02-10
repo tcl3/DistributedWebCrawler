@@ -4,8 +4,10 @@ using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.Tests.Attributes;
 using DistributedWebCrawler.Core.Tests.Fakes;
+using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace DistributedWebCrawler.Core.Tests
@@ -27,7 +29,25 @@ namespace DistributedWebCrawler.Core.Tests
 
             var result = sut.GetAll();
 
-            Assert.Equal(eventReceivers, result);
+            result.Should().BeEquivalentTo(eventReceivers);
+        }
+
+        [MoqAutoData]
+        [Theory]
+        public void GetAllShouldReturnAllEventReceiversWithNoDuplicates([Frozen] IEnumerable<IEventReceiver> eventReceivers, IFixture fixture)
+        {
+            fixture.Inject<Func<Type, object>>(type =>
+            {
+                Assert.True(type.IsAssignableFrom(typeof(IEnumerable<IEventReceiver>)));
+
+                return Enumerable.Repeat(eventReceivers, 2).SelectMany(x => x);
+            });
+
+            var sut = fixture.Create<EventReceiverFactory>();
+
+            var result = sut.GetAll();
+
+            result.Should().BeEquivalentTo(eventReceivers);
         }
 
         [MoqAutoData]
