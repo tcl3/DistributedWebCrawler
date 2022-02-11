@@ -1,6 +1,4 @@
 ﻿using DistributedWebCrawler.Core.Enums;
-using DistributedWebCrawler.Core.Models;
-using System;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
@@ -9,8 +7,11 @@ namespace DistributedWebCrawler.Core.Interfaces
     {
         Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running);
         Task WaitUntilCompletedAsync();
+        Task WaitUntilCompletedAsync(ComponentFilter componentFilter);
         Task PauseAsync();
+        Task PauseAsync(ComponentFilter componentFilter);
         Task ResumeAsync();
+        Task ResumeAsync(ComponentFilter componentFilter);
 
         EventReceiverCollection Components { get; }
     }

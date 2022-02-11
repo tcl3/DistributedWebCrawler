@@ -1,7 +1,9 @@
 ﻿using DistributedWebCrawler.Core.Enums;
 using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core
@@ -38,28 +40,43 @@ namespace DistributedWebCrawler.Core
                 _isSeeded = true;
             }            
 
-            await ForEachComponent(c => c.StartAsync(startState)).ConfigureAwait(false);
+            await ForEachComponent(c => c.StartAsync(startState), ComponentFilter.MatchAll).ConfigureAwait(false);
         }
 
         public Task PauseAsync()
         {
-            return ForEachComponent(c => c.PauseAsync());
+            return PauseAsync(ComponentFilter.MatchAll);
+        }
+
+        public Task PauseAsync(ComponentFilter componentFilter)
+        {
+            return ForEachComponent(c => c.PauseAsync(), componentFilter);
         }
 
         public Task ResumeAsync()
         {
-            return ForEachComponent(c => c.ResumeAsync());
+            return ResumeAsync(ComponentFilter.MatchAll);
+        }
+
+        public Task ResumeAsync(ComponentFilter componentFilter)
+        {
+            return ForEachComponent(c => c.ResumeAsync(), componentFilter);
         }
 
         public Task WaitUntilCompletedAsync()
         {
-            return ForEachComponent(c => c.WaitUntilCompletedAsync());
+            return WaitUntilCompletedAsync(ComponentFilter.MatchAll);
         }
 
-        private Task ForEachComponent(Func<ICrawlerComponent, Task> componentAsyncAction)
+        public Task WaitUntilCompletedAsync(ComponentFilter componentFilter)
+        {
+            return ForEachComponent(c => c.WaitUntilCompletedAsync(), componentFilter);
+        }
+
+        private Task ForEachComponent(Func<ICrawlerComponent, Task> componentAsyncAction, ComponentFilter componentFilter)
         {
             var componentTasks = new List<Task>();
-            foreach (var component in _crawlerComponents)
+            foreach (var component in _crawlerComponents.Where(component => componentFilter.Matches(component)))
             {
                 var componentTask = componentAsyncAction(component);
                 componentTasks.Add(componentTask);

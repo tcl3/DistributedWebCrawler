@@ -47,6 +47,11 @@ namespace DistributedWebCrawler.Core.Tests.Serialization
     {
     }
 
+    public class ComponentFilterSerializationTests
+    : JsonSerializerAdaptorTestBase<ComponentFilter>
+    {
+    }
+
     public abstract class JsonSerializerAdaptorTestBase<TData>
     {
         [Theory]

@@ -17,13 +17,18 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
     {
         private readonly ICrawlerManager _inner;
         private readonly IPersistentConnection _connection;
+        private readonly ISerializer _serializer;
         private readonly ILogger<RabbitMQCrawlerManagerDecorator> _logger;
         private readonly RetryPolicy _retryPolicy;
 
-        public RabbitMQCrawlerManagerDecorator(ICrawlerManager inner, IPersistentConnection connection, ILogger<RabbitMQCrawlerManagerDecorator> logger)
+        public RabbitMQCrawlerManagerDecorator(ICrawlerManager inner, 
+            IPersistentConnection connection, 
+            ISerializer serializer,
+            ILogger<RabbitMQCrawlerManagerDecorator> logger)
         {
             _inner = inner;
             _connection = connection;
+            _serializer = serializer;
             _logger = logger;
             _retryPolicy = Policy.Handle<BrokerUnreachableException>()
                .Or<AlreadyClosedException>()
@@ -38,32 +43,48 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
 
         public Task PauseAsync()
         {
-            SendCommand(Command.Pause);
+            return PauseAsync(ComponentFilter.MatchAll);
+        }
+
+        public Task PauseAsync(ComponentFilter componentFilter)
+        {
+            SendCommand(Command.Pause, componentFilter);
             return Task.CompletedTask;
         }
 
         public Task ResumeAsync()
         {
-            SendCommand(Command.Resume);
+            return ResumeAsync(ComponentFilter.MatchAll);
+        }
+
+        public Task ResumeAsync(ComponentFilter componentFilter)
+        {
+            SendCommand(Command.Resume, componentFilter);
             return Task.CompletedTask;
         }
 
-        public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
+            public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running)
         {
             return _inner.StartAsync(startState);
         }
 
         public Task WaitUntilCompletedAsync()
         {
-            // TODO: Listen for completed signal here
-            var tcs = new TaskCompletionSource();
-            return Task.WhenAll(tcs.Task, _inner.WaitUntilCompletedAsync());
+            return WaitUntilCompletedAsync(ComponentFilter.MatchAll);
         }
 
-        private void SendCommand(Command command)
+        public Task WaitUntilCompletedAsync(ComponentFilter componentFilter)
         {
-            var commandString = command.ToString();
-            var commandBytes = Encoding.UTF8.GetBytes(commandString);
+            // TODO: Listen for completed signal here
+            var tcs = new TaskCompletionSource();
+            return Task.WhenAll(tcs.Task, _inner.WaitUntilCompletedAsync(componentFilter));
+        }
+
+        private void SendCommand(Command command, ComponentFilter componentFilter)
+        {
+            var commandMessage = new RabbitMQCommandMessage(command, componentFilter);
+            
+            var messageBytes = _serializer.Serialize(commandMessage);
 
             if (!_connection.IsConnected)
             {
@@ -80,7 +101,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 channel.BasicPublish(exchange: RabbitMQConstants.CrawlerManager.ExchangeName,
                                      routingKey: "",
                                      basicProperties: null,
-                                     body: commandBytes);
+                                     body: messageBytes);
             });
         }
     }

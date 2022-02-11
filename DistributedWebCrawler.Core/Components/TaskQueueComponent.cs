@@ -32,7 +32,7 @@ namespace DistributedWebCrawler.Core.Components
 
         private readonly Lazy<ComponentInfo> _componentInfo;
 
-        protected ComponentInfo ComponentInfo => _componentInfo.Value;
+        public ComponentInfo ComponentInfo => _componentInfo.Value;
 
         private readonly TaskCompletionSource _taskCompletionSource;
 
