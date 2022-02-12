@@ -139,24 +139,18 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             foreach (var path in pathsToVisit)
             {
                 var fullUri = new Uri(baseUri, path);
-                try
+                
+                var contains = domainPatterns.Any(pattern => pattern.Match(fullUri.Host));
+                if (mode == PathCompareMode.Include)
                 {
-                    var contains = domainPatterns.Any(pattern => pattern.Match(fullUri.Host));
-                    if (mode == PathCompareMode.Include)
-                    {
-                        if (contains) validPaths.Add(path);
-                        else _logger.LogDebug($"Excluding '{fullUri}'. Domain not in IncludeDomains list");
-                    }
-                    else if (mode == PathCompareMode.Exclude)
-                    {
-                        if (!contains) validPaths.Add(path);
-                        else _logger.LogDebug($"Excluding '{fullUri}'. Domain is in ExcludeDomains list");
-                    }
+                    if (contains) validPaths.Add(path);
+                    else _logger.LogDebug($"Excluding '{fullUri}'. Domain not in IncludeDomains list");
                 }
-                catch (ParseException ex)
+                else if (mode == PathCompareMode.Exclude)
                 {
-                    _logger.LogError(ex, $"Unable to parse domain from {fullUri}");
-                }
+                    if (!contains) validPaths.Add(path);
+                    else _logger.LogDebug($"Excluding '{fullUri}'. Domain is in ExcludeDomains list");
+                }                
             }
 
             return validPaths;
