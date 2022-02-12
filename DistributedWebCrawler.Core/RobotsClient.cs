@@ -18,7 +18,7 @@ namespace DistributedWebCrawler.Core
             _logger = logger;
         }
 
-        public async Task<bool> TryGetRobotsAsync(Uri host, Func<string, Task> robotsTxtExistsAction, CancellationToken cancellationToken)
+        public async Task<bool> TryGetRobotsAsync(Uri host, Func<string, Task> robotsTxtExistsAction, CancellationToken cancellationToken = default)
         {
             var uri = new Uri(host, "/robots.txt");
             try
