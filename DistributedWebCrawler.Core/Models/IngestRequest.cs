@@ -5,25 +5,19 @@ namespace DistributedWebCrawler.Core.Models
 {
     public class IngestRequest : RequestBase
     {
-        [JsonConstructor]
-        public IngestRequest() : base()
+        public IngestRequest(Uri uri) : base()
         {
-            Uri = default!;
-        }
-
-        public IngestRequest(Uri host) : base()
-        {
-            if (host == null || !host.IsAbsoluteUri)
+            if (uri == null || !uri.IsAbsoluteUri)
             {
                 throw new UriFormatException();
             }
 
-            Uri = host;
+            Uri = uri;
         }
 
-        public Uri Uri { get; set; }
+        public Uri Uri { get; init; }
 
-        public int CurrentCrawlDepth { get; set; }
-        public bool MaxDepthReached { get; set; }
+        public int CurrentCrawlDepth { get; init; }
+        public bool MaxDepthReached { get; init; }
     }
 }
