@@ -5,6 +5,7 @@ using DistributedWebCrawler.Core.Tests.Attributes;
 using Moq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -88,6 +89,70 @@ namespace DistributedWebCrawler.Core.Tests
             {
                 var componentMock = Mock.Get(crawlerComponent);
                 componentMock.Verify(x => x.WaitUntilCompletedAsync(), Times.Once());
+            }
+        }
+
+
+        [MoqAutoData(configureMembers: true)]
+        [Theory]
+        public async Task PauseWithFilterShouldCallCrawlerComponentsMatchedByFilter(
+            [Frozen] IEnumerable<ICrawlerComponent> crawlerComponents,
+            InMemoryCrawlerManager sut)
+        {
+            var firstComponentId = crawlerComponents.First().ComponentInfo.ComponentId;
+            var componentFilter = ComponentFilter.FromComponentId(firstComponentId);
+            await sut.PauseAsync(componentFilter);
+
+            foreach (var crawlerComponent in crawlerComponents)
+            {
+                var componentMock = Mock.Get(crawlerComponent);
+                var times = componentFilter.Matches(crawlerComponent)
+                    ? Times.Once()
+                    : Times.Never();
+
+                componentMock.Verify(x => x.PauseAsync(), times);
+            }
+        }
+
+        [MoqAutoData(configureMembers: true)]
+        [Theory]
+        public async Task ResumeWithFilterShouldCallCrawlerComponentsMatchedByFilter(
+            [Frozen] IEnumerable<ICrawlerComponent> crawlerComponents,
+            InMemoryCrawlerManager sut)
+        {
+            var firstComponentId = crawlerComponents.First().ComponentInfo.ComponentId;
+            var componentFilter = ComponentFilter.FromComponentId(firstComponentId);
+            await sut.ResumeAsync(componentFilter);
+
+            foreach (var crawlerComponent in crawlerComponents)
+            {
+                var componentMock = Mock.Get(crawlerComponent);
+                var times = componentFilter.Matches(crawlerComponent)
+                    ? Times.Once()
+                    : Times.Never();
+
+                componentMock.Verify(x => x.ResumeAsync(), times);
+            }
+        }
+
+        [MoqAutoData(configureMembers: true)]
+        [Theory]
+        public async Task WaitUntilCompletedWithFilterShouldCallCrawlerComponentsMatchedByFilter(
+            [Frozen] IEnumerable<ICrawlerComponent> crawlerComponents,
+            InMemoryCrawlerManager sut)
+        {
+            var firstComponentId = crawlerComponents.First().ComponentInfo.ComponentId;
+            var componentFilter = ComponentFilter.FromComponentId(firstComponentId);
+            await sut.WaitUntilCompletedAsync(componentFilter);
+
+            foreach (var crawlerComponent in crawlerComponents)
+            {
+                var componentMock = Mock.Get(crawlerComponent);
+                var times = componentFilter.Matches(crawlerComponent)
+                    ? Times.Once()
+                    : Times.Never();
+
+                componentMock.Verify(x => x.WaitUntilCompletedAsync(), times);
             }
         }
     }
