@@ -14,8 +14,6 @@ namespace DistributedWebCrawler.Core.Tests
     {
         private static readonly Uri MockUri = new Uri("http://mock.test/");
 
-        private readonly CancellationTokenSource _cts = new(TimeSpan.FromSeconds(1));
-
         [HttpClientAutoData(content: "nonEmpty")]
         [Theory]
         public async Task TryGetRobotsShouldReturnTrueWhenContentIsReturned(RobotsClient sut)
@@ -53,9 +51,10 @@ namespace DistributedWebCrawler.Core.Tests
 
         private async Task TryGetRobotsTest(RobotsClient sut, bool expectedReturnValue)
         {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             var callbackCalled = new CallbackSentinel();
 
-            var result = await sut.TryGetRobotsAsync(MockUri, GetRobotsCallback(callbackCalled), _cts.Token);
+            var result = await sut.TryGetRobotsAsync(MockUri, GetRobotsCallback(callbackCalled), cts.Token);
 
             Assert.Equal(expectedReturnValue, result);
             Assert.Equal(expectedReturnValue, callbackCalled.Value);
