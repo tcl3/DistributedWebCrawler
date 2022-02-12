@@ -8,14 +8,14 @@ namespace DistributedWebCrawler.Core.StreamManager
 {
     internal class ByteCountingStream : Stream
     {
-        private readonly StreamManager _manager;
-        private readonly StreamStats _streamStats;
         private readonly Stream _inner;
 
-        public ByteCountingStream(StreamManager manager, StreamStats streamStats, Stream inner)
+        public Action<int> UpdateBytesSentCallback { get; init; } = _ => { };
+        public Action<int> UpdateBytesReceivedCallback { get; init; } = _ => { };
+        public Action<ByteCountingStream> DisposeCallback { get; init; } = _ => { };
+
+        public ByteCountingStream(Stream inner)
         {
-            _manager = manager;
-            _streamStats = streamStats;
             _inner = inner;
         }
 
@@ -70,28 +70,28 @@ namespace DistributedWebCrawler.Core.StreamManager
         public override int Read(byte[] buffer, int offset, int count)
         {
             var bytesRead = _inner.Read(buffer, offset, count);
-            _streamStats.UpdateBytesReceived(bytesRead);
+            UpdateBytesReceivedCallback?.Invoke(bytesRead);
             return bytesRead;
         }
 
         public override int Read(Span<byte> buffer)
         {
             var bytesRead = _inner.Read(buffer);
-            _streamStats.UpdateBytesReceived(bytesRead);
+            UpdateBytesReceivedCallback?.Invoke(bytesRead);
             return bytesRead;
         }
 
         public async override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             var bytesRead = await _inner.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-            _streamStats.UpdateBytesReceived(bytesRead);
+            UpdateBytesReceivedCallback?.Invoke(bytesRead);
             return bytesRead;
         }
 
         public async override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             var bytesRead = await _inner.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-            _streamStats.UpdateBytesReceived(bytesRead);
+            UpdateBytesReceivedCallback?.Invoke(bytesRead);
             return bytesRead;
         }
 
@@ -99,7 +99,7 @@ namespace DistributedWebCrawler.Core.StreamManager
         {
             var result = base.ReadByte();
 
-            _streamStats.UpdateBytesReceived(1);
+            UpdateBytesReceivedCallback?.Invoke(1);
 
             return result;
         }
@@ -117,31 +117,31 @@ namespace DistributedWebCrawler.Core.StreamManager
         public override void Write(byte[] buffer, int offset, int count)
         {
             _inner.Write(buffer, offset, count);
-            _streamStats.UpdateBytesSent(count);
+            UpdateBytesSentCallback?.Invoke(count);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             _inner.Write(buffer);
-            _streamStats.UpdateBytesSent(buffer.Length); // FIXME: length?
+            UpdateBytesSentCallback?.Invoke(buffer.Length); // FIXME: length?
         }
 
         public async override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             await _inner.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-            _streamStats.UpdateBytesSent(count);
+            UpdateBytesSentCallback?.Invoke(count);
         }
 
         public async override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             await _inner.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-            _streamStats.UpdateBytesSent(buffer.Length); // FIXME: length?
+            UpdateBytesSentCallback?.Invoke(buffer.Length); // FIXME: length?
         }
 
         public override void WriteByte(byte value)
         {
             base.WriteByte(value);
-            _streamStats.UpdateBytesSent(1);
+            UpdateBytesSentCallback?.Invoke(1);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -184,7 +184,7 @@ namespace DistributedWebCrawler.Core.StreamManager
         {
             if (disposing)
             {
-                _manager.DisposeStream(this);
+                DisposeCallback?.Invoke(this);
             }
 
             base.Dispose(disposing);

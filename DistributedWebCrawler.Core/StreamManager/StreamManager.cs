@@ -1,7 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -14,22 +13,26 @@ namespace DistributedWebCrawler.Core.StreamManager
     public class StreamManager : IStreamManager
     {
         private readonly ConcurrentDictionary<ByteCountingStream, bool> _streamLookup;
-        private readonly StreamStats _streamStats;
+        
         private readonly IDnsResolver? _customDnsResolver;
 
-        public long TotalBytesSent => _streamStats.TotalBytesSent;
-        public long TotalBytesReceived => _streamStats.TotalBytesReceived;
+        private long _totalBytesSent;
+        public long TotalBytesSent => _totalBytesSent;
+
+        private long _totalBytesReceived;
+        public long TotalBytesReceived => _totalBytesReceived;
+
         public int ActiveSockets => _streamLookup.Count;
 
-        public DateTimeOffset StartedAt => _streamStats.StartedAt;
+        public DateTimeOffset StartedAt { get; }
 
         public StreamManager(IDnsResolver? customDnsResolver = null)
         {
             _streamLookup = new();
-            _streamStats = new();
             _customDnsResolver = customDnsResolver;
-        }
 
+            StartedAt = DateTimeOffset.Now;
+        }
 
         public async ValueTask<Stream> ConnectCallback(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
         {
@@ -48,7 +51,13 @@ namespace DistributedWebCrawler.Core.StreamManager
                 await socket.ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
                 var stream = new NetworkStream(socket, ownsSocket: true);
 
-                var wrappedStream = new ByteCountingStream(this, _streamStats, stream);
+                var wrappedStream = new ByteCountingStream(stream)
+                {
+                    DisposeCallback = stream => DisposeStream(stream),
+                    UpdateBytesReceivedCallback = UpdateBytesReceived,
+                    UpdateBytesSentCallback = UpdateBytesSent
+                };
+
                 _streamLookup.TryAdd(wrappedStream, true);
                 return wrappedStream;
             }
@@ -59,7 +68,17 @@ namespace DistributedWebCrawler.Core.StreamManager
             }
         }
 
-        internal void DisposeStream(ByteCountingStream stream)
+        private void UpdateBytesReceived(int count)
+        {
+            Interlocked.Add(ref _totalBytesReceived, count);
+        }
+
+        private void UpdateBytesSent(int count)
+        {
+            Interlocked.Add(ref _totalBytesSent, count);
+        }
+
+        private void DisposeStream(ByteCountingStream stream)
         {
             _streamLookup.TryRemove(stream, out _);
         }
