@@ -97,7 +97,7 @@ namespace DistributedWebCrawler.Core.StreamManager
 
         public override int ReadByte()
         {
-            var result = base.ReadByte();
+            var result = _inner.ReadByte();
 
             UpdateBytesReceivedCallback?.Invoke(1);
 
@@ -140,7 +140,7 @@ namespace DistributedWebCrawler.Core.StreamManager
 
         public override void WriteByte(byte value)
         {
-            base.WriteByte(value);
+            _inner.WriteByte(value);
             UpdateBytesSentCallback?.Invoke(1);
         }
 
