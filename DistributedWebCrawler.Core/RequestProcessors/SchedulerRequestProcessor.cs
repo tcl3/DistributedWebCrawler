@@ -17,11 +17,6 @@ namespace DistributedWebCrawler.Core.RequestProcessors
     [Component(name: "Scheduler", successType: typeof(SchedulerSuccess), failureType: typeof(ErrorCode<SchedulerFailure>))]
     public class SchedulerRequestProcessor : IRequestProcessor<SchedulerRequest>
     {
-        private record SchedulerQueueEntry(
-            Uri Uri, 
-            string Domain, 
-            SchedulerRequest SchedulerRequest);
-
         private readonly SchedulerSettings _schedulerSettings;
         private readonly ILogger<SchedulerRequestProcessor> _logger;
         private readonly IRobotsCacheReader _robotsCacheReader;
