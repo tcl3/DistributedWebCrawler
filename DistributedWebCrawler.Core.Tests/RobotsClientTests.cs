@@ -44,6 +44,13 @@ namespace DistributedWebCrawler.Core.Tests
             await TryGetRobotsTest(sut, expectedReturnValue: false);
         }
 
+        [CancelledHttpClientAutoData]
+        [Theory]
+        public async Task TryGetRobotsShouldReturnFalseWhenHttpConnectionTimesOut(RobotsClient sut)
+        {
+            await TryGetRobotsTest(sut, expectedReturnValue: false);
+        }
+
         private async Task TryGetRobotsTest(RobotsClient sut, bool expectedReturnValue)
         {
             var callbackCalled = new CallbackSentinel();
