@@ -42,10 +42,6 @@ namespace DistributedWebCrawler.Core
             {
                 _logger.LogError(ex, $"Timeout occurred when getting robots.txt for host {host}");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Uncaught exception when getting robots.txt for host {host}");
-            }
 
             return false;
         }
