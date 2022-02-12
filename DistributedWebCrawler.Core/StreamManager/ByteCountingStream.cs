@@ -154,9 +154,10 @@ namespace DistributedWebCrawler.Core.StreamManager
             throw new NotSupportedException("EndWrite not supported");
         }
 
-        public override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync()
         {
-            return _inner.DisposeAsync();
+            await base.DisposeAsync().ConfigureAwait(false);
+            await _inner.DisposeAsync().ConfigureAwait(false);
         }
 
         public override void Close()
