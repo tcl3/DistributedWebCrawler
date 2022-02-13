@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core;
+using DistributedWebCrawler.Core.Models;
 
 namespace DistributedWebCrawler.Extensions.RabbitMQ
 {

@@ -3,10 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DistributedWebCrawler.Core
+namespace DistributedWebCrawler.Core.Models
 {
     public class ComponentFilter
-    {        
+    {
         public IEnumerable<string> ComponentNames { get; }
         public IEnumerable<Guid> ComponentIds { get; }
 
@@ -41,7 +41,7 @@ namespace DistributedWebCrawler.Core
 
         public bool Matches(ICrawlerComponent component)
         {
-            if (ComponentIds.Any() && !ComponentIds.Contains(component.ComponentInfo.ComponentId)) 
+            if (ComponentIds.Any() && !ComponentIds.Contains(component.ComponentInfo.ComponentId))
             {
                 return false;
             }

@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Enums;
+using DistributedWebCrawler.Core.Models;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
