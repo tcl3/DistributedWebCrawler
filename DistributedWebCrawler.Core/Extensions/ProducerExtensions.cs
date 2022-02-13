@@ -95,16 +95,13 @@ namespace DistributedWebCrawler.Core.Extensions
             where TSuccess : notnull
             where TFailure : notnull, IErrorCode
         {
-            producer.Enqueue(item);
-
-            if (completedHandler == null && failedHandler == null)
+            if (completedHandler != null || failedHandler != null)
             {
-                return;
+                var callbackHandler = CallbackHandler<TSuccess, TFailure>.Instance;
+                callbackHandler.AddCallback(item.Id, eventReceiver, completedHandler, failedHandler);
             }
 
-            var callbackHandler = CallbackHandler<TSuccess, TFailure>.Instance;
-
-            callbackHandler.AddCallback(item.Id, eventReceiver, completedHandler, failedHandler);
+            producer.Enqueue(item);
         }
         public static async Task RequeueAsync<TRequest>(this IProducer<TRequest> producer, Guid requestId, IKeyValueStore outstandingItemsStore, CancellationToken cancellationToken = default)
             where TRequest : RequestBase
