@@ -18,15 +18,15 @@ namespace DistributedWebCrawler.Core
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)        
         {
-            HttpResponseMessage message = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var message = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (cancellationToken.IsCancellationRequested)
                 return message;            
 
             // fix invalid encoding
-            var charset = message?.Content.Headers.ContentType?.CharSet;
+            var charset = message.Content.Headers.ContentType?.CharSet;
             if (charset == null)
             {
-                return message ?? throw new NullReferenceException(nameof(message));
+                return message;
             }
 
             try
@@ -35,14 +35,12 @@ namespace DistributedWebCrawler.Core
             }
             catch (ArgumentException)
             {
-                if (message != null)
-                {
-                    using var responseStream = await message.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                    using var reader = new StreamReader(responseStream, _fallbackEncoding);
-                    message.Content = new StringContent(reader.ReadToEnd(), _fallbackEncoding);
-                }
+                using var responseStream = await message.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                using var reader = new StreamReader(responseStream, _fallbackEncoding);
+                message.Content = new StringContent(reader.ReadToEnd(), _fallbackEncoding);                
             }
-            return message ?? throw new NullReferenceException(nameof(message)); ;
+
+            return message;
         }
     }
 }
