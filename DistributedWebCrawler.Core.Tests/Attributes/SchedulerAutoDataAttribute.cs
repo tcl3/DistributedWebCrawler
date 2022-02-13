@@ -1,4 +1,5 @@
-﻿using DistributedWebCrawler.Core.Tests.Customizations;
+﻿using AutoFixture;
+using DistributedWebCrawler.Core.Tests.Customizations;
 using System;
 
 namespace DistributedWebCrawler.Core.Tests.Attributes
@@ -17,17 +18,21 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
             int maxCrawlDepth = 1,
             int maxConcurrentItems = 1
             )
-            : base(new SchedulerRequestProcessorCustomization(
-                uri == null ? null : new Uri(uri, UriKind.Absolute), 
-                paths ?? new[] {"/"}, 
-                currentCrawlDepth, 
-                respectsRobotsTxt, 
-                allowedByRobots, 
-                robotsContentExists, 
-                includeDomains, 
-                excludeDomains, 
-                maxCrawlDepth, 
-                maxConcurrentItems), 
+            : base(new ICustomization[]
+            {
+                new SchedulerRequestProcessorCustomization(
+                    allowedByRobots,
+                    robotsContentExists),
+                new SchedulerSettingsCustomization(
+                    uri: uri == null ? null : new Uri(uri, UriKind.Absolute),
+                    paths: paths ?? new[] {"/"},
+                    currentCrawlDepth: currentCrawlDepth,
+                    respectsRobotsTxt: respectsRobotsTxt,
+                    includeDomains: includeDomains,
+                    excludeDomains: excludeDomains,
+                    maxCrawlDepth: maxCrawlDepth,
+                    maxConcurrentItems: maxConcurrentItems),
+            },
             configureMembers: true)
         {
         }
