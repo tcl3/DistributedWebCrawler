@@ -12,7 +12,6 @@ using Nager.PublicSuffix;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DistributedWebCrawler.Core.Components;
-using DistributedWebCrawler.Core.StreamManager;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {

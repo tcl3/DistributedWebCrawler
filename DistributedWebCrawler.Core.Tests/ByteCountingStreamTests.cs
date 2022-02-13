@@ -1,5 +1,4 @@
-﻿using DistributedWebCrawler.Core.StreamManager;
-using DistributedWebCrawler.Core.Tests.Attributes;
+﻿using DistributedWebCrawler.Core.Tests.Attributes;
 using System;
 using System.IO;
 using System.Linq;

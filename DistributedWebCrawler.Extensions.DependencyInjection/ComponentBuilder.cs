@@ -1,14 +1,10 @@
-﻿using DistributedWebCrawler.Core;
-using DistributedWebCrawler.Core.Configuration;
-using DistributedWebCrawler.Core.Extensions.DependencyInjection;
+﻿using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Models;
-using DistributedWebCrawler.Core.StreamManager;
 using DistributedWebCrawler.Extensions.DependencyInjection.Configuration;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net;
 using System.Net.Http.Headers;
 

@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DistributedWebCrawler.Core.StreamManager
+namespace DistributedWebCrawler.Core
 {
     internal class ByteCountingStream : Stream
     {
