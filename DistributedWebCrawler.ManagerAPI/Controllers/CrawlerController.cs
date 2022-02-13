@@ -1,4 +1,5 @@
 using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DistributedWebCrawler.ManagerAPI.Controllers
@@ -17,15 +18,17 @@ namespace DistributedWebCrawler.ManagerAPI.Controllers
         }
         
         [HttpPost]
-        public async Task Start()
+        public async Task Start(ComponentFilter? componentFilter = null)
         {
-            await _crawlerManager.ResumeAsync();
+            componentFilter ??= ComponentFilter.MatchAll;
+            await _crawlerManager.ResumeAsync(componentFilter);
         }
 
         [HttpPost]
-        public async Task Stop()
+        public async Task Stop(ComponentFilter? componentFilter = null)
         {
-            await _crawlerManager.PauseAsync();
+            componentFilter ??= ComponentFilter.MatchAll;
+            await _crawlerManager.PauseAsync(componentFilter);
         }
 
         

@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Interfaces;
+using DistributedWebCrawler.Core.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DistributedWebCrawler.ManagerAPI.Hubs
@@ -12,14 +13,16 @@ namespace DistributedWebCrawler.ManagerAPI.Hubs
             _crawlerManager = crawlerManager;
         }
 
-        public Task Pause()
+        public Task Pause(ComponentFilter? componentFilter = null)
         {
-            return _crawlerManager.PauseAsync();
+            componentFilter ??= ComponentFilter.MatchAll;
+            return _crawlerManager.PauseAsync(componentFilter);
         }
 
-        public async Task Resume()
+        public async Task Resume(ComponentFilter? componentFilter = null)
         {
-            await _crawlerManager.ResumeAsync();
+            componentFilter ??= ComponentFilter.MatchAll;
+            await _crawlerManager.ResumeAsync(componentFilter);
         }
     }
 }
