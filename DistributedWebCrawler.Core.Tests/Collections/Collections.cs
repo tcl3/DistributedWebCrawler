@@ -13,4 +13,10 @@ namespace DistributedWebCrawler.Core.Tests.Collections
     {
 
     }
+
+    [CollectionDefinition(nameof(StreamManagerCollection), DisableParallelization = false)]
+    public class StreamManagerCollection
+    {
+
+    }
 }
