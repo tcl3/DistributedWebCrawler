@@ -11,7 +11,6 @@ namespace DistributedWebCrawler.Core.Interfaces
         long TotalBytesSent { get; }
         long TotalBytesReceived { get; }
         int ActiveSockets { get; }
-        DateTimeOffset StartedAt { get; }
         ValueTask<Stream> ConnectCallback(SocketsHttpConnectionContext context, CancellationToken cancellationToken);
     }
 }

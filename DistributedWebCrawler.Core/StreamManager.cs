@@ -13,7 +13,7 @@ namespace DistributedWebCrawler.Core
     public class StreamManager : IStreamManager
     {
         private readonly ConcurrentDictionary<ByteCountingStream, bool> _streamLookup;
-        
+
         private readonly IDnsResolver? _customDnsResolver;
 
         private long _totalBytesSent;
@@ -24,14 +24,10 @@ namespace DistributedWebCrawler.Core
 
         public int ActiveSockets => _streamLookup.Count;
 
-        public DateTimeOffset StartedAt { get; }
-
         public StreamManager(IDnsResolver? customDnsResolver = null)
         {
             _streamLookup = new();
             _customDnsResolver = customDnsResolver;
-
-            StartedAt = DateTimeOffset.Now;
         }
 
         public async ValueTask<Stream> ConnectCallback(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
