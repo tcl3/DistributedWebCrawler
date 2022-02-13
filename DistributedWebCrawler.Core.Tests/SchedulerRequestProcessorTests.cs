@@ -15,7 +15,7 @@ namespace DistributedWebCrawler.Core.Tests
     public class SchedulerRequestProcessorTests
     {
         [Theory]
-        [SchedulerAutoData]
+        [SchedulerRequestProcessorAutoData]
         public async Task ProcessItemShouldQueueAllPathsInRequest(
             [Frozen] SchedulerRequest request, 
             SchedulerRequestProcessor sut)
@@ -26,7 +26,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(paths: new[] { "/", "/test", "/test2", "/test3", "/" })]
+        [SchedulerRequestProcessorAutoData(paths: new[] { "/", "/test", "/test2", "/test3", "/" })]
         public async Task ProcessItemShouldQueueAllPathsInRequestForRequestWithMultiplePaths(
             [Frozen] SchedulerRequest request, 
             SchedulerRequestProcessor sut)
@@ -38,7 +38,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData]
+        [SchedulerRequestProcessorAutoData]
         public async Task ProcessItemShouldNotQueuePreviouslyQueuedPaths(
             [Frozen] SchedulerRequest request, 
             SchedulerRequestProcessor sut)
@@ -53,7 +53,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData]
+        [SchedulerRequestProcessorAutoData]
         public async Task ProcessItemShouldNotQueuePreviouslyQueuedPathsWhenInvokedInParallel(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -74,7 +74,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(currentCrawlDepth: 2, maxCrawlDepth: 1)]
+        [SchedulerRequestProcessorAutoData(currentCrawlDepth: 2, maxCrawlDepth: 1)]
         public async Task ProcessItemShouldReturnFailureWhenCrawlDepthExceeded(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -86,7 +86,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(respectsRobotsTxt: true, allowedByRobots: true)]
+        [SchedulerRequestProcessorAutoData(respectsRobotsTxt: true, allowedByRobots: true)]
         public async Task ProcessItemShouldQueueAllPathsInRequestWhenPathAllowedByRobotsTxt(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -97,7 +97,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(respectsRobotsTxt: true, allowedByRobots: false)]
+        [SchedulerRequestProcessorAutoData(respectsRobotsTxt: true, allowedByRobots: false)]
         public async Task ProcessItemShouldNotQueuePathsDisallowedByRobotsTxt(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -108,7 +108,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(respectsRobotsTxt: true, robotsContentExists: false)]
+        [SchedulerRequestProcessorAutoData(respectsRobotsTxt: true, robotsContentExists: false)]
         public async Task ProcessItemShouldReturnWaitingIfRobotsTxtNotCached(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -118,7 +118,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(uri: "http://non-maching.url", includeDomains: new[] { "*.non-matching-pattern" })]
+        [SchedulerRequestProcessorAutoData(uri: "http://non-maching.url", includeDomains: new[] { "*.non-matching-pattern" })]
         public async Task ProcessItemShouldNotQueuePathsForDomainNotInIncludeList(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -129,7 +129,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(uri: "http://maching.url", includeDomains: new[] { "*.url" })]
+        [SchedulerRequestProcessorAutoData(uri: "http://maching.url", includeDomains: new[] { "*.url" })]
         public async Task ProcessItemShouldQueueAllPathsForDomainInIncludeList(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -140,7 +140,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(uri: "http://matching.url", excludeDomains: new[] { "*.url" })]
+        [SchedulerRequestProcessorAutoData(uri: "http://matching.url", excludeDomains: new[] { "*.url" })]
         public async Task ProcessItemShouldNotQueuePathsForDomainInExcludeList(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)
@@ -151,7 +151,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [SchedulerAutoData(uri: "http://maching.url", excludeDomains: new[] { "*.non-matching-pattern" })]
+        [SchedulerRequestProcessorAutoData(uri: "http://maching.url", excludeDomains: new[] { "*.non-matching-pattern" })]
         public async Task ProcessItemShouldQueueAllPathsForDomainNotInExcludeList(
             [Frozen] SchedulerRequest request,
             SchedulerRequestProcessor sut)

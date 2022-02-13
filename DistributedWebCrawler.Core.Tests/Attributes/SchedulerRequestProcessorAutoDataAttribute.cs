@@ -4,9 +4,9 @@ using System;
 
 namespace DistributedWebCrawler.Core.Tests.Attributes
 {
-    internal class SchedulerAutoDataAttribute : MoqAutoDataAttribute
+    internal class SchedulerRequestProcessorAutoDataAttribute : MoqAutoDataAttribute
     {
-        public SchedulerAutoDataAttribute(
+        public SchedulerRequestProcessorAutoDataAttribute(
             string? uri = null,
             string[]? paths = null,
             int currentCrawlDepth = 0,
