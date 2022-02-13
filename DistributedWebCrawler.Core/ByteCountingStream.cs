@@ -106,12 +106,14 @@ namespace DistributedWebCrawler.Core
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            throw new NotSupportedException("BeginRead not supported");
+            return _inner.BeginRead(buffer, offset, count, callback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            throw new NotSupportedException("EndRead not supported");
+            var bytesRead = _inner.EndRead(asyncResult);
+            UpdateBytesReceivedCallback?.Invoke(bytesRead);
+            return bytesRead;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -146,12 +148,22 @@ namespace DistributedWebCrawler.Core
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            throw new NotSupportedException("BeginWrite not supported");
+            var wrappedCallback = new AsyncCallback(ar =>
+            {
+                if (ar.IsCompleted)
+                {
+                    UpdateBytesSentCallback(count);
+                }
+
+                callback?.Invoke(ar);
+            });
+
+            return _inner.BeginWrite(buffer, offset, count, wrappedCallback, state);
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            throw new NotSupportedException("EndWrite not supported");
+            _inner.EndWrite(asyncResult);
         }
 
         public override async ValueTask DisposeAsync()

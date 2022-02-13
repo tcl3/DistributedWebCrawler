@@ -234,6 +234,39 @@ namespace DistributedWebCrawler.Core.Tests
 
         [Theory]
         [ByteCountingStreamAutoData(DefaultStreamContent)]
+        public void EndReadShouldCallUpdateBytesReceivedCallback(MemoryStream innerStream)
+        {
+            var bytesSent = 0;
+            var bytesReceived = 0;
+
+            var byteCountingStream = new ByteCountingStream(innerStream)
+            {
+                UpdateBytesSentCallback = count => { bytesSent += count; },
+                UpdateBytesReceivedCallback = count => { bytesReceived += count; },
+            };
+
+            var expectedByteCount = innerStream.ToArray().Length;
+            var buffer = new byte[expectedByteCount];
+
+            var waitHandle = new ManualResetEvent(false);
+            var asyncState = "Test";
+            var callback = new AsyncCallback(ar => 
+            {
+                Assert.Equal(ar.AsyncState, asyncState);
+                var bytesRead = byteCountingStream.EndRead(ar);
+                Assert.Equal(bytesRead, bytesReceived);
+                Assert.Equal(expectedByteCount, bytesReceived);
+                Assert.Equal(0, bytesSent);
+                waitHandle.Set();
+            });
+
+            var ar = byteCountingStream.BeginRead(buffer, 0, buffer.Length, callback, asyncState);
+            waitHandle.WaitOne(TimeSpan.FromMilliseconds(1));
+            Assert.True(ar.IsCompleted);
+        }
+
+        [Theory]
+        [ByteCountingStreamAutoData(DefaultStreamContent)]
         public void ReadByteShouldCallUpdateBytesReceivedCallback(MemoryStream innerStream)
         {
             var bytesSent = 0;
@@ -372,7 +405,43 @@ namespace DistributedWebCrawler.Core.Tests
             Assert.Equal(1, bytesSent);
         }
 
+        [Theory]
+        [ByteCountingStreamAutoData(DefaultStreamContent)]
+        public void EndWriteShouldCallUpdateBytesSentCallback(MemoryStream innerStream)
+        {
+            var bytesSent = 0;
+            var bytesReceived = 0;
 
+            var byteCountingStream = new ByteCountingStream(innerStream)
+            {
+                UpdateBytesSentCallback = count => { bytesSent += count; },
+                UpdateBytesReceivedCallback = count => { bytesReceived += count; },
+            };
+
+            var expectedByteCount = innerStream.ToArray().Length;
+            var buffer = new byte[expectedByteCount];
+            
+            var asyncState = "Test";
+            object? asyncStatePassedToCallback = null;
+            var waitHandle = new ManualResetEvent(false);
+            var callback = new AsyncCallback(asyncResult =>
+            {
+                asyncStatePassedToCallback = asyncResult.AsyncState;
+                waitHandle.Set();
+            });
+
+            var ar = byteCountingStream.BeginWrite(buffer, 0, buffer.Length, callback, asyncState);
+
+            waitHandle.WaitOne();
+            Assert.True(ar.IsCompleted);
+
+            byteCountingStream.EndWrite(ar);
+
+            Assert.Equal(asyncState, asyncStatePassedToCallback);
+
+            Assert.Equal(expectedByteCount, bytesSent);
+            Assert.Equal(0, bytesReceived);
+        }
 
         [Theory]
         [ByteCountingStreamAutoData(DefaultStreamContent)]
