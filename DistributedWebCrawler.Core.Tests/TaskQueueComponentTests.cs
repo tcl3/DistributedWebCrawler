@@ -44,7 +44,7 @@ namespace DistributedWebCrawler.Core.Tests
 
         [Theory]
         [TaskQueueAutoData(throwsException: true, numberOfItemsToDequeue: 2)]
-        public async Task RequestProcessorThrowsException(
+        public async Task ExceptionsThrownByRequestProcessorShouldBeCaught(
             [Frozen] CancellationTokenSource cts,
             [Frozen] Mock<IConsumer<TestRequest>> consumerMock,
             TestComponent sut)
@@ -62,11 +62,8 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] Mock<IConsumer<TestRequest>> consumerMock,
             [Frozen] CancellationTokenSource cts,
             TestComponent sut)
-        {   
+        {
             await sut.StartAsync(CrawlerRunningState.Paused, cts.Token);
-
-            // Delay needed to ensure pause semaphore is entered
-            await Task.Delay(1);
 
             cts.Cancel();
 
@@ -75,7 +72,7 @@ namespace DistributedWebCrawler.Core.Tests
             await WaitForCancellationAsync(sut);
 
             consumerMock.Verify(x => x.DequeueAsync(), Times.Never());
-        }        
+        }
 
         [Theory]
         [TaskQueueAutoData(resultStatus: QueuedItemStatus.Success, numberOfItemsToDequeue: 1)]

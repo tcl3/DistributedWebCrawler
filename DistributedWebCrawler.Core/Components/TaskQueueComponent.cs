@@ -145,25 +145,27 @@ namespace DistributedWebCrawler.Core.Components
         {
             while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
             {
-                await _itemSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-                if (_isPaused && !cancellationToken.IsCancellationRequested)
+                try
                 {
-                    await _pauseSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-                }
+                    await _itemSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-                if (cancellationToken.IsCancellationRequested)
+                    if (_isPaused && !cancellationToken.IsCancellationRequested)
+                    {
+                        await _pauseSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
+
+                    var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cts.CancelAfter(TimeSpan.FromSeconds(_taskQueueSettings.QueueItemTimeoutSeconds));
+                    var processItemCancellationToken = cts.Token;
+
+                    _ = ProcessItemAndReleaseSemaphore(currentItem, processItemCancellationToken);
+                }
+                catch (OperationCanceledException ex)
                 {
-                    return;
+                    _logger.LogInformation(ex, $"Task cancelled while processing queued item");
                 }
-
-                var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
-
-                var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts.CancelAfter(TimeSpan.FromSeconds(_taskQueueSettings.QueueItemTimeoutSeconds));
-                var processItemCancellationToken = cts.Token;
-
-                _ = ProcessItemAndReleaseSemaphore(currentItem, processItemCancellationToken);
             }
         }
 
@@ -177,10 +179,6 @@ namespace DistributedWebCrawler.Core.Components
                 {
                     await NotifyAsync(item, queuedItem).ConfigureAwait(false);
                 }
-            }
-            catch (OperationCanceledException ex) 
-            {
-                _logger.LogInformation(ex, $"Task cancelled while processing queued item");
             }
             catch (Exception ex)
             {
