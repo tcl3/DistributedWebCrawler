@@ -5,8 +5,9 @@ using DistributedWebCrawler.ManagerAPI.Hubs;
 using DistributedWebCrawler.ManagerAPI.Models;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Timers;
+using DistributedWebCrawler.Core.Enums;
+
 using Timer = System.Timers.Timer;
 
 namespace DistributedWebCrawler.ManagerAPI
@@ -19,6 +20,8 @@ namespace DistributedWebCrawler.ManagerAPI
         
         private const int HubUpdateIntervalMillis = 1000;
 
+        private volatile bool _currentlyIdle = true;
+
         public ComponentHubEventListener(IHubContext<CrawlerHub, IComponentEventsHub> hubContext)
         {
             _hubContext = hubContext;
@@ -30,38 +33,6 @@ namespace DistributedWebCrawler.ManagerAPI
             timer.Interval = HubUpdateIntervalMillis;
             timer.Enabled = true;
             timer.Start();
-        }
-
-        private void OnTimerIntervalElapsed(object? source, ElapsedEventArgs e)
-        {
-            var builders = _builderLookup.Values.ToList();
-
-            foreach (var lazyBuilder in builders)
-            {
-                var builder = lazyBuilder.Value;
-                SendUpdateToHub(builder);
-                builder.Reset();
-            }
-        }
-
-        private void SendUpdateToHub(ComponentStatsBuilder builder)
-        {
-            var componentName = builder.ComponentInfo.ComponentName;
-
-            if (builder.TryBuildCompletedItemStats(out var completedItemStats))
-            {
-                _hubContext.Clients.All.OnCompleted(componentName, completedItemStats);
-            }
-
-            if (builder.TryBuildFailedItemStats(out var failedItemStats))
-            {
-                _hubContext.Clients.All.OnFailed(componentName, failedItemStats);
-            }
-
-            if (builder.TryBuildComponentStatusStats(out var componentStatusStats))
-            {
-                _hubContext.Clients.All.OnComponentUpdate(componentName, componentStatusStats);
-            }
         }
 
         public void Register(IEventReceiver eventReceiver)
@@ -81,6 +52,74 @@ namespace DistributedWebCrawler.ManagerAPI
                 eventReceiver.OnCompletedAsync -= OnCompletedAsync;
                 eventReceiver.OnFailedAsync -= OnFailedAsync;
                 eventReceiver.OnComponentUpdateAsync -= OnComponentUpdateAsync;
+            }
+        }
+
+        public void UpdateComponentStats(string connectionId, Guid componentId)
+        {
+            if (_builderLookup.TryGetValue(componentId, out var lazyBuilder))
+            {
+                SendUpdateToHub(_hubContext.Clients.Client(connectionId), lazyBuilder.Value, forceUpdate: true);
+            }
+        }
+
+        public void UpdateComponentStats(string connectionId)
+        {
+            UpdateComponentStats(_hubContext.Clients.Client(connectionId), forceUpdate: true);
+        }
+
+        private void UpdateComponentStats(IComponentEventsHub hub, bool forceUpdate)
+        {
+            var builders = _builderLookup.Values.ToList();
+            var anyComponentsRunning = false;
+            foreach (var lazyBuilder in builders)
+            {
+                var builder = lazyBuilder.Value;
+
+                anyComponentsRunning = anyComponentsRunning || builder.CurrentStatus == CrawlerComponentStatus.Running;
+
+                SendUpdateToHub(hub, builder, forceUpdate);
+
+                if (!forceUpdate)
+                {
+                    builder.Reset();
+                }
+            }
+
+            if ((forceUpdate && !builders.Any()) 
+                || (!anyComponentsRunning && !_currentlyIdle && builders.Any()))
+            {
+                hub.OnAllComponentsIdle();
+            }
+
+            _currentlyIdle = !anyComponentsRunning;
+        }
+
+        private void OnTimerIntervalElapsed(object? source, ElapsedEventArgs e)
+        {
+            UpdateComponentStats(_hubContext.Clients.All, forceUpdate: false);
+        }
+
+        private void SendUpdateToHub(IComponentEventsHub hub, ComponentStatsBuilder builder, bool forceUpdate = false)
+        {
+            var componentName = builder.ComponentInfo.ComponentName;
+
+            if (forceUpdate || builder.CompletedItemStatsHasUpdate())
+            {
+                var completedItemStats = builder.BuildCompletedItemStats();
+                hub.OnCompleted(componentName, completedItemStats);
+            }
+
+            if (forceUpdate || builder.FailedItemStatsHasUpdate())
+            {
+                var failedItemStats = builder.BuildFailedItemStats();
+                hub.OnFailed(componentName, failedItemStats);
+            }
+
+            if (forceUpdate || builder.ComponentStatsHasUpdate())
+            {
+                var componentStatusStats = builder.BuildComponentStatusStats();
+                hub.OnComponentUpdate(componentName, componentStatusStats);
             }
         }
 
@@ -104,10 +143,10 @@ namespace DistributedWebCrawler.ManagerAPI
             builder.AddCompletedItem(e);
             return Task.CompletedTask;
         }
-        
-        private ComponentStatsBuilder GetBuilder(ComponentInfo nodeInfo)
+
+        private ComponentStatsBuilder GetBuilder(ComponentInfo componentInfo)
         {
-            var lazyValue = _builderLookup.GetOrAdd(nodeInfo.ComponentId, name => new(() => new ComponentStatsBuilder(nodeInfo)));
+            var lazyValue = _builderLookup.GetOrAdd(componentInfo.ComponentId, name => new(() => new ComponentStatsBuilder(componentInfo)));
             return lazyValue.Value;
         }
 
@@ -128,6 +167,8 @@ namespace DistributedWebCrawler.ManagerAPI
             private long _totalComponentUpdateCount;
             private long _totalCompletedItemCount;
             private long _totalFailedItemCount;
+
+            public CrawlerComponentStatus CurrentStatus { get; private set; }
 
             private object _resetLock = new();
 
@@ -164,6 +205,8 @@ namespace DistributedWebCrawler.ManagerAPI
                     _failedItemCount = 0;
 
                     _totalBytesIngestedSinceLastUpdate = 0;
+
+                    CurrentStatus = CrawlerComponentStatus.Unknown;
 
                     _completedItems.Clear();
                     _failedItems.Clear();
@@ -216,64 +259,70 @@ namespace DistributedWebCrawler.ManagerAPI
                 Interlocked.Add(ref _totalTaskCount, componentStatus.TasksInUse);
                 Interlocked.Add(ref _totalQueueCount, componentStatus.QueueCount);
 
-                var builder = _nodeStatusBuilderLookup.GetOrAdd(componentStatus.NodeStatus.NodeId, new NodeStatusBuilder());
+                var builder = _nodeStatusBuilderLookup.GetOrAdd(componentStatus.NodeStatus.NodeId, key => new NodeStatusBuilder());
                 builder.UpdateNodeStatus(componentStatus.NodeStatus);
+
+                CurrentStatus = componentStatus.CurrentStatus;
 
                 Interlocked.Increment(ref _componentUpdateCount);
             }
 
-            public bool TryBuildCompletedItemStats([NotNullWhen(returnValue: true)] out CompletedItemStats? completedItemStats)
+            public bool CompletedItemStatsHasUpdate()
             {
-                if (_completedItemCount <= 0)
-                {
-                    completedItemStats = null;
-                    return false;
-                }
+                return _completedItemCount > 0;
+            }
 
-                completedItemStats = new CompletedItemStats(_completedItemCount, _totalCompletedItemCount)
+            public CompletedItemStats BuildCompletedItemStats()
+            { 
+                return new CompletedItemStats(_completedItemCount, _totalCompletedItemCount)
                 {
                     RecentItems = _completedItems.TakeLast(RecentItemCount).ToList(),
                     TotalBytesIngested = _hasContentLength ? _totalBytesIngested : null,
                     TotalBytesIngestedSinceLastUpdate = _hasContentLength ? _totalBytesIngestedSinceLastUpdate : null
                 };
-
-                return true;
             }
 
-            public bool TryBuildFailedItemStats([NotNullWhen(returnValue: true)] out FailedItemStats? failedItemStats)
+            public FailedItemStats BuildFailedItemStats()
             {
-                if (_failedItemCount <= 0)
-                {
-                    failedItemStats = null;
-                    return false;
-                }
-
-                failedItemStats = new FailedItemStats(_failedItemCount, _totalFailedItemCount)
+                return new FailedItemStats(_failedItemCount, _totalFailedItemCount)
                 {
                     ErrorCounts = new Dictionary<string, int>(_errorCounts),
                     RecentItems = _failedItems.TakeLast(RecentItemCount).ToList()
                 };
-
-                return true;
             }
 
-            public bool TryBuildComponentStatusStats([NotNullWhen(returnValue: true)] out ComponentStatusStats? componentStatusStats)
+            public bool FailedItemStatsHasUpdate()
             {
-                if (_componentUpdateCount <= 0)
-                {
-                    componentStatusStats = null;
-                    return false;
-                }
+                return _failedItemCount > 0;
+            }
 
-                componentStatusStats = new ComponentStatusStats(_componentUpdateCount, _totalComponentUpdateCount)
+            public ComponentStatusStats BuildComponentStatusStats()
+            {
+                var averageTasksInUse = _componentUpdateCount == 0
+                    ? 0
+                    : (int)Math.Round(_totalTaskCount / (double)_componentUpdateCount);
+                
+                var averageQueueCount = _componentUpdateCount == 0
+                    ? 0
+                    : (int)Math.Round(_totalQueueCount / (double)_componentUpdateCount);
+
+                var nodeStatusLookup = _nodeStatusBuilderLookup
+                    .ToArray()
+                    .ToDictionary(x => x.Key, x => x.Value.Build());
+
+                return new ComponentStatusStats(_componentUpdateCount, _totalComponentUpdateCount)
                 {
-                    AverageTasksInUse = (int)Math.Round(_totalTaskCount / (double)_componentUpdateCount),
-                    AverageQueueCount = (int)Math.Round(_totalQueueCount / (double)_componentUpdateCount),
+                    AverageTasksInUse = averageTasksInUse,
+                    AverageQueueCount = averageQueueCount,
                     MaxTasks = _maxTasks,
-                    NodeStatus = _nodeStatusBuilderLookup.ToArray().ToDictionary(keySelector => keySelector.Key, elementSelector => elementSelector.Value.Build())
+                    CurrentStatus = this.CurrentStatus,
+                    NodeStatus = nodeStatusLookup
                 };
+            }
 
-                return true;
+            public bool ComponentStatsHasUpdate()
+            {
+                return _componentUpdateCount > 0;
             }
         }
 

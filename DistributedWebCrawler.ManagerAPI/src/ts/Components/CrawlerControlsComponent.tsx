@@ -14,7 +14,8 @@ const CrawlerControls: React.FC<CrawlerControlsProps> = ({isRunning, setIsRunnin
   return (
     <>
       <div className="block">
-        <Switch defaultChecked={isRunning}
+        <Switch 
+          checked={isRunning}
           onChange={(e) => {
             setIsRunning(e.currentTarget.checked);
             const hubMethod = e.currentTarget.checked ? "Resume" : "Pause";

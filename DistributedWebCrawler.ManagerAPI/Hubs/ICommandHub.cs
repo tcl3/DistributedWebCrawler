@@ -8,5 +8,8 @@ namespace DistributedWebCrawler.ManagerAPI.Hubs
         Task Resume();
         Task PauseComponent(ComponentFilter componentFilter);
         Task ResumeComponent(ComponentFilter componentFilter);
+        
+        Task UpdateComponentStats(Guid componentId);
+        Task UpdateAllComponentStats();
     }
 }

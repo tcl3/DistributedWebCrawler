@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import
 {
@@ -18,6 +18,7 @@ import { CompletedItemStats } from '../types/CompletedItemStats';
 import { FailedItemStats } from '../types/FailedItemStats';
 import { ComponentStatusStats } from '../types/ComponentStatusStats';
 import Overview from "./OverviewComponent";
+import { CrawlerComponentStatus } from "../types/CrawlerComponentStatus";
 
 // TODO: replace this with a SignalR call
 export interface ComponentDescription {
@@ -52,59 +53,76 @@ export interface ComponentStats {
   componentStatusStats: ComponentStatusStats
 }
 
-const getComponentStats = (component: ComponentDescription): ComponentStats => {
-  const [completedItemStats, setCompletedItemStats] = useState<CompletedItemStats>({} as CompletedItemStats);
-  const [failedItemStats, setFailedItemStats] = useState<FailedItemStats>({} as FailedItemStats);
-  const [componentStatusStats, setComponentStatusStats] = useState<ComponentStatusStats>({} as ComponentStatusStats);
-
-  useEffect(() => {
-      const handler: ComponentMessageHandler = {
-          OnCompleted(data: CompletedItemStats) {
-              setCompletedItemStats(data);
-          },
-          OnFailed(data: FailedItemStats) {
-              setFailedItemStats(data);
-          },
-          OnComponentUpdate(data: ComponentStatusStats) {
-              setComponentStatusStats(data);
-          }
-      };
-      addSignalRHandler(component.name, handler);
-
-      return () => removeSignalRHandler(component.name);
-  }, []);
-
-  return {
-    name: component.name,
-    friendlyName: component.friendlyName,
-    completedItemStats: completedItemStats,
-    failedItemStats: failedItemStats,
-    componentStatusStats: componentStatusStats
-  }
-}
-
 const App: React.FC = () => {
   const [connection, setConnection] = useState<HubConnection>(null);
+  const [initialDataReceived, setInitialDataReceived] = useState<boolean>(false);
   const [isRunning, setIsRunning] = useState<boolean>(false);
+
+  const getComponentStats = (component: ComponentDescription): ComponentStats => {
+    const [completedItemStats, setCompletedItemStats] = useState<CompletedItemStats>({} as CompletedItemStats);
+    const [failedItemStats, setFailedItemStats] = useState<FailedItemStats>({} as FailedItemStats);
+    const [componentStatusStats, setComponentStatusStats] = useState<ComponentStatusStats>({} as ComponentStatusStats);
+
+    useEffect(() => {
+        const handler: ComponentMessageHandler = {
+            OnCompleted(data: CompletedItemStats) {
+                setCompletedItemStats(data);
+            },
+            OnFailed(data: FailedItemStats) {
+                setFailedItemStats(data);
+            },
+            OnComponentUpdate(data: ComponentStatusStats) {
+                setComponentStatusStats(data);
+
+                if (data.currentStatus === CrawlerComponentStatus.Running) {
+                  setIsRunning(true);
+                }
+
+                setInitialDataReceived(true);
+            }
+        };
+        addSignalRHandler(component.name, handler);
+
+        return () => removeSignalRHandler(component.name);
+    }, []);
+
+    return {
+      name: component.name,
+      friendlyName: component.friendlyName,
+      completedItemStats: completedItemStats,
+      failedItemStats: failedItemStats,
+      componentStatusStats: componentStatusStats
+    }
+  }
 
   useEffect(() => {
     if (connection == null) {
       const hubName = "/crawlerHub";
-      const newConnection = setupSignalRConnection(hubName);
+
+      const newConnection = setupSignalRConnection(hubName,
+        c => c.send("UpdateAllComponentStats"));
+
+      newConnection.on('OnAllComponentsIdle', () => {
+        setInitialDataReceived(true);
+        setIsRunning(false);
+      });
+
       setConnection(newConnection);
     }
   }, [connection]);
 
   const componentStats = componentDescriptions.map((component) => getComponentStats(component));
 
-  const overviewElement = (
-    <Overview
-      isRunning={isRunning}
-      setIsRunning={setIsRunning}
-      connection={connection}
-      componentStats={componentStats}
-    />
-  );
+  const overviewElement = initialDataReceived
+    ? (
+      <Overview
+        isRunning={isRunning}
+        setIsRunning={setIsRunning}
+        connection={connection}
+        componentStats={componentStats}
+      />
+    )
+    : <></>;
 
   return (
     <>

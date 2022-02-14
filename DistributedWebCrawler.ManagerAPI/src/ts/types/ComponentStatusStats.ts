@@ -1,4 +1,5 @@
-﻿import { NodeStatusStats } from "./NodeStatusStats";
+﻿import { CrawlerComponentStatus } from "./CrawlerComponentStatus";
+import { NodeStatusStats } from "./NodeStatusStats";
 import { ComponentStatsBase } from "./ComponentStatsBase";
 
 
@@ -8,5 +9,6 @@ export interface ComponentStatusStats extends ComponentStatsBase {
     averageTasksInUse: number;
     averageQueueCount: number;
     maxTasks: number;
+    currentStatus: CrawlerComponentStatus;
     nodeStatus: { [key: string]: NodeStatusStats; };
 }

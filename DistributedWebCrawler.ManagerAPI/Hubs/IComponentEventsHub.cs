@@ -8,5 +8,6 @@ namespace DistributedWebCrawler.ManagerAPI.Hubs
         Task OnComponentUpdate(string componentName, ComponentStatusStats data);
         Task OnCompleted(string componentName, CompletedItemStats data);
         Task OnFailed(string componentName, FailedItemStats data);
+        Task OnAllComponentsIdle();
     }
 }
