@@ -4,7 +4,8 @@ import {
     HubConnectionState,
     HubConnectionBuilder,
     LogLevel,
-    IHttpConnectionOptions
+    IHttpConnectionOptions,
+    HubConnection
 } from '@microsoft/signalr/';
 
 import { CompletedItemStats } from './types/CompletedItemStats';
@@ -19,15 +20,17 @@ export interface ComponentMessageHandler {
 
 const isDev = process.env.NODE_ENV === 'development';
 
-const startSignalRConnection = async connection => {
+const startSignalRConnection = async (
+    connection: HubConnection,
+    onConnectedCallback?: (connection: HubConnection) => void) => {
     try {
-        await connection.start();
+        await connection.start().then(() => onConnectedCallback(connection));
         console.assert(connection.state === HubConnectionState.Connected);
         console.log('SignalR connection established');
     } catch (err) {
         console.assert(connection.state === HubConnectionState.Disconnected);
         console.error('SignalR Connection Error: ', err);
-        setTimeout(() => startSignalRConnection(connection), 5000);
+        setTimeout(() => startSignalRConnection(connection, onConnectedCallback), 5000);
     }
 };
 
@@ -43,7 +46,10 @@ export const removeSignalRHandler = (componentName: string) => {
 // Set up a SignalR connection to the specified hub URL, and actionEventMap.
 // actionEventMap should be an object mapping event names, to eventHandlers that will
 // be dispatched with the message body.
-export const setupSignalRConnection = (connectionHub: string) => {
+export const setupSignalRConnection = (
+    connectionHub: string,
+    onConnectedCallback?: (connection: HubConnection) => void) => {
+
     const options: IHttpConnectionOptions = {
         logMessageContent: isDev,
         logger: isDev ? LogLevel.Warning : LogLevel.Error,
@@ -80,7 +86,7 @@ export const setupSignalRConnection = (connectionHub: string) => {
         console.log('Connection reestablished. Connected with connectionId', connectionId);
     });
 
-    startSignalRConnection(connection);
+    startSignalRConnection(connection, onConnectedCallback);
 
     const handleCompleted = (componentName: string, data: CompletedItemStats) => {
         componentName = componentName.toLowerCase();
