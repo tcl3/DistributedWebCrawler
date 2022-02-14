@@ -18,19 +18,29 @@ namespace DistributedWebCrawler.ManagerAPI.Controllers
         }
         
         [HttpPost]
-        public async Task Start(ComponentFilter? componentFilter = null)
+        public async Task StartComponent(ComponentFilter componentFilter)
         {
-            componentFilter ??= ComponentFilter.MatchAll;
             await _crawlerManager.ResumeAsync(componentFilter);
         }
 
         [HttpPost]
-        public async Task Stop(ComponentFilter? componentFilter = null)
+        public async Task Start()
         {
-            componentFilter ??= ComponentFilter.MatchAll;
+            await _crawlerManager.ResumeAsync();
+        }
+
+        [HttpPost]
+        public async Task StopComponent(ComponentFilter componentFilter)
+        {
             await _crawlerManager.PauseAsync(componentFilter);
         }
 
-        
+        [HttpPost]
+        public async Task Stop()
+        {
+            await _crawlerManager.PauseAsync();
+        }
+
+
     }
 }

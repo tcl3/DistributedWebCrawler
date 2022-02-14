@@ -13,15 +13,23 @@ namespace DistributedWebCrawler.ManagerAPI.Hubs
             _crawlerManager = crawlerManager;
         }
 
-        public Task Pause(ComponentFilter? componentFilter = null)
+        public Task Pause()
         {
-            componentFilter ??= ComponentFilter.MatchAll;
+            return _crawlerManager.PauseAsync();
+        }
+
+        public async Task Resume()
+        {
+            await _crawlerManager.ResumeAsync();
+        }
+
+        public Task PauseComponent(ComponentFilter componentFilter)
+        {
             return _crawlerManager.PauseAsync(componentFilter);
         }
 
-        public async Task Resume(ComponentFilter? componentFilter = null)
+        public async Task ResumeComponent(ComponentFilter componentFilter)
         {
-            componentFilter ??= ComponentFilter.MatchAll;
             await _crawlerManager.ResumeAsync(componentFilter);
         }
     }
