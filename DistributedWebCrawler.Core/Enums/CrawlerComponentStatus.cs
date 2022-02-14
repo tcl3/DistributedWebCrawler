@@ -2,9 +2,10 @@
 {
     public enum CrawlerComponentStatus
     {
+        Unknown = 0,
         NotStarted,
-        Busy,
-        Idle,
+        Paused,
+        Running,
         Completed,
     }
 }

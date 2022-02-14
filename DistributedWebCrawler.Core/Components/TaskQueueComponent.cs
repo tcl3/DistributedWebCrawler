@@ -76,7 +76,9 @@ namespace DistributedWebCrawler.Core.Components
                     return CrawlerComponentStatus.NotStarted;
                 }
 
-                return GetStatus();
+                return _isPaused 
+                    ? CrawlerComponentStatus.Paused 
+                    : CrawlerComponentStatus.Running;
             }
         }
 
@@ -99,12 +101,6 @@ namespace DistributedWebCrawler.Core.Components
         public async Task WaitUntilCompletedAsync()
         {
             await _taskCompletionSource.Task.ConfigureAwait(false);
-        }
-
-        protected virtual CrawlerComponentStatus GetStatus()
-        {
-            // TODO: Implement the correct status here to allow us to exit when done
-            return CrawlerComponentStatus.Busy;
         }
 
         private async Task ComponentStartAndHandleExceptionAsync(CrawlerRunningState startState, CancellationToken cancellationToken)
