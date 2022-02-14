@@ -16,9 +16,21 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] IEnumerable<ICrawlerComponent> crawlerComponents)
         {
             var componentFilter = ComponentFilter.MatchAll;
-            foreach (var matchingComponent in crawlerComponents.Skip(1))
+            foreach (var matchingComponent in crawlerComponents)
             {
                 Assert.True(componentFilter.Matches(matchingComponent));
+            }
+        }
+
+        [Theory]
+        [MoqAutoData(configureMembers: true)]
+        public void EmptyComponentFilterShouldMatchNoComponents(
+            [Frozen] IEnumerable<ICrawlerComponent> crawlerComponents)
+        {
+            var componentFilter = new ComponentFilter();
+            foreach (var matchingComponent in crawlerComponents)
+            {
+                Assert.False(componentFilter.Matches(matchingComponent));
             }
         }
 

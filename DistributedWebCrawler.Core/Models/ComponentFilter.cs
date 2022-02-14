@@ -7,51 +7,62 @@ namespace DistributedWebCrawler.Core.Models
 {
     public class ComponentFilter
     {
-        public IEnumerable<string> ComponentNames { get; }
-        public IEnumerable<Guid> ComponentIds { get; }
+        public IEnumerable<string> ComponentNames { get; init; } = Enumerable.Empty<string>();
+        public IEnumerable<Guid> ComponentIds { get; init; } = Enumerable.Empty<Guid>();
 
-        private static readonly ComponentFilter _matchAllFilter = new(Enumerable.Empty<string>(), Enumerable.Empty<Guid>());
+        private static readonly ComponentFilter _matchAllFilter = new();
         public static ComponentFilter MatchAll => _matchAllFilter;
-
-        public ComponentFilter(IEnumerable<string> componentNames, IEnumerable<Guid> componentIds)
-        {
-            ComponentNames = componentNames;
-            ComponentIds = componentIds;
-        }
 
         public static ComponentFilter FromComponentNames(IEnumerable<string> componentNames)
         {
-            return new ComponentFilter(componentNames, Enumerable.Empty<Guid>());
+            return new ComponentFilter
+            {
+                ComponentNames = componentNames,
+            };
         }
 
         public static ComponentFilter FromComponentName(string componentName)
         {
-            return new ComponentFilter(new[] { componentName }, Enumerable.Empty<Guid>());
+            return new ComponentFilter
+            {
+                ComponentNames = new[] { componentName } 
+            };
         }
 
         public static ComponentFilter FromComponentIds(IEnumerable<Guid> componentIds)
         {
-            return new ComponentFilter(Enumerable.Empty<string>(), componentIds);
+            return new ComponentFilter
+            {
+                ComponentIds = componentIds
+            };
         }
 
         public static ComponentFilter FromComponentId(Guid componentId)
         {
-            return new ComponentFilter(Enumerable.Empty<string>(), new[] { componentId });
+            return new ComponentFilter
+            {
+                ComponentIds = new[] { componentId }
+            };
         }
 
         public bool Matches(ICrawlerComponent component)
         {
-            if (ComponentIds.Any() && !ComponentIds.Contains(component.ComponentInfo.ComponentId))
+            if (ReferenceEquals(this, MatchAll))
             {
-                return false;
+                return true;
             }
 
-            if (ComponentNames.Any() && !ComponentNames.Contains(component.ComponentInfo.ComponentName))
+            if (ComponentIds.Any() && ComponentIds.Contains(component.ComponentInfo.ComponentId))
             {
-                return false;
+                return true;
             }
 
-            return true;
+            if (ComponentNames.Any() && ComponentNames.Contains(component.ComponentInfo.ComponentName))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
