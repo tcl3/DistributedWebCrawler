@@ -238,6 +238,7 @@ namespace DistributedWebCrawler.Core.Components
                 QueueCount = _consumer.Count,
                 TasksInUse = _taskQueueSettings.MaxConcurrentItems - _itemSemaphore.CurrentCount,
                 MaxConcurrentTasks = _taskQueueSettings.MaxConcurrentItems,
+                CurrentStatus = Status
             };
         }
     }
