@@ -26,11 +26,13 @@ namespace DistributedWebCrawler.Core
         private readonly ConcurrentDictionary<Guid, SchedulerQueueEntry> _activeQueueEntries;
         private readonly ConcurrentDictionary<string, DomainStatus> _activeDomains;
         private readonly InMemoryDateTimePriorityQueue<SchedulerQueueEntry> _nextPathForHostQueue;
+        private readonly CancellationTokenSource _cts;
 
         private const int IngestQueueMaxItems = 500;
-
-        private Task? _ingestQueueLoopTask;
-        private object _schedulerLoopLock = new();
+        
+        private bool _isStarted;
+        private bool _disposed;
+        private readonly object _startLock = new();
 
         private enum DomainStatus
         {
@@ -63,12 +65,17 @@ namespace DistributedWebCrawler.Core
             _activeQueueEntries = new();
             _nextPathForHostQueue = new();
             _activeDomains = new();
+
+            _cts = new();
         }
 
         public Task AddFromSchedulerAsync(SchedulerRequest schedulerRequest, IEnumerable<Uri> urisToVisit,
             CancellationToken cancellationToken = default)
         {
-            EnsureIngestQueueLoopStarted();
+            if (!_isStarted)
+            {
+                Start();
+            }
 
             var domain = _domainParser.IsValidDomain(schedulerRequest.Uri.Host)
                 ? _domainParser.Parse(schedulerRequest.Uri).RegistrableDomain
@@ -88,6 +95,18 @@ namespace DistributedWebCrawler.Core
             return AddNextUriToSchedulerQueueAsync(domain, schedulerRequest, addCrawlDelay: false, cancellationToken);
         }
 
+        private void Start()
+        {
+            lock(_startLock)
+            {
+                if (!_isStarted)
+                {
+                    _ = IngestQueueLoop(_cts.Token);
+                    _isStarted = true;
+                }
+            }
+        }
+
         private async Task IngestQueueLoop(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -102,11 +121,6 @@ namespace DistributedWebCrawler.Core
                     }
 
                     var entry = await _nextPathForHostQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        break;
-                    }
 
                     var schedulerRequest = entry.SchedulerRequest;
 
@@ -135,6 +149,10 @@ namespace DistributedWebCrawler.Core
                         await AddNextUriToSchedulerQueueAsync(entry.Domain, schedulerRequest, 
                             addCrawlDelay: true, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -173,25 +191,7 @@ namespace DistributedWebCrawler.Core
             }
         }
 
-        private void EnsureIngestQueueLoopStarted()
-        {
-            if (_ingestQueueLoopTask != null)
-            {
-                return;
-            }
-
-            lock (_schedulerLoopLock)
-            {
-                if (_ingestQueueLoopTask != null)
-                {
-                    return;
-                }
-
-                _ingestQueueLoopTask = Task.Run(() => IngestQueueLoop(CancellationToken.None));
-            }
-        }
-
-        private async Task AddNextUriToSchedulerQueueAsync(string domain, SchedulerRequest schedulerRequest, 
+        private async Task AddNextUriToSchedulerQueueAsync(string domain, SchedulerRequest schedulerRequest,
             bool addCrawlDelay = true, CancellationToken cancellationToken = default)
         {
             if (!_queuedPathsLookup.TryGetValue(domain, out var urisToVisit) || !urisToVisit.Any())
@@ -223,6 +223,26 @@ namespace DistributedWebCrawler.Core
             {
                 _queuedPathsLookup.TryRemove(domain, out _);
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _cts.Cancel();
+                }
+
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

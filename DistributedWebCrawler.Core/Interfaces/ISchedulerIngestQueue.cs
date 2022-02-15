@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Interfaces
 {
-    public interface ISchedulerIngestQueue
+    public interface ISchedulerIngestQueue : IDisposable
     {
         Task AddFromSchedulerAsync(SchedulerRequest schedulerRequest, IEnumerable<Uri> urisToVisit,
             CancellationToken cancellationToken = default);
