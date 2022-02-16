@@ -238,6 +238,7 @@ namespace DistributedWebCrawler.Core.Tests
         {
             var bytesSent = 0;
             var bytesReceived = 0;
+            var testTimeout = TimeSpan.FromMilliseconds(1000);
 
             var byteCountingStream = new ByteCountingStream(innerStream)
             {
@@ -261,7 +262,7 @@ namespace DistributedWebCrawler.Core.Tests
             });
 
             var ar = byteCountingStream.BeginRead(buffer, 0, buffer.Length, callback, asyncState);
-            waitHandle.WaitOne(TimeSpan.FromMilliseconds(1));
+            waitHandle.WaitOne(testTimeout);
             Assert.True(ar.IsCompleted);
         }
 
