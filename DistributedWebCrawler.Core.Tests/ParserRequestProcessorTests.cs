@@ -73,6 +73,7 @@ namespace DistributedWebCrawler.Core.Tests
 
         [Theory]
         [ParserAutoData(hyperlinks: new string[] { "/relative-path" })]
+        [ParserAutoData(hyperlinks: new string[] { "relative-path" })]
         public async Task ProcessItemShouldSendSchedulerRequestIfValidRelativeUriFound(
             [Frozen] Mock<IProducer<SchedulerRequest>> requestProducerMock,
             [Frozen] ParseRequest request,

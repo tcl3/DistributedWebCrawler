@@ -82,7 +82,11 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
         private Uri? GetHostFromHref(string href, Uri baseAddress)
         {
-            if (!(Uri.TryCreate(href, UriKind.Absolute, out var absoluteUri) || Uri.TryCreate(baseAddress, href, out absoluteUri)))
+            // NB: URI.TryCreate behaviour is not consistent across platforms
+            // A path such as "/path" with a leading forward slash is considered
+            // an absolute path on Linux, but not on Windows or MacOS
+            // See here: https://github.com/dotnet/runtime/issues/22718
+            if (!((Uri.TryCreate(href, UriKind.Absolute, out var absoluteUri) && (!absoluteUri.IsFile)) || Uri.TryCreate(baseAddress, href, out absoluteUri)))
             {
                 _logger.LogInformation($"Error while parsing link: invalid URI {href}");
                 return null;
