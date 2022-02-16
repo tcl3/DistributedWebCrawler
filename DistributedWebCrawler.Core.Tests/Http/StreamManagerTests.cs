@@ -12,6 +12,7 @@ namespace DistributedWebCrawler.Core.Tests.Http
     // They are closer to integration tests than unit tests, as they rely
     // on a HTTP server being set up.
     [Collection(nameof(StreamManagerCollection))]
+    [Trait("Category", "Integration")]
     public class StreamManagerTests
     {
         [Theory]
