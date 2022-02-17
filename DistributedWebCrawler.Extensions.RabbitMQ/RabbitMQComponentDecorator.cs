@@ -104,7 +104,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 throw new SerializationException($"Failed to deserialize RabbitMQ command message'");
             }
 
-            if (!commandMessage.ComponentFilter.Matches(_inner))
+            if (commandMessage.ComponentFilter != null && commandMessage.ComponentFilter.Matches(_inner))
             {
                 return Task.CompletedTask;
             }
