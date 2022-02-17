@@ -11,11 +11,16 @@ import {
 import { CompletedItemStats } from './types/CompletedItemStats';
 import { FailedItemStats } from './types/FailedItemStats';
 import { ComponentStatusStats } from './types/ComponentStatusStats';
+import { ComponentStatsCollection } from './types/ComponentStatsCollection';
+import { NodeStatusStats } from './types/NodeStatusStats';
 
-export interface ComponentMessageHandler {
+export interface ComponentUpdateMessageHandler {
     OnCompleted: (data: CompletedItemStats) => void;
     OnFailed: (data: FailedItemStats) => void;
     OnComponentUpdate: (data: ComponentStatusStats) => void;
+}
+export interface NodeStatsUpdateMessageHandler {
+    OnNodeStatsUpdate: (data: NodeStatusStats[]) => void;
 }
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -34,18 +39,55 @@ const startSignalRConnection = async (
     }
 };
 
-const actionEventMap: { [key: string]: ComponentMessageHandler } = {};
+const componentUpdateEventMap: { [key: string]: ComponentUpdateMessageHandler } = {};
 
-export const addSignalRHandler = (componentName: string, handler: ComponentMessageHandler) => {
-    actionEventMap[componentName] = handler;
-}
-export const removeSignalRHandler = (componentName: string) => {
-    delete actionEventMap[componentName];
+export const addComponentUpdateHandler = (componentName: string, handler: ComponentUpdateMessageHandler) => {
+    componentUpdateEventMap[componentName] = handler;
 }
 
-// Set up a SignalR connection to the specified hub URL, and actionEventMap.
-// actionEventMap should be an object mapping event names, to eventHandlers that will
-// be dispatched with the message body.
+export const removeComponentUpdateHandler = (componentName: string) => {
+    delete componentUpdateEventMap[componentName];
+}
+
+const nodeStatsUpdateEvents: Set<NodeStatsUpdateMessageHandler> = new Set<NodeStatsUpdateMessageHandler>();
+
+export const addNodeStatsUpdateHandler = (handler: NodeStatsUpdateMessageHandler) => {
+    nodeStatsUpdateEvents.add(handler);
+}
+
+export const removeNodeStatsUpdateHandler = (handler: NodeStatsUpdateMessageHandler) => {
+    nodeStatsUpdateEvents.delete(handler);
+}
+
+const handleComponentUpdate = (componentStatsCollection: ComponentStatsCollection) => {
+    for (const entry of componentStatsCollection.componentStats) {
+        if (!entry.componentInfo || !entry.componentInfo.componentName) {
+            continue;
+        }
+        const componentName = entry.componentInfo.componentName.toLowerCase();
+        const componentMessageHandler = componentUpdateEventMap[componentName];
+        if (componentMessageHandler) {
+            executeEventHandler(componentMessageHandler.OnCompleted, entry.completed);
+            executeEventHandler(componentMessageHandler.OnFailed, entry.failed);
+            executeEventHandler(componentMessageHandler.OnComponentUpdate, entry.componentStatus);
+        }
+    }
+
+    if (componentStatsCollection.nodeStatus) {
+        for (const handler of nodeStatsUpdateEvents) {
+            const nodeStatusList = Object.values(componentStatsCollection.nodeStatus);
+            handler.OnNodeStatsUpdate(nodeStatusList);
+        }
+    }
+};
+
+const executeEventHandler = <TData>(handler: (data: TData) => void | null, data: TData | null) => {
+    if (handler && data) {
+        handler(data);
+    }
+}
+
+// Set up a SignalR connection to the specified hub URL
 export const setupSignalRConnection = (
     connectionHub: string,
     onConnectedCallback?: (connection: HubConnection) => void) => {
@@ -88,30 +130,7 @@ export const setupSignalRConnection = (
 
     startSignalRConnection(connection, onConnectedCallback);
 
-    const handleCompleted = (componentName: string, data: CompletedItemStats) => {
-        componentName = componentName.toLowerCase();
-        const componentMessageHandler = actionEventMap[componentName] ?? actionEventMap['default'];
-        const eventHandler = componentMessageHandler && componentMessageHandler.OnCompleted;
-        eventHandler && eventHandler(data);
-    };
-
-    const handleFailed = (componentName: string, data: FailedItemStats) => {
-        componentName = componentName.toLowerCase();
-        const componentMessageHandler = actionEventMap[componentName] ?? actionEventMap['default'];
-        const eventHandler = componentMessageHandler && componentMessageHandler.OnFailed;
-        eventHandler && eventHandler(data);
-    };
-
-    const handleComponentUpdate = (componentName: string, data: ComponentStatusStats) => {
-        componentName = componentName.toLowerCase();
-        const componentMessageHandler = actionEventMap[componentName] ?? actionEventMap['default'];
-        const eventHandler = componentMessageHandler && componentMessageHandler.OnComponentUpdate;
-        eventHandler && eventHandler(data);
-    };
-
-    connection.on('OnCompleted', handleCompleted);
-    connection.on('OnFailed', handleFailed);
-    connection.on('OnComponentUpdate', handleComponentUpdate);
+    connection.on('OnComponentUpdate',  handleComponentUpdate);
 
     return connection;
 };

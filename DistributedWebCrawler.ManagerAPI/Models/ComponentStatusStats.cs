@@ -12,8 +12,6 @@ namespace DistributedWebCrawler.ManagerAPI.Models
         public int AverageQueueCount { get; init; }
         public int MaxTasks { get; init; }
         public CrawlerComponentStatus CurrentStatus { get; init; }
-
-        public Dictionary<Guid, NodeStatusStats> NodeStatus { get; init; } = new Dictionary<Guid, NodeStatusStats>();
     }
 
 }

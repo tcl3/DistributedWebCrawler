@@ -5,6 +5,7 @@ import { ComponentStats } from "./AppComponent";
 
 export interface ComponentSummaryTableProps {
   componentStats: ComponentStats[];
+  nodeStats: NodeStatusStats[]
 }
 
 export interface HasContentLength {
@@ -21,7 +22,8 @@ export interface BytesDownloadedStats {
 }
 
 const getBytesDownloaded = (
-  componentStats: ComponentStats[]
+  componentStats: ComponentStats[],
+  nodeStats: NodeStatusStats[]
 ): BytesDownloadedStats => {
   const result = {
     totalIngested: 0,
@@ -31,20 +33,9 @@ const getBytesDownloaded = (
     totalDownloadedSinceLastUpdate: 0,
     totalUploadedSinceLastUpdate: 0,
   };
-  const nodeStatuses: {[key: string]: NodeStatusStats } = {};
   for (const stats of componentStats) {
     const totalBytesIngested = stats.completedItemStats.totalBytesIngested;
-    const totalBytesIngestedSinceLastUpdate =
-      stats.completedItemStats.totalBytesIngestedSinceLastUpdate;
-
-    if (stats.componentStatusStats && stats.componentStatusStats.nodeStatus) {
-      Object.entries(stats.componentStatusStats.nodeStatus).forEach(entry => {
-        const [key, value] = entry;
-        if (!nodeStatuses[key]) {
-          nodeStatuses[key] = value;
-        }
-      });
-  }
+    const totalBytesIngestedSinceLastUpdate = stats.completedItemStats.totalBytesIngestedSinceLastUpdate;
 
     if (totalBytesIngested) {
       result.totalIngested += totalBytesIngested;
@@ -60,28 +51,17 @@ const getBytesDownloaded = (
   let totalBytesDownloadedSinceLastUpdate = 0;
   let totalBytesUploadedSinceLastUpdate = 0;
 
-  Object.values(nodeStatuses).forEach(nodeStatus => {
+  Object.values(nodeStats).forEach(nodeStatus => {
     totalBytesDownloaded += nodeStatus.totalBytesDownloaded;
     totalBytesUploaded += nodeStatus.totalBytesUploaded;
     totalBytesDownloadedSinceLastUpdate += nodeStatus.totalBytesDownloadedSinceLastUpdate;
     totalBytesUploadedSinceLastUpdate += nodeStatus.totalBytesUploadedSinceLastUpdate;
   });
 
-  if (totalBytesDownloaded) {
-    result.totalDownloaded += totalBytesDownloaded;
-  }
-
-  if (totalBytesUploaded) {
-    result.totalUploaded += totalBytesUploaded;
-  }
-
-  if (totalBytesDownloadedSinceLastUpdate) {
-    result.totalDownloadedSinceLastUpdate += totalBytesDownloadedSinceLastUpdate;
-  }
-
-  if (totalBytesUploadedSinceLastUpdate) {
-    result.totalUploadedSinceLastUpdate += totalBytesUploadedSinceLastUpdate;
-  }
+  result.totalDownloaded += totalBytesDownloaded;
+  result.totalUploaded += totalBytesUploaded;
+  result.totalDownloadedSinceLastUpdate += totalBytesDownloadedSinceLastUpdate;
+  result.totalUploadedSinceLastUpdate += totalBytesUploadedSinceLastUpdate;
 
   return result;
 };
@@ -107,6 +87,7 @@ const getBytesString = (bytes: number): string => {
 
 const ComponentSummaryTable: React.FC<ComponentSummaryTableProps> = ({
   componentStats,
+  nodeStats
 }): JSX.Element => {
   const renderTableRow = (
     componentStats: ComponentStats,
@@ -142,7 +123,7 @@ const ComponentSummaryTable: React.FC<ComponentSummaryTableProps> = ({
     );
   };
 
-  const bytesDownloaded = getBytesDownloaded(componentStats);
+  const bytesDownloaded = getBytesDownloaded(componentStats, nodeStats);
 
   return (
     <>

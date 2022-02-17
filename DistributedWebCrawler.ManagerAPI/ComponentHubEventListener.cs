@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Timers;
 using DistributedWebCrawler.Core.Enums;
+using System.Diagnostics.CodeAnalysis;
 
 using Timer = System.Timers.Timer;
 
@@ -16,17 +17,19 @@ namespace DistributedWebCrawler.ManagerAPI
     {
         private readonly HashSet<IEventReceiver> _receivers;
         private readonly ConcurrentDictionary<Guid, Lazy<ComponentStatsBuilder>> _builderLookup;
+        private readonly ConcurrentDictionary<Guid, Lazy<NodeStatusBuilder>> _nodeStatusBuilderLookup;
         private readonly IHubContext<CrawlerHub, IComponentEventsHub> _hubContext;
         
         private const int HubUpdateIntervalMillis = 1000;
 
-        private volatile bool _currentlyIdle = true;
+        private volatile bool _allComponentsPaused = true;
 
         public ComponentHubEventListener(IHubContext<CrawlerHub, IComponentEventsHub> hubContext)
         {
             _hubContext = hubContext;
             _receivers = new();
             _builderLookup = new();
+            _nodeStatusBuilderLookup = new();
 
             var timer = new Timer();
             timer.Elapsed += new ElapsedEventHandler(OnTimerIntervalElapsed);
@@ -59,7 +62,8 @@ namespace DistributedWebCrawler.ManagerAPI
         {
             if (_builderLookup.TryGetValue(componentId, out var lazyBuilder))
             {
-                SendUpdateToHub(_hubContext.Clients.Client(connectionId), lazyBuilder.Value, forceUpdate: true);
+                var builders = new[] { lazyBuilder.Value };
+                SendForcedUpdateToHub(_hubContext.Clients.Client(connectionId), builders);
             }
         }
 
@@ -70,29 +74,15 @@ namespace DistributedWebCrawler.ManagerAPI
 
         private void UpdateComponentStats(IComponentEventsHub hub, bool forceUpdate)
         {
-            var builders = _builderLookup.Values.ToList();
-            var anyComponentsRunning = false;
-            foreach (var lazyBuilder in builders)
+            var builders = _builderLookup.Values.Select(x => x.Value).ToList();
+            if (forceUpdate)
             {
-                var builder = lazyBuilder.Value;
-
-                anyComponentsRunning = anyComponentsRunning || builder.CurrentStatus == CrawlerComponentStatus.Running;
-
-                SendUpdateToHub(hub, builder, forceUpdate);
-
-                if (!forceUpdate)
-                {
-                    builder.Reset();
-                }
+                SendForcedUpdateToHub(hub, builders);
             }
-
-            if ((forceUpdate && !builders.Any()) 
-                || (!anyComponentsRunning && !_currentlyIdle && builders.Any()))
+            else
             {
-                hub.OnAllComponentsIdle();
-            }
-
-            _currentlyIdle = !anyComponentsRunning;
+                SendUpdateToHub(hub, builders);
+            }            
         }
 
         private void OnTimerIntervalElapsed(object? source, ElapsedEventArgs e)
@@ -100,53 +90,117 @@ namespace DistributedWebCrawler.ManagerAPI
             UpdateComponentStats(_hubContext.Clients.All, forceUpdate: false);
         }
 
-        private void SendUpdateToHub(IComponentEventsHub hub, ComponentStatsBuilder builder, bool forceUpdate = false)
+        private void SendForcedUpdateToHub(IComponentEventsHub hub, IEnumerable<ComponentStatsBuilder> builders)
         {
-            var componentName = builder.ComponentInfo.ComponentName;
-
-            if (forceUpdate || builder.CompletedItemStatsHasUpdate())
+            var componentStatsList = new List<ComponentStats>();
+            foreach (var builder in builders)
             {
-                var completedItemStats = builder.BuildCompletedItemStats();
-                hub.OnCompleted(componentName, completedItemStats);
+                var componentStats = builder.BuildComponentStats(forceUpdate: true);
+                componentStatsList.Add(componentStats);
             }
 
-            if (forceUpdate || builder.FailedItemStatsHasUpdate())
+            var nodeStatus = new Dictionary<Guid, NodeStatusStats>();
+            foreach (var (nodeId, lazyBuilder) in _nodeStatusBuilderLookup)
             {
-                var failedItemStats = builder.BuildFailedItemStats();
-                hub.OnFailed(componentName, failedItemStats);
+                var builder = lazyBuilder.Value;
+                nodeStatus.Add(nodeId, builder.Build());
             }
 
-            if (forceUpdate || builder.ComponentStatsHasUpdate())
+            var componentStatsCollection = new ComponentStatsCollection
             {
-                var componentStatusStats = builder.BuildComponentStatusStats();
-                hub.OnComponentUpdate(componentName, componentStatusStats);
+                ComponentStats = componentStatsList,
+                NodeStatus = nodeStatus
+            };
+
+            hub.OnComponentUpdate(componentStatsCollection);
+        }
+
+        private void SendUpdateToHub(IComponentEventsHub hub, IEnumerable<ComponentStatsBuilder> builders)
+        {
+            var componentStatsList = new List<ComponentStats>();
+            var anyComponentsRunning = false;
+            foreach (var builder in builders)
+            {
+                anyComponentsRunning = anyComponentsRunning || builder.CurrentStatus == CrawlerComponentStatus.Running;
+
+                var componentHasUpdate = builder.ComponentStatsHasUpdate();
+                
+                if (componentHasUpdate)
+                {
+                    var componentStats = builder.BuildComponentStats(forceUpdate: false);
+                    componentStatsList.Add(componentStats);
+                }
+
+                builder.Reset();
             }
+
+            if (!anyComponentsRunning && !_allComponentsPaused && builders.Any())
+            {
+                hub.OnAllComponentsPaused();
+            }
+            
+            _allComponentsPaused = !anyComponentsRunning;
+            if (!componentStatsList.Any())
+            {
+                return;
+            }
+
+            var nodeStatus = new Dictionary<Guid, NodeStatusStats>();
+            foreach (var (nodeId, lazyBuilder) in _nodeStatusBuilderLookup)
+            {
+                var builder = lazyBuilder.Value;
+                
+                if (builder.HasUpdate())
+                {
+                    nodeStatus.Add(nodeId, builder.Build());
+                }
+
+                builder.Reset();
+            }
+
+            var componentStatsCollection = new ComponentStatsCollection
+            {
+                ComponentStats = componentStatsList,
+                NodeStatus = nodeStatus
+            };
+
+            hub.OnComponentUpdate(componentStatsCollection);
         }
 
         private Task OnComponentUpdateAsync(object? sender, ComponentEventArgs<ComponentStatus> e)
         {
-            var builder = GetBuilder(e.ComponentInfo);
-            builder.AddComponentStatusUpdate(e.Result);
+            var componentStatsBuilder = GetComponentStatsBuilder(e.ComponentInfo);
+            componentStatsBuilder.AddComponentStatusUpdate(e.Result);
+            
+            var nodeStatusBuilder = GetNodeStatusBuilder(e.Result.NodeStatus.NodeId);
+            nodeStatusBuilder.UpdateNodeStatus(e.Result.NodeStatus);
+            
             return Task.CompletedTask;
         }
 
         private Task OnFailedAsync(object? sender, ItemFailedEventArgs e)
         {
-            var builder = GetBuilder(e.ComponentInfo);
+            var builder = GetComponentStatsBuilder(e.ComponentInfo);
             builder.AddFailedItem(e);
             return Task.CompletedTask;
         }
 
         private Task OnCompletedAsync(object? sender, ItemCompletedEventArgs e)
         {
-            var builder = GetBuilder(e.ComponentInfo);
+            var builder = GetComponentStatsBuilder(e.ComponentInfo);
             builder.AddCompletedItem(e);
             return Task.CompletedTask;
         }
 
-        private ComponentStatsBuilder GetBuilder(ComponentInfo componentInfo)
+        private ComponentStatsBuilder GetComponentStatsBuilder(ComponentInfo componentInfo)
         {
-            var lazyValue = _builderLookup.GetOrAdd(componentInfo.ComponentId, name => new(() => new ComponentStatsBuilder(componentInfo)));
+            var lazyValue = _builderLookup.GetOrAdd(componentInfo.ComponentId, key => new(() => new ComponentStatsBuilder(componentInfo)));
+            return lazyValue.Value;
+        }
+
+        private NodeStatusBuilder GetNodeStatusBuilder(Guid nodeId)
+        {
+            var lazyValue = _nodeStatusBuilderLookup.GetOrAdd(nodeId, key => new Lazy<NodeStatusBuilder>(() => new()));
             return lazyValue.Value;
         }
 
@@ -168,6 +222,8 @@ namespace DistributedWebCrawler.ManagerAPI
             private long _totalCompletedItemCount;
             private long _totalFailedItemCount;
 
+            private bool _isIdle;
+
             public CrawlerComponentStatus CurrentStatus { get; private set; }
 
             private object _resetLock = new();
@@ -177,20 +233,17 @@ namespace DistributedWebCrawler.ManagerAPI
 
             private ConcurrentDictionary<string, int> _errorCounts;
 
-            private readonly ConcurrentDictionary<Guid, NodeStatusBuilder> _nodeStatusBuilderLookup;
-
             private const int RecentItemCount = 10;
 
-            public ComponentInfo ComponentInfo { get; }
+            private readonly ComponentInfo _componentInfo;
 
             public ComponentStatsBuilder(ComponentInfo componentInfo)
             {                
                 _errorCounts = new();
                 _completedItems = new();
                 _failedItems = new();
-                _nodeStatusBuilderLookup = new();
 
-                ComponentInfo = componentInfo;
+                _componentInfo = componentInfo;
             }
 
             public void Reset()
@@ -211,11 +264,6 @@ namespace DistributedWebCrawler.ManagerAPI
                     _completedItems.Clear();
                     _failedItems.Clear();
                     _errorCounts.Clear();
-                    
-                    foreach (var builder in _nodeStatusBuilderLookup.Values)
-                    {
-                        builder.Reset();
-                    }
                 }
             }
 
@@ -259,21 +307,44 @@ namespace DistributedWebCrawler.ManagerAPI
                 Interlocked.Add(ref _totalTaskCount, componentStatus.TasksInUse);
                 Interlocked.Add(ref _totalQueueCount, componentStatus.QueueCount);
 
-                var builder = _nodeStatusBuilderLookup.GetOrAdd(componentStatus.NodeStatus.NodeId, key => new NodeStatusBuilder());
-                builder.UpdateNodeStatus(componentStatus.NodeStatus);
-
                 CurrentStatus = componentStatus.CurrentStatus;
 
                 Interlocked.Increment(ref _componentUpdateCount);
             }
 
-            public bool CompletedItemStatsHasUpdate()
+            public ComponentStats BuildComponentStats(bool forceUpdate)
             {
-                return _completedItemCount > 0;
+                var completedItemStats = forceUpdate || _completedItemCount > 0
+                    ? BuildCompletedItemStats()
+                    : null;
+
+                var failedItemStats = forceUpdate || _failedItemCount > 0
+                    ? BuildFailedItemStats()
+                    : null;
+
+                return new ComponentStats(_componentInfo)
+                {
+                    Completed = completedItemStats,
+                    Failed = failedItemStats,
+                    ComponentStatus = BuildComponentStatusStats(),
+                };
             }
 
-            public CompletedItemStats BuildCompletedItemStats()
-            { 
+            public bool ComponentStatsHasUpdate()
+            {
+                var hasUpdate = _componentUpdateCount > 0 
+                    || _completedItemCount > 0
+                    || _failedItemCount > 0;
+
+                var result = hasUpdate || !_isIdle;
+
+                _isIdle = !hasUpdate;
+
+                return result;
+            }
+
+            private CompletedItemStats BuildCompletedItemStats()
+            {
                 return new CompletedItemStats(_completedItemCount, _totalCompletedItemCount)
                 {
                     RecentItems = _completedItems.TakeLast(RecentItemCount).ToList(),
@@ -282,7 +353,7 @@ namespace DistributedWebCrawler.ManagerAPI
                 };
             }
 
-            public FailedItemStats BuildFailedItemStats()
+            private FailedItemStats BuildFailedItemStats()
             {
                 return new FailedItemStats(_failedItemCount, _totalFailedItemCount)
                 {
@@ -291,12 +362,7 @@ namespace DistributedWebCrawler.ManagerAPI
                 };
             }
 
-            public bool FailedItemStatsHasUpdate()
-            {
-                return _failedItemCount > 0;
-            }
-
-            public ComponentStatusStats BuildComponentStatusStats()
+            private ComponentStatusStats BuildComponentStatusStats()
             {
                 var averageTasksInUse = _componentUpdateCount == 0
                     ? 0
@@ -306,23 +372,13 @@ namespace DistributedWebCrawler.ManagerAPI
                     ? 0
                     : (int)Math.Round(_totalQueueCount / (double)_componentUpdateCount);
 
-                var nodeStatusLookup = _nodeStatusBuilderLookup
-                    .ToArray()
-                    .ToDictionary(x => x.Key, x => x.Value.Build());
-
                 return new ComponentStatusStats(_componentUpdateCount, _totalComponentUpdateCount)
                 {
                     AverageTasksInUse = averageTasksInUse,
                     AverageQueueCount = averageQueueCount,
                     MaxTasks = _maxTasks,
                     CurrentStatus = this.CurrentStatus,
-                    NodeStatus = nodeStatusLookup
                 };
-            }
-
-            public bool ComponentStatsHasUpdate()
-            {
-                return _componentUpdateCount > 0;
             }
         }
 
@@ -351,6 +407,11 @@ namespace DistributedWebCrawler.ManagerAPI
                 }                
             }
 
+            public bool HasUpdate()
+            {
+                return _totalBytesDownloaded > 0 || _totalBytesUploaded > 0;
+            }
+
             public NodeStatusStats Build()
             {
                 return new NodeStatusStats
@@ -368,8 +429,6 @@ namespace DistributedWebCrawler.ManagerAPI
                 _totalBytesDownloadedSinceLastReset = _totalBytesDownloaded;
                 _totalBytesDownloadedSinceLastUpdate = 0;
                 _totalBytesUploadedSinceLastUpdate = 0;
-                _totalBytesDownloaded = 0;
-                _totalBytesUploaded = 0;
             }
         }
     }

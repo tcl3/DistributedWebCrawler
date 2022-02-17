@@ -3,9 +3,12 @@ import { Routes, Route } from "react-router-dom";
 import
 {
   setupSignalRConnection,
-  ComponentMessageHandler,
-  addSignalRHandler,
-  removeSignalRHandler
+  ComponentUpdateMessageHandler,
+  addComponentUpdateHandler,
+  removeComponentUpdateHandler,
+  NodeStatsUpdateMessageHandler,
+  removeNodeStatsUpdateHandler,
+  addNodeStatsUpdateHandler
 } from "../SignalR";
 import { HubConnection } from "@microsoft/signalr";
 import Navbar from "react-bootstrap/Navbar";
@@ -19,6 +22,7 @@ import { FailedItemStats } from '../types/FailedItemStats';
 import { ComponentStatusStats } from '../types/ComponentStatusStats';
 import Overview from "./OverviewComponent";
 import { CrawlerComponentStatus } from "../types/CrawlerComponentStatus";
+import { NodeStatusStats } from "../types/NodeStatusStats";
 
 // TODO: replace this with a SignalR call
 export interface ComponentDescription {
@@ -57,6 +61,20 @@ const App: React.FC = () => {
   const [connection, setConnection] = useState<HubConnection>(null);
   const [initialDataReceived, setInitialDataReceived] = useState<boolean>(false);
   const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [nodeStats, setNodeStats] = useState<NodeStatusStats[]>([]);
+
+  useEffect(() => {
+    const nodeStatsUpdateHandler: NodeStatsUpdateMessageHandler = {
+      OnNodeStatsUpdate(stats: NodeStatusStats[]) {
+        setNodeStats(stats);
+        setInitialDataReceived(true);
+      }
+    }
+
+    addNodeStatsUpdateHandler(nodeStatsUpdateHandler)
+
+    return () => removeNodeStatsUpdateHandler(nodeStatsUpdateHandler);
+  }, [])
 
   const getComponentStats = (component: ComponentDescription): ComponentStats => {
     const [completedItemStats, setCompletedItemStats] = useState<CompletedItemStats>({} as CompletedItemStats);
@@ -64,7 +82,7 @@ const App: React.FC = () => {
     const [componentStatusStats, setComponentStatusStats] = useState<ComponentStatusStats>({} as ComponentStatusStats);
 
     useEffect(() => {
-        const handler: ComponentMessageHandler = {
+        const componentUpdateHandler: ComponentUpdateMessageHandler = {
             OnCompleted(data: CompletedItemStats) {
                 setCompletedItemStats(data);
             },
@@ -73,17 +91,16 @@ const App: React.FC = () => {
             },
             OnComponentUpdate(data: ComponentStatusStats) {
                 setComponentStatusStats(data);
-
+                setInitialDataReceived(true);
                 if (data.currentStatus === CrawlerComponentStatus.Running) {
                   setIsRunning(true);
                 }
-
-                setInitialDataReceived(true);
             }
         };
-        addSignalRHandler(component.name, handler);
 
-        return () => removeSignalRHandler(component.name);
+        addComponentUpdateHandler(component.name, componentUpdateHandler);
+
+        return () => removeComponentUpdateHandler(component.name);
     }, []);
 
     return {
@@ -102,7 +119,7 @@ const App: React.FC = () => {
       const newConnection = setupSignalRConnection(hubName,
         c => c.send("UpdateAllComponentStats"));
 
-      newConnection.on('OnAllComponentsIdle', () => {
+      newConnection.on('OnAllComponentsPaused', () => {
         setInitialDataReceived(true);
         setIsRunning(false);
       });
@@ -120,6 +137,7 @@ const App: React.FC = () => {
         setIsRunning={setIsRunning}
         connection={connection}
         componentStats={componentStats}
+        nodeStats={nodeStats}
       />
     )
     : <></>;
