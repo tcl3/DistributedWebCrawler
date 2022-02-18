@@ -119,12 +119,17 @@ namespace DistributedWebCrawler.ManagerAPI
         {
             var componentStatsList = new List<ComponentStats>();
             var anyComponentsRunning = false;
+            var allComponentsPaused = true;
             foreach (var builder in builders)
             {
                 anyComponentsRunning = anyComponentsRunning || builder.CurrentStatus == CrawlerComponentStatus.Running;
 
                 var componentHasUpdate = builder.ComponentStatsHasUpdate();
-                
+
+                allComponentsPaused = allComponentsPaused
+                    && (builder.CurrentStatus == CrawlerComponentStatus.Paused
+                        || !componentHasUpdate);
+
                 if (componentHasUpdate)
                 {
                     var componentStats = builder.BuildComponentStats(forceUpdate: false);
@@ -134,12 +139,12 @@ namespace DistributedWebCrawler.ManagerAPI
                 builder.Reset();
             }
 
-            if (!anyComponentsRunning && !_allComponentsPaused && builders.Any())
+            if (allComponentsPaused && !_allComponentsPaused && builders.Any())
             {
                 hub.OnAllComponentsPaused();
             }
             
-            _allComponentsPaused = !anyComponentsRunning;
+            _allComponentsPaused = allComponentsPaused && builders.Any();
             if (!componentStatsList.Any())
             {
                 return;
@@ -224,6 +229,8 @@ namespace DistributedWebCrawler.ManagerAPI
 
             private bool _isIdle;
 
+            private int _lastAverageQueueCount;
+
             public CrawlerComponentStatus CurrentStatus { get; private set; }
 
             private object _resetLock = new();
@@ -258,8 +265,6 @@ namespace DistributedWebCrawler.ManagerAPI
                     _failedItemCount = 0;
 
                     _totalBytesIngestedSinceLastUpdate = 0;
-
-                    CurrentStatus = CrawlerComponentStatus.Unknown;
 
                     _completedItems.Clear();
                     _failedItems.Clear();
@@ -369,8 +374,12 @@ namespace DistributedWebCrawler.ManagerAPI
                     : (int)Math.Round(_totalTaskCount / (double)_componentUpdateCount);
                 
                 var averageQueueCount = _componentUpdateCount == 0
-                    ? 0
+                    ? CurrentStatus == CrawlerComponentStatus.Running || CurrentStatus == CrawlerComponentStatus.Unknown
+                        ? 0
+                        : _lastAverageQueueCount
                     : (int)Math.Round(_totalQueueCount / (double)_componentUpdateCount);
+
+                _lastAverageQueueCount = averageQueueCount;
 
                 return new ComponentStatusStats(_componentUpdateCount, _totalComponentUpdateCount)
                 {

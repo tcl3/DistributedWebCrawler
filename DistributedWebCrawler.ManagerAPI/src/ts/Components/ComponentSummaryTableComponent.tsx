@@ -1,11 +1,15 @@
 import React from "react";
+import Switch from "react-bootstrap/esm/Switch";
 import Table from "react-bootstrap/Table";
 import { NodeStatusStats } from "../types/NodeStatusStats";
-import { ComponentStats } from "./AppComponent";
+import { ComponentFilter } from "../types/ComponentFilter";
+import { ComponentModel } from "./AppComponent";
+import { HubConnection } from "@microsoft/signalr";
 
 export interface ComponentSummaryTableProps {
-  componentStats: ComponentStats[];
-  nodeStats: NodeStatusStats[]
+  componentStats: ComponentModel[];
+  nodeStats: NodeStatusStats[];
+  connection: HubConnection;
 }
 
 export interface HasContentLength {
@@ -22,7 +26,7 @@ export interface BytesDownloadedStats {
 }
 
 const getBytesDownloaded = (
-  componentStats: ComponentStats[],
+  componentStats: ComponentModel[],
   nodeStats: NodeStatusStats[]
 ): BytesDownloadedStats => {
   const result = {
@@ -87,10 +91,11 @@ const getBytesString = (bytes: number): string => {
 
 const ComponentSummaryTable: React.FC<ComponentSummaryTableProps> = ({
   componentStats,
-  nodeStats
+  nodeStats,
+  connection
 }): JSX.Element => {
   const renderTableRow = (
-    componentStats: ComponentStats,
+    componentStats: ComponentModel,
     key: number
   ): JSX.Element => {
     const statusStats = componentStats.componentStatusStats;
@@ -119,6 +124,20 @@ const ComponentSummaryTable: React.FC<ComponentSummaryTableProps> = ({
           <strong>{componentStats.friendlyName}</strong>
         </td>
         {statsInfo}
+        <td>
+          <Switch
+            checked={componentStats.isRunning}
+            onChange={(e) => {
+              componentStats.setIsRunning(e.currentTarget.checked);
+              const hubMethod = e.currentTarget.checked ? "ResumeComponent" : "PauseComponent";
+              const componentFilter: ComponentFilter = {
+                componentNames: [componentStats.name],
+                componentIds: [],
+              };
+              connection.send(hubMethod, componentFilter);
+            }}
+          />
+          </td>
       </tr>
     );
   };
@@ -135,6 +154,7 @@ const ComponentSummaryTable: React.FC<ComponentSummaryTableProps> = ({
             <th>Average queue size</th>
             <th>Items per second</th>
             <th>Total items processed</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>

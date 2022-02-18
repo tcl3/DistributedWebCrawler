@@ -1,8 +1,8 @@
 ﻿import React from "react";
-import { ComponentStats } from "./AppComponent";
+import { ComponentModel } from "./AppComponent";
 
 export interface ComponentStatusProps {
-  componentStats: ComponentStats;
+  componentStats: ComponentModel;
 }
 
 const ComponentStatus: React.FC<ComponentStatusProps> = ({

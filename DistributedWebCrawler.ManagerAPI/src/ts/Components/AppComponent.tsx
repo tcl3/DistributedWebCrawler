@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Dispatch, Suspense, useEffect, useMemo, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import
 {
@@ -15,7 +15,6 @@ import Navbar from "react-bootstrap/Navbar";
 
 import ComponentStatus from "./ComponentStatusComponent";
 import Sidebar from "./SidebarComponent";
-import CrawlerControls from "./CrawlerControlsComponent";
 
 import { CompletedItemStats } from '../types/CompletedItemStats';
 import { FailedItemStats } from '../types/FailedItemStats';
@@ -49,18 +48,20 @@ const componentDescriptions: ComponentDescription[] = [
   }
 ];
 
-export interface ComponentStats {
+export interface ComponentModel {
   name: string,
   friendlyName: string,
   completedItemStats: CompletedItemStats,
   failedItemStats: FailedItemStats,
-  componentStatusStats: ComponentStatusStats
+  componentStatusStats: ComponentStatusStats,
+  isRunning: boolean,
+  setIsRunning: Dispatch<boolean>
 }
 
 const App: React.FC = () => {
   const [connection, setConnection] = useState<HubConnection>(null);
   const [initialDataReceived, setInitialDataReceived] = useState<boolean>(false);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [anyComponentIsRunning, setAnyComponentIsRunning] = useState<boolean>(false);
   const [nodeStats, setNodeStats] = useState<NodeStatusStats[]>([]);
 
   useEffect(() => {
@@ -76,10 +77,11 @@ const App: React.FC = () => {
     return () => removeNodeStatsUpdateHandler(nodeStatsUpdateHandler);
   }, [])
 
-  const getComponentStats = (component: ComponentDescription): ComponentStats => {
+  const getComponentStats = (component: ComponentDescription): ComponentModel => {
     const [completedItemStats, setCompletedItemStats] = useState<CompletedItemStats>({} as CompletedItemStats);
     const [failedItemStats, setFailedItemStats] = useState<FailedItemStats>({} as FailedItemStats);
     const [componentStatusStats, setComponentStatusStats] = useState<ComponentStatusStats>({} as ComponentStatusStats);
+    const [isRunning, setIsRunning] = useState<boolean>(false);
 
     useEffect(() => {
         const componentUpdateHandler: ComponentUpdateMessageHandler = {
@@ -92,8 +94,14 @@ const App: React.FC = () => {
             OnComponentUpdate(data: ComponentStatusStats) {
                 setComponentStatusStats(data);
                 setInitialDataReceived(true);
-                if (data.currentStatus === CrawlerComponentStatus.Running) {
-                  setIsRunning(true);
+                switch (data.currentStatus) {
+                  case CrawlerComponentStatus.Running:
+                    setAnyComponentIsRunning(true)
+                    setIsRunning(true);
+                    break;
+                  case CrawlerComponentStatus.Paused:
+                    setIsRunning(false);
+                    break;
                 }
             }
         };
@@ -108,7 +116,9 @@ const App: React.FC = () => {
       friendlyName: component.friendlyName,
       completedItemStats: completedItemStats,
       failedItemStats: failedItemStats,
-      componentStatusStats: componentStatusStats
+      componentStatusStats: componentStatusStats,
+      isRunning: isRunning,
+      setIsRunning: setIsRunning
     }
   }
 
@@ -120,21 +130,21 @@ const App: React.FC = () => {
         c => c.send("UpdateAllComponentStats"));
 
       newConnection.on('OnAllComponentsPaused', () => {
+        setAnyComponentIsRunning(false);
         setInitialDataReceived(true);
-        setIsRunning(false);
       });
 
       setConnection(newConnection);
     }
   }, [connection]);
 
-  const componentStats = componentDescriptions.map((component) => getComponentStats(component));
+  const componentStats = componentDescriptions.map((componentDescription) => getComponentStats(componentDescription));
 
   const overviewElement = initialDataReceived
     ? (
       <Overview
-        isRunning={isRunning}
-        setIsRunning={setIsRunning}
+        isRunning={anyComponentIsRunning}
+        setIsRunning={setAnyComponentIsRunning}
         connection={connection}
         componentStats={componentStats}
         nodeStats={nodeStats}
