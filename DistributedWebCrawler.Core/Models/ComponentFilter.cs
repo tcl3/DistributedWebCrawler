@@ -52,12 +52,12 @@ namespace DistributedWebCrawler.Core.Models
                 return true;
             }
 
-            if (ComponentIds.Any() && ComponentIds.Contains(component.ComponentInfo.ComponentId))
+            if (ComponentIds.Any(id => id == component.ComponentInfo.ComponentId))
             {
                 return true;
             }
 
-            if (ComponentNames.Any() && ComponentNames.Contains(component.ComponentInfo.ComponentName))
+            if (ComponentNames.Any(name => name.Equals(component.ComponentInfo.ComponentName, StringComparison.InvariantCultureIgnoreCase)))
             {
                 return true;
             }

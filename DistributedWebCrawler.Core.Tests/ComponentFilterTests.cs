@@ -101,7 +101,7 @@ namespace DistributedWebCrawler.Core.Tests
         {
             var componentsToMatch = crawlerComponents.Take(2);
 
-            var componentNamesToMatch = componentsToMatch.Select(x => x.ComponentInfo.ComponentName);
+            var componentNamesToMatch = componentsToMatch.Select(x => x.ComponentInfo.ComponentName.ToUpperInvariant());
 
             var componentFilter = ComponentFilter.FromComponentNames(componentNamesToMatch);
 
