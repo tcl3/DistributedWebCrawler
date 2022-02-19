@@ -2,10 +2,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NLog.Extensions.Logging;
 using System;
 using System.Text;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
+using Serilog;
 
 namespace DistributedWebCrawler.Console
 {
@@ -23,8 +23,13 @@ namespace DistributedWebCrawler.Console
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
-                loggingBuilder.SetMinimumLevel(LogLevel.Trace);
-                loggingBuilder.AddNLog();
+                
+                var logger = new LoggerConfiguration()
+                    .ReadFrom
+                    .Configuration(configuration)
+                    .CreateLogger();
+
+                loggingBuilder.AddSerilog(logger);
             });
 
             services.AddInMemoryCrawlerWithDefaultSettings(configuration);

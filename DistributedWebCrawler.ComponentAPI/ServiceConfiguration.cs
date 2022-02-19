@@ -1,6 +1,4 @@
-﻿using DistributedWebCrawler.Core.Interfaces;
-using DistributedWebCrawler.Core.Seeding;
-using NLog.Extensions.Logging;
+﻿using DistributedWebCrawler.Core.Seeding;
 using System.Text;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Core;
@@ -9,6 +7,7 @@ using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.Extensions.Redis;
 using DistributedWebCrawler.Extensions.DependencyInjection.Interfaces;
 using DistributedWebCrawler.Extensions.DnsClient;
+using Serilog;
 
 namespace DistributedWebCrawler.ComponentAPI
 {
@@ -19,7 +18,13 @@ namespace DistributedWebCrawler.ComponentAPI
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
-                loggingBuilder.AddNLog();
+
+                var logger = new LoggerConfiguration()
+                    .ReadFrom
+                    .Configuration(configuration)
+                    .CreateLogger();
+
+                loggingBuilder.AddSerilog(logger);
             });
 
             var roles = GetRoles(configuration);

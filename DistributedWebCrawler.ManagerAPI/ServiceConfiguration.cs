@@ -1,22 +1,26 @@
-﻿using NLog.Extensions.Logging;
-using System.Text;
+﻿using System.Text;
 using DistributedWebCrawler.Extensions.RabbitMQ;
 using DistributedWebCrawler.ManagerAPI.Hubs;
-using Microsoft.AspNetCore.ResponseCompression;
 using DistributedWebCrawler.Core.Extensions.DependencyInjection;
 using DistributedWebCrawler.Extensions.DnsClient;
+using Serilog;
 
 namespace DistributedWebCrawler.ManagerAPI
 {
     internal static class ServiceConfiguration
     {
         public static IServiceProvider ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        {          
-
+        {
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
-                loggingBuilder.AddNLog();
+
+                var logger = new LoggerConfiguration()
+                    .ReadFrom
+                    .Configuration(configuration)
+                    .CreateLogger();
+
+                loggingBuilder.AddSerilog(logger);
             });
 
             services.AddResponseCompression(options =>
