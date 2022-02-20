@@ -1,5 +1,6 @@
 ﻿using DistributedWebCrawler.Core.Queue;
 using DistributedWebCrawler.Core.Tests.Fakes;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -7,7 +8,7 @@ namespace DistributedWebCrawler.Core.Tests
 {
     public class InMemoryQueueTests
     {
-        private static readonly TestRequest TestRequestData = new();
+        private static readonly TestRequest TestRequestData = new TestRequest(new Uri("http://test.uri/"));
 
         [Fact]
         public void NewQueueCountShouldBeZero()

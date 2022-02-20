@@ -47,13 +47,10 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
         {
             fixture.Customize<SchedulerRequest>(composer =>
             {
-                var result = composer
+                var requestUri = _uri ?? fixture.Create<Uri>();
+                var result = composer.FromFactory(() => new SchedulerRequest(requestUri))
                     .With(x => x.Paths, _paths)
                     .With(x => x.CurrentCrawlDepth, _currentCrawlDepth);
-
-                result = _uri != null
-                    ? result.With(x => x.Uri, _uri)
-                    : result.With(x => x.Uri);
 
                 return result;
             });
