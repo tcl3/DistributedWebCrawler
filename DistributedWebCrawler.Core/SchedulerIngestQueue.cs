@@ -122,32 +122,34 @@ namespace DistributedWebCrawler.Core
 
                     var entry = await _nextPathForHostQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
 
-                    var schedulerRequest = entry.SchedulerRequest;
-
-                    if (!_visitedUris.ContainsKey(entry.Uri))
+                    using (_logger.BeginScope("SchedulerIngestQueue entry {uri}", entry.Uri))
                     {
-                        _logger.LogDebug($"Enqueueing URI: {entry.Uri} for ingestion");
+                        var schedulerRequest = entry.SchedulerRequest;
 
-                        var ingestRequest = new IngestRequest(entry.Uri)
+                        if (!_visitedUris.ContainsKey(entry.Uri))
                         {
-                            CurrentCrawlDepth = schedulerRequest.CurrentCrawlDepth,
-                            MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
-                        };
+                            _logger.LogDebug("Enqueueing URI for ingestion");
 
+                            var ingestRequest = new IngestRequest(entry.Uri)
+                            {
+                                CurrentCrawlDepth = schedulerRequest.CurrentCrawlDepth,
+                                MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
+                            };
 
-                        if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))
-                        {
-                            _logger.LogCritical($"Active queue item with ID: {ingestRequest.Id} already exists. This should never happen");
-                            continue;
+                            if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))
+                            {
+                                _logger.LogCritical("Active queue item with ID: {ingestRequestId} already exists. This should never happen", ingestRequest.Id);
+                                continue;
+                            }
+                            _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
+                            _ingestRequestProducer.Enqueue(ingestRequest, _ingestEventReceiver, OnIngestCompletedAsync, OnIngestFailedAsync);
+                            _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
                         }
-                        _activeDomains.AddOrUpdate(entry.Domain, DomainStatus.Queued, (key, oldvalue) => DomainStatus.Ingesting);
-                        _ingestRequestProducer.Enqueue(ingestRequest, _ingestEventReceiver, OnIngestCompletedAsync, OnIngestFailedAsync);
-                        _visitedUris.AddOrUpdate(entry.Uri, true, (key, oldValue) => oldValue);
-                    }
-                    else
-                    {
-                        await AddNextUriToSchedulerQueueAsync(entry.Domain, schedulerRequest, 
-                            addCrawlDelay: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        else
+                        {
+                            await AddNextUriToSchedulerQueueAsync(entry.Domain, schedulerRequest,
+                                addCrawlDelay: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+                        }
                     }
                 }
                 catch (OperationCanceledException)
@@ -156,7 +158,7 @@ namespace DistributedWebCrawler.Core
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unhandled exception in Scheduler thread");
+                    _logger.LogError(ex, "Unhandled exception in SchedulerIngestQueue thread");
                 }
             }
         }
@@ -187,7 +189,7 @@ namespace DistributedWebCrawler.Core
             }
             else
             {
-                _logger.LogCritical($"No queue entry found for ingest request ID: {id}");
+                _logger.LogCritical("No queue entry found for ingest request ID: {ingestRequestId}", id);
             }
         }
 

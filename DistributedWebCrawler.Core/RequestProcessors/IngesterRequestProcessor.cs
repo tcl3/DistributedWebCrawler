@@ -92,7 +92,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             var requestStartTime = SystemClock.DateTimeOffsetNow();
             if (item.MaxDepthReached)
             {
-                _logger.LogDebug($"Not sending request to parser for {item.Uri}");
+                _logger.LogDebug("Not sending request to parser. Maximum depth reached");
                 return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.MaxDepthReached));
             }
 
@@ -112,14 +112,17 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
                 if (response.StatusCode.IsError())
                 {
-                    _logger.LogInformation($"Failed to retrieve URI {currentUri} . Status code {(int)response.StatusCode}");
+                    var statusCodeNumber = (int)response.StatusCode;
+                    _logger.LogInformation("Ingest request failed with status code {statusCode}", statusCodeNumber);
                     var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.Http4xxError, httpStatusCode: response.StatusCode);
                     return item.Failed(ingestFailure);
                 }
 
                 if (response.Content.Headers.ContentLength > _ingesterSettings.MaxContentLengthBytes)
                 {
-                    _logger.LogInformation($"Content length for {currentUri} ({response.Content.Headers.ContentLength} bytes) is longer than the maximum allowed ({_ingesterSettings.MaxContentLengthBytes} bytes)");
+                    _logger.LogInformation("Ingest request failed. ContentLength header too large. Header length ({headerLength} bytes) Max allowed ({maxAllowed} bytes)",
+                        response.Content.Headers.ContentLength, _ingesterSettings.MaxContentLengthBytes);
+
                     return item.Failed(IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.ContentTooLarge));
                 }
 
@@ -128,21 +131,19 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                 {
                     if (_mediaTypesToInclude.Value.Any() && !_mediaTypesToInclude.Value.Any(x => x.Match(contentType)))
                     {
-                        _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) not present in include list");
+                        _logger.LogInformation("Ingest request failed. Content Type {contentType} not present in include list", contentTypeHeader.MediaType);
                         var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
                         return item.Failed(ingestFailure);
                     }
                     else if (_mediaTypesToExclude.Value.Any() && _mediaTypesToExclude.Value.Any(x => x.Match(contentType)))
                     {
-                        _logger.LogInformation($"Content Type for '{currentUri}' ({contentTypeHeader.MediaType}) present in exclude list");
+                        _logger.LogInformation("Ingest request failed. Content Type {contentType} present in exclude list", contentTypeHeader.MediaType);
                         var ingestFailure = IngestFailure.Create(currentUri, requestStartTime, IngestFailureReason.MediaTypeNotPermitted, mediaType: contentTypeHeader.MediaType);
                         return item.Failed(ingestFailure);
                     }
                 }
 
                 var urlContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-
-                _logger.LogDebug($"Successfully retrieved content for URI {currentUri}");
 
                 var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
 
@@ -165,25 +166,28 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                     }
                     else
                     {
-                        _logger.LogWarning($"Not passing {ingestResult.Uri} to parser. Non parseable content type");
+                        _logger.LogWarning("Not passing {uri} to parser. Non parseable content type", ingestResult.Uri);
                     }
                 }
+
+                _logger.LogDebug("Ingest request successful");
 
                 return item.Success(ingestResult);
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, $"Error when getting for URI {item.Uri}. {ex.Message}");
+                var exceptionMessage = ex.GetBaseException().Message;
+                _logger.LogError("Ingest request failed. {exceptionMessage}", exceptionMessage);
                 return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.NetworkConnectivityError, httpStatusCode: ex.StatusCode));
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, $"Error processing URL for URI {item.Uri}. {ex.Message}");
+                _logger.LogError(ex, "Error processing URL. Incorrect URI format");
                 return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.UriFormatError));
             }
             catch (TaskCanceledException ex)
             {
-                _logger.LogError($"Timeout while getting URL for URI {item.Uri}. {ex.Message}");
+                _logger.LogError("Timeout while processing ingest request {item.Uri}. {exceptionMessage}", ex.Message);
                 return item.Failed(IngestFailure.Create(item.Uri, requestStartTime, IngestFailureReason.RequestTimeout));
             }
         }
@@ -198,7 +202,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             {
                 if (currentRedirectDepth++ >= _ingesterSettings.MaxRedirects)
                 {
-                    _logger.LogInformation($"Max redirect depth ({_ingesterSettings.MaxRedirects}) reached for URI: {uri}");
+                    _logger.LogInformation("Ingest failed. Max redirect depth reached ({maxRedirects})", _ingesterSettings.MaxRedirects);
                     return new HandleRedirectResult(uri, response)
                     {
                         FailureReason = IngestFailureReason.MaxRedirectsReached,
@@ -206,8 +210,9 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                     };
                 }
                 var redirectUri = response.Headers.Location;
-
-                _logger.LogInformation($"URI {uri} is redirecting to {redirectUri} ({(int)response.StatusCode})");
+                
+                var statusCodeNumber = (int)response.StatusCode;
+                _logger.LogDebug("Redirecting to {redirectUri} ({statusCode})", redirectUri, statusCodeNumber);
 
                 var redirectUriAbsolute = PathToAbsoluteUri(uri, redirectUri.ToString());
 

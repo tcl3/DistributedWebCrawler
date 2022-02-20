@@ -38,7 +38,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
         public async Task<QueuedItemResult> ProcessItemAsync(RobotsRequest item, CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation($"Processing robots.txt request for {item.Uri}");
+            _logger.LogDebug($"Started getting robots.txt");
 
             var content = await _robotsCache.AddOrUpdateRobotsForHostAsync(item.Uri, _expirationTimeSpan, cancellationToken).ConfigureAwait(false);
 

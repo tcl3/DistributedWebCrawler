@@ -84,18 +84,21 @@ namespace DistributedWebCrawler.Core.Components
 
         public Task StartAsync(CrawlerRunningState startState = CrawlerRunningState.Running, CancellationToken cancellationToken = default)
         {
-            if (IsStarted)
+            using (_logger.BeginComponentInfoScope(ComponentInfo))
             {
-                throw new InvalidOperationException($"Cannot start {ComponentInfo.ComponentName} when already started");
+                if (IsStarted)
+                {
+                    throw new InvalidOperationException($"Cannot start {ComponentInfo.ComponentName} when already started");
+                }
+
+                IsStarted = true;
+
+                _logger.LogInformation("Component started");
+
+                _ = ComponentStartAndHandleExceptionAsync(startState, cancellationToken);
+
+                return Task.CompletedTask;
             }
-
-            IsStarted = true;
-
-            _logger.LogInformation($"{ComponentInfo.ComponentName} component started");
-
-            _ = ComponentStartAndHandleExceptionAsync(startState, cancellationToken);
-
-            return Task.CompletedTask;
         }
 
         public async Task WaitUntilCompletedAsync()
@@ -139,28 +142,34 @@ namespace DistributedWebCrawler.Core.Components
 
         private async Task ItemProcessingLoop(CancellationToken cancellationToken)
         {
-            while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
+            using (_logger.BeginComponentInfoScope(ComponentInfo))
             {
-                try
+                while (Status != CrawlerComponentStatus.Completed && !cancellationToken.IsCancellationRequested)
                 {
-                    await _itemSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (_isPaused && !cancellationToken.IsCancellationRequested)
+                    try
                     {
-                        await _pauseSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                        await _itemSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+                        if (_isPaused && !cancellationToken.IsCancellationRequested)
+                        {
+                            await _pauseSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                        }
+
+                        var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
+
+                        using (_logger.BeginRequestScope(currentItem))
+                        {
+                            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                            cts.CancelAfter(TimeSpan.FromSeconds(_taskQueueSettings.QueueItemTimeoutSeconds));
+                            var processItemCancellationToken = cts.Token;
+
+                            _ = ProcessItemAndReleaseSemaphore(currentItem, processItemCancellationToken);
+                        }
                     }
-
-                    var currentItem = await _consumer.DequeueAsync().ConfigureAwait(false);
-
-                    var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    cts.CancelAfter(TimeSpan.FromSeconds(_taskQueueSettings.QueueItemTimeoutSeconds));
-                    var processItemCancellationToken = cts.Token;
-
-                    _ = ProcessItemAndReleaseSemaphore(currentItem, processItemCancellationToken);
-                }
-                catch (OperationCanceledException ex)
-                {
-                    _logger.LogInformation(ex, $"Task cancelled while processing queued item");
+                    catch (OperationCanceledException ex)
+                    {
+                        _logger.LogInformation(ex, "Task cancelled while processing queued item");
+                    }
                 }
             }
         }
@@ -178,7 +187,7 @@ namespace DistributedWebCrawler.Core.Components
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Uncaught exception in {ComponentInfo.ComponentName} (ComponentId: {ComponentInfo.ComponentId})");
+                _logger.LogError(ex, "Uncaught exception");
             }
             finally
             {
@@ -207,24 +216,32 @@ namespace DistributedWebCrawler.Core.Components
 
         public Task PauseAsync()
         {
-            if (!IsStarted)
+            using (_logger.BeginComponentInfoScope(ComponentInfo))
             {
-                throw new InvalidOperationException($"Cannot call {nameof(PauseAsync)} before {nameof(StartAsync)}");
+                if (!IsStarted)
+                {
+                    throw new InvalidOperationException($"Cannot call {nameof(PauseAsync)} before {nameof(StartAsync)}");
+                }
+
+                _logger.LogInformation("Pausing...");
             }
 
-            _logger.LogInformation("Pausing...");
             _isPaused = true;
             return Task.CompletedTask; 
         }
 
         public Task ResumeAsync()
         {
-            if (!IsStarted)
+            using (_logger.BeginComponentInfoScope(ComponentInfo))
             {
-                throw new InvalidOperationException($"Cannot call {nameof(ResumeAsync)} before {nameof(StartAsync)}");
+                if (!IsStarted)
+                {
+                    throw new InvalidOperationException($"Cannot call {nameof(ResumeAsync)} before {nameof(StartAsync)}");
+                }
+
+                _logger.LogInformation("Resuming...");
             }
 
-            _logger.LogInformation("Resuming...");
             _isPaused = false;
             _pauseSemaphore.Release();
 

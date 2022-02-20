@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -36,11 +35,12 @@ namespace DistributedWebCrawler.Core
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, $"Http error when getting robots.txt for host: {host}");
+                var exceptionMessage = ex.GetBaseException().Message;
+                _logger.LogError("Http error when getting robots.txt. {exceptionMessage}", exceptionMessage);
             }
             catch (OperationCanceledException ex)
             {
-                _logger.LogError(ex, $"Timeout occurred when getting robots.txt for host {host}");
+                _logger.LogError("Timeout occurred when getting robots.txt. {exceptionMessage}", ex.Message);
             }
 
             return false;

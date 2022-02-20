@@ -49,7 +49,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             }
             catch (IOException ex)
             {
-                _logger.LogCritical(ex.ToString());
+                _logger.LogCritical(ex, "Exception thrown while disposing RabbitMQ connection");
             }
         }
 

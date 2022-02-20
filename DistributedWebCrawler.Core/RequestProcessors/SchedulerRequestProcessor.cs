@@ -60,11 +60,11 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
         public async Task<QueuedItemResult> ProcessItemAsync(SchedulerRequest schedulerRequest, CancellationToken cancellationToken = default)
         {
-            // Scheduler queue start
-
             if (schedulerRequest.CurrentCrawlDepth > _schedulerSettings.MaxCrawlDepth)
             {
-                _logger.LogError($"Not processing {schedulerRequest.Uri}. Maximum crawl depth exceeded (curremt: {schedulerRequest.CurrentCrawlDepth}, max: {_schedulerSettings.MaxCrawlDepth})");
+                _logger.LogError("Maximum crawl depth exceeded (current: {currentDepth}, max: {maxDepth})", 
+                    schedulerRequest.CurrentCrawlDepth, _schedulerSettings.MaxCrawlDepth);
+
                 return schedulerRequest.Failed(SchedulerFailure.MaximumCrawlDepthReached.AsErrorCode());
             }
 
@@ -91,7 +91,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
                         if (!allowed)
                         {
-                            _logger.LogDebug($"Path {path} disallowed for host {schedulerRequest.Uri} by robots.txt");
+                            _logger.LogDebug("Path {path} disallowed for request", path);
                         }
 
                         return allowed;
@@ -120,7 +120,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
             if (!pathsToVisit.Any())
             {
-                _logger.LogDebug($"Not processing request for host: {schedulerRequest.Uri}. No unvisited paths");
+                _logger.LogDebug("No unvisited paths for request");
                 return schedulerRequest.Success(new SchedulerSuccess(schedulerRequest.Uri, Enumerable.Empty<string>()));
             }
 
@@ -144,12 +144,12 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                 if (mode == PathCompareMode.Include)
                 {
                     if (contains) validPaths.Add(path);
-                    else _logger.LogDebug($"Excluding '{fullUri}'. Domain not in IncludeDomains list");
+                    else _logger.LogDebug("Excluding {disallowedUri}. Domain not in IncludeDomains list", fullUri);
                 }
                 else if (mode == PathCompareMode.Exclude)
                 {
                     if (!contains) validPaths.Add(path);
-                    else _logger.LogDebug($"Excluding '{fullUri}'. Domain is in ExcludeDomains list");
+                    else _logger.LogDebug("Excluding {disallowedUri}. Domain is in ExcludeDomains list", fullUri);
                 }                
             }
 

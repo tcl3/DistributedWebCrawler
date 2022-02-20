@@ -41,7 +41,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
             if (string.IsNullOrEmpty(content))
             {
-                _logger.LogError($"Item with ID: '{parseRequest.ContentId}', not found in ContentStore");
+                _logger.LogError("Item with ID: '{contentId}', not found in ContentStore", parseRequest.ContentId);
                 return parseRequest.Failed(ParseFailure.NoItemInContentStore.AsErrorCode());
             }
 
@@ -52,7 +52,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                 return parseRequest.Failed(ParseFailure.NoLinksFound.AsErrorCode());
             }
 
-            _logger.LogDebug($"{links.Count} links successfully parsed from URI {parseRequest.Uri}");
+            _logger.LogDebug("{linkCount} links successfully parsed", links.Count);
 
             var linksGroupedByHost = links.ToLookup(k => GetHostFromHref(k.Href, parseRequest.Uri), v => v.Href);
 
@@ -71,7 +71,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                     Paths = paths,
                 };
 
-                _logger.LogDebug($"Request sent to scheduler for host {currentUri}");
+                _logger.LogDebug("Request sent to scheduler for host {uri}", currentUri);
 
                 _schedulerRequestProducer.Enqueue(schedulerRequest);
             }
@@ -88,13 +88,13 @@ namespace DistributedWebCrawler.Core.RequestProcessors
             // See here: https://github.com/dotnet/runtime/issues/22718
             if (!((Uri.TryCreate(href, UriKind.Absolute, out var absoluteUri) && (!absoluteUri.IsFile)) || Uri.TryCreate(baseAddress, href, out absoluteUri)))
             {
-                _logger.LogInformation($"Error while parsing link: invalid URI {href}");
+                _logger.LogInformation("Error while parsing link: invalid URI {link}", href);
                 return null;
             }
 
             if (absoluteUri.Scheme != Uri.UriSchemeHttps && absoluteUri.Scheme != Uri.UriSchemeHttp)
             {
-                _logger.LogDebug($"Not following link with scheme type {absoluteUri.Scheme}");
+                _logger.LogDebug("Not following link with scheme type {scheme}", absoluteUri.Scheme);
                 return null;
             }
 
