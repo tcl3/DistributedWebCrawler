@@ -23,7 +23,7 @@ namespace DistributedWebCrawler.Console
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
-                
+
                 var logger = new LoggerConfiguration()
                     .ReadFrom
                     .Configuration(configuration)
