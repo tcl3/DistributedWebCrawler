@@ -48,7 +48,7 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
             fixture.Customize<SchedulerRequest>(composer =>
             {
                 var requestUri = _uri ?? fixture.Create<Uri>();
-                var result = composer.FromFactory(() => new SchedulerRequest(requestUri))
+                var result = composer.FromFactory(() => new SchedulerRequest(requestUri) { TraceId = fixture.Create<Guid>() })
                     .With(x => x.Paths, _paths)
                     .With(x => x.CurrentCrawlDepth, _currentCrawlDepth);
 

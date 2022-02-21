@@ -101,7 +101,10 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                 var exists = await _robotsCacheReader.GetRobotsTxtAsync(schedulerRequest.Uri, IfRobotsExists, cancellationToken).ConfigureAwait(false);
                 if (!exists)
                 {
-                    var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest.Id);
+                    var robotsRequest = new RobotsRequest(schedulerRequest.Uri, schedulerRequest.Id)
+                    {
+                        TraceId = schedulerRequest.TraceId,
+                    };
                     _robotsRequestProducer.Enqueue(robotsRequest);
                     return schedulerRequest.Waiting();
                 }

@@ -44,7 +44,8 @@ namespace DistributedWebCrawler.Core.Seeding
             {
                 var ingestRequest = new SchedulerRequest(new Uri(uri.GetLeftPart(UriPartial.Authority), UriKind.Absolute))
                 { 
-                    Paths = new[] { uri.PathAndQuery }
+                    Paths = new[] { uri.PathAndQuery },
+                    TraceId = Guid.NewGuid(),
                 };
 
                 producer.Enqueue(ingestRequest);

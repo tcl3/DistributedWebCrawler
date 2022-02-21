@@ -133,7 +133,8 @@ namespace DistributedWebCrawler.Core
                             var ingestRequest = new IngestRequest(entry.Uri)
                             {
                                 CurrentCrawlDepth = schedulerRequest.CurrentCrawlDepth,
-                                MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth
+                                MaxDepthReached = schedulerRequest.CurrentCrawlDepth >= _schedulerSettings.MaxCrawlDepth,
+                                TraceId = schedulerRequest.TraceId
                             };
 
                             if (!_activeQueueEntries.TryAdd(ingestRequest.Id, entry))

@@ -69,6 +69,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                 {
                     CurrentCrawlDepth = parseRequest.CurrentCrawlDepth + 1,
                     Paths = paths,
+                    TraceId = Guid.NewGuid(),
                 };
 
                 _logger.LogDebug("Request sent to scheduler for host {uri}", currentUri);

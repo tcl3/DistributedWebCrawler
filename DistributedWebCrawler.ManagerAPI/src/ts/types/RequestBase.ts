@@ -5,5 +5,6 @@ export interface RequestBase {
     
     uri: string;
     id: string;
+    traceId: string | null;
     createdAt: Date;
 }

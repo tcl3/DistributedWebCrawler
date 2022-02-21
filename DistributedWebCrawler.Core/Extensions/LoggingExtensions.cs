@@ -13,7 +13,7 @@ namespace DistributedWebCrawler.Core.Extensions
             {
                 ["componentName"] = componentInfo.ComponentName,
                 ["componentId"] = componentInfo.ComponentId,
-                ["nodeId"] = componentInfo.NodeId
+                ["nodeId"] = componentInfo.NodeId,
             });
         }
 
@@ -23,6 +23,7 @@ namespace DistributedWebCrawler.Core.Extensions
             {
                 ["requestId"] = request.Id,
                 ["requestUri"] = request.Uri,
+                ["traceId"] = request.TraceId,
             });
         }
     }

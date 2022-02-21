@@ -17,6 +17,7 @@ namespace DistributedWebCrawler.Core.Models
         }
         public Uri Uri { get; }
         public Guid Id { get; init; }
+        public Guid? TraceId { get; init; }
         public DateTimeOffset CreatedAt { get; init; }
     }
 }
