@@ -1,4 +1,5 @@
 ﻿using DistributedWebCrawler.Core.Tests.Attributes;
+using FluentAssertions;
 using System;
 using System.IO;
 using System.Linq;
@@ -250,20 +251,25 @@ namespace DistributedWebCrawler.Core.Tests
             var buffer = new byte[expectedByteCount];
 
             var waitHandle = new ManualResetEvent(false);
-            var asyncState = "Test";
+            var expectedAsyncState = "Test";
+
+            object? asyncState = null;
+            int bytesRead = -1;
             var callback = new AsyncCallback(ar => 
             {
-                Assert.Equal(ar.AsyncState, asyncState);
-                var bytesRead = byteCountingStream.EndRead(ar);
-                Assert.Equal(bytesRead, bytesReceived);
-                Assert.Equal(expectedByteCount, bytesReceived);
-                Assert.Equal(0, bytesSent);
+                asyncState = ar.AsyncState;
+                bytesRead = byteCountingStream.EndRead(ar);
                 waitHandle.Set();
             });
 
-            var ar = byteCountingStream.BeginRead(buffer, 0, buffer.Length, callback, asyncState);
+            var ar = byteCountingStream.BeginRead(buffer, 0, buffer.Length, callback, expectedAsyncState);
             waitHandle.WaitOne(testTimeout);
+
             Assert.True(ar.IsCompleted);
+            Assert.Equal(asyncState, expectedAsyncState);
+            Assert.Equal(bytesRead, bytesReceived);
+            Assert.Equal(expectedByteCount, bytesReceived);
+            Assert.Equal(0, bytesSent);
         }
 
         [Theory]
@@ -304,6 +310,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             Assert.Equal(0, bytesReceived);
             Assert.Equal(buffer.Length, bytesSent);
+            Assert.Equal(buffer, innerStream.ToArray());
         }
 
         [Theory]
@@ -324,6 +331,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             Assert.Equal(0, bytesReceived);
             Assert.Equal(buffer.Length, bytesSent);
+            Assert.Equal(buffer, innerStream.ToArray());
         }
 
         [Theory]
@@ -344,6 +352,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             Assert.Equal(0, bytesReceived);
             Assert.Equal(buffer.Length, bytesSent);
+            Assert.Equal(buffer, innerStream.ToArray());
         }
 
         [Theory]
@@ -364,6 +373,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             Assert.Equal(0, bytesReceived);
             Assert.Equal(buffer.Length, bytesSent);
+            Assert.Equal(buffer, innerStream.ToArray());
         }
 
         [Theory]
@@ -384,6 +394,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             Assert.Equal(0, bytesReceived);
             Assert.Equal(buffer.Length, bytesSent);
+            Assert.Equal(buffer, innerStream.ToArray());
         }
 
         [Theory]
@@ -404,6 +415,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             Assert.Equal(0, bytesReceived);
             Assert.Equal(1, bytesSent);
+            Assert.Equal(buffer.First(), innerStream.ToArray().First());
         }
 
         [Theory]
@@ -442,6 +454,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             Assert.Equal(expectedByteCount, bytesSent);
             Assert.Equal(0, bytesReceived);
+            Assert.Equal(buffer, innerStream.ToArray());
         }
 
         [Theory]
@@ -484,6 +497,7 @@ namespace DistributedWebCrawler.Core.Tests
             
             byteCountingStream.Dispose();
             Assert.True(disposeCalled);
+            Assert.Throws<ObjectDisposedException>(() => byteCountingStream.ReadByte());
         }
 
         [Theory]
@@ -502,6 +516,7 @@ namespace DistributedWebCrawler.Core.Tests
 
             await byteCountingStream.DisposeAsync();
             Assert.True(disposeCalled);
+            Assert.Throws<ObjectDisposedException>(() => byteCountingStream.ReadByte());
         }
 
         [Theory]
@@ -519,7 +534,9 @@ namespace DistributedWebCrawler.Core.Tests
             };
 
             byteCountingStream.Close();
+
             Assert.True(disposeCalled);
+            Assert.Throws<ObjectDisposedException>(() => byteCountingStream.ReadByte());
         }
 
         [Theory]
