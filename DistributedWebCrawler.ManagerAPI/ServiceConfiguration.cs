@@ -29,7 +29,11 @@ namespace DistributedWebCrawler.ManagerAPI
                 configuration.RootPath = "wwwroot";
             });
 
-            if (configuration.GetValue<bool>("DevMode"))
+            var devMode = configuration.GetValue<bool?>("DEV_MODE") 
+                ?? configuration.GetValue<bool?>("DevMode") 
+                ?? false;
+
+            if (devMode)
             {
                 services.UseCustomDns(configuration.GetSection("DnsResolverSettings"));
                 services.AddInMemoryCrawlerManager();
