@@ -15,8 +15,14 @@ namespace DistributedWebCrawler.Core.Tests
             NodeStatusProvider sut)
         {
             streamManagerMock.Invocations.Clear();
-
+            
+            streamManagerMock.SetupGet(x => x.TotalBytesSent).Returns(2);
+            streamManagerMock.SetupGet(x => x.TotalBytesReceived).Returns(3);
+            
             var result = sut.CurrentNodeStatus;
+            
+            Assert.Equal(3, result.TotalBytesDownloaded);
+            Assert.Equal(2, result.TotalBytesUploaded);
 
             streamManagerMock.VerifyGet(x => x.TotalBytesSent, Times.Once());
             streamManagerMock.VerifyGet(x => x.TotalBytesReceived, Times.Once());
