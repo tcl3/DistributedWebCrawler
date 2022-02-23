@@ -145,7 +145,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
                 var urlContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
-                var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+                var mediaType = response.Content.Headers.ContentType?.MediaType;
 
                 var contentId = await _contentStore.SaveContentAsync(urlContent, cancellationToken).ConfigureAwait(false);
 
@@ -157,11 +157,11 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                     response.StatusCode,
                     handleRedirectsResult.Redirects);
 
-                if (ingestResult.ContentId.HasValue && ingestResult.MediaType != null)
+                if (ingestResult.MediaType != null)
                 {
                     if (ParseableMediaTypes.Contains(ingestResult.MediaType))
                     {
-                        var parseRequest = new ParseRequest(item.Uri, ingestResult.ContentId.Value, item.CurrentCrawlDepth)
+                        var parseRequest = new ParseRequest(item.Uri, ingestResult.ContentId, item.CurrentCrawlDepth)
                         {
                             TraceId = item.TraceId
                         };

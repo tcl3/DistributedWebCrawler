@@ -12,7 +12,7 @@ namespace DistributedWebCrawler.Core.Models
         public DateTimeOffset RequestStartTime { get; init; }
         public TimeSpan TimeTaken { get; init; }
         public HttpStatusCode? HttpStatusCode { get; init; }
-        public string? MediaType { get; init; } = string.Empty;
+        public string? MediaType { get; init; }
         public IEnumerable<RedirectResult> Redirects { get; init; } = Enumerable.Empty<RedirectResult>();
 
         public IngestFailureReason Error { get; init; }

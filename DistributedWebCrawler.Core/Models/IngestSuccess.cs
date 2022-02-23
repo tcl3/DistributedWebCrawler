@@ -19,9 +19,9 @@ namespace DistributedWebCrawler.Core.Models
         public Uri Uri { get; init; }
         public DateTimeOffset RequestStartTime { get; init; }
         public TimeSpan TimeTaken { get; init; }
-        public Guid? ContentId { get; init; } 
+        public Guid ContentId { get; init; } 
         public int ContentLength { get; init; }
-        public string MediaType { get; init; } = string.Empty;
+        public string? MediaType { get; init; }
 
         public IEnumerable<RedirectResult> Redirects { get; init; } = Enumerable.Empty<RedirectResult>();
 
@@ -30,7 +30,7 @@ namespace DistributedWebCrawler.Core.Models
             DateTimeOffset requestStartTime, 
             Guid contentId, 
             int contentLength, 
-            string mediaType, 
+            string? mediaType, 
             HttpStatusCode statusCode, 
             IEnumerable<RedirectResult>? redirects = null)
         {
