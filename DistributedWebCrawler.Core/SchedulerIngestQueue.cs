@@ -122,7 +122,7 @@ namespace DistributedWebCrawler.Core
 
                     var entry = await _nextPathForHostQueue.DequeueAsync(cancellationToken).ConfigureAwait(false);
 
-                    using (_logger.BeginScope("SchedulerIngestQueue entry {uri}", entry.Uri))
+                    using (_logger.BeginIngestQueueScope(entry.Uri, entry.SchedulerRequest))
                     {
                         var schedulerRequest = entry.SchedulerRequest;
 

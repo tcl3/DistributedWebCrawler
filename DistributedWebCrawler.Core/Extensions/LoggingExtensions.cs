@@ -26,5 +26,16 @@ namespace DistributedWebCrawler.Core.Extensions
                 ["traceId"] = request.TraceId,
             });
         }
+
+        public static IDisposable BeginIngestQueueScope(this ILogger logger, Uri ingestUri, SchedulerRequest schedulerRequest)
+        {
+            return logger.BeginScope(new Dictionary<string, object?>
+            {
+                ["ingestQueueUri"] = ingestUri,
+                ["requestId"] = schedulerRequest.Id,
+                ["requestUri"] = schedulerRequest.Uri,
+                ["traceId"] = schedulerRequest.TraceId,
+            });
+        }
     }
 }
