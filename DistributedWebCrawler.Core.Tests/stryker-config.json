@@ -1,0 +1,14 @@
+{
+  "stryker-config": {
+    "mutate": [
+      "!**/Extensions/LoggingExtensions.cs"
+    ],
+    "ignore-methods": [
+      "Log*",
+      "Begin*",
+      "*Exception.ctor",
+      "ToString",
+      "ConfigureAwait"
+    ]
+  }
+}
