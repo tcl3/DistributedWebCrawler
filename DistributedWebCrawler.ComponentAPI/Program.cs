@@ -1,4 +1,4 @@
-using System.Net;
+using Serilog;
 
 namespace DistributedWebCrawler.ComponentAPI
 {
@@ -6,20 +6,38 @@ namespace DistributedWebCrawler.ComponentAPI
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            try
+            {
+                var builder = WebApplication.CreateBuilder(args);
 
-            var configuration = new ConfigurationBuilder()
-                           .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-                           .AddEnvironmentVariables()
-                           .Build();
+                var configuration = new ConfigurationBuilder()
+                               .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                               .AddEnvironmentVariables()
+                               .Build();
 
-            ServiceConfiguration.ConfigureServices(builder.Services, configuration);
+                var logger = new LoggerConfiguration()
+                        .ReadFrom
+                        .Configuration(configuration)
+                        .CreateLogger();
 
-            builder.Services.AddHostedService<ComponentBackgroundService>();
+                Log.Logger = logger;
 
-            var app = builder.Build();
+                ServiceConfiguration.ConfigureServices(builder.Services, configuration, logger);
 
-            app.Run();
+                builder.Services.AddHostedService<ComponentBackgroundService>();
+
+                var app = builder.Build();
+
+                app.Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }

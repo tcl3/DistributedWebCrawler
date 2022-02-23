@@ -13,17 +13,12 @@ namespace DistributedWebCrawler.ComponentAPI
 {
     internal static class ServiceConfiguration
     {
-        public static IServiceProvider ConfigureServices(IServiceCollection services, IConfiguration configuration)
+        public static IServiceProvider ConfigureServices(IServiceCollection services,
+            IConfiguration configuration, Serilog.ILogger logger)
         {
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
-
-                var logger = new LoggerConfiguration()
-                    .ReadFrom
-                    .Configuration(configuration)
-                    .CreateLogger();
-
                 loggingBuilder.AddSerilog(logger);
             });
 
