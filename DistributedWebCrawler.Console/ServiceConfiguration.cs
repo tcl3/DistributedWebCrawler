@@ -11,24 +11,13 @@ namespace DistributedWebCrawler.Console
 {
     internal static class ServiceConfiguration
     {
-        public static ICrawlerManager CreateCrawler(IConfiguration configuration)
-        {
-            return ConfigureServices(configuration).GetRequiredService<ICrawlerManager>();
-        }
-
-        public static IServiceProvider ConfigureServices(IConfiguration configuration)
+        public static IServiceProvider ConfigureServices(IConfiguration configuration, Serilog.ILogger logger)
         {
             var services = new ServiceCollection();
 
             services.AddLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
-
-                var logger = new LoggerConfiguration()
-                    .ReadFrom
-                    .Configuration(configuration)
-                    .CreateLogger();
-
                 loggingBuilder.AddSerilog(logger);
             });
 

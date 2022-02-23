@@ -1,29 +1,47 @@
 ﻿using DistributedWebCrawler.Core;
 using DistributedWebCrawler.Core.Enums;
+using DistributedWebCrawler.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using System;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Console
 {
-    static class Program
+    internal class Program
     {
         static async Task Main(string[] args)
-        {
+        {            
             var configuration = new ConfigurationBuilder()
-                           .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-                           .Build();
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .Build();
 
-            var crawlerManager = ServiceConfiguration.CreateCrawler(configuration);
+            var logger = new LoggerConfiguration()
+                    .ReadFrom
+                    .Configuration(configuration)
+                    .CreateLogger();
+            
+            Log.Logger = logger;            
 
-           await crawlerManager.StartAsync(CrawlerRunningState.Running);
+            try
+            {
+                var serviceProvider = ServiceConfiguration.ConfigureServices(configuration, logger);
 
-            // For testing pause / resume functionality
-            //await Task.Delay(5000);
-            //await crawlerManager.PauseAsync();
-            //await Task.Delay(40000);
-            //await crawlerManager.ResumeAsync();
+                var crawlerManager = serviceProvider.GetRequiredService<ICrawlerManager>();
 
-            await crawlerManager.WaitUntilCompletedAsync();
-        }        
+                await crawlerManager.StartAsync(CrawlerRunningState.Running);
+
+                await crawlerManager.WaitUntilCompletedAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Uncaught exception");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
+        }
     }
 }
