@@ -73,6 +73,18 @@ namespace DistributedWebCrawler.Core.Tests
             Assert.NotNull(result);
             eventReceiverFactoryMock.Verify(x =>
                 x.Get<TestSuccess, ErrorCode<TestFailure>>(), Times.Once());
-        }        
+        }
+
+        [Theory]
+        [MoqAutoData]
+        public void GetEnumeratorShouldReturnAllEventReceivers(
+            [Frozen] IEventReceiverFactory eventReceiverFactory,
+            EventReceiverCollection sut)
+        {
+            var result = sut.GetEnumerator();
+
+            Assert.NotNull(result);
+            Assert.Equal(eventReceiverFactory.GetAll().GetEnumerator(), result);
+        }
     }
 }
