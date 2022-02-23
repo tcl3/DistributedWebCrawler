@@ -1,4 +1,4 @@
-using DistributedWebCrawler.ManagerAPI.Hubs;
+using Serilog;
 
 namespace DistributedWebCrawler.ManagerAPI
 {
@@ -6,18 +6,36 @@ namespace DistributedWebCrawler.ManagerAPI
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            try
+            {
+                var builder = WebApplication.CreateBuilder(args);
 
-            var configuration = ServiceConfiguration.BuildConfiguration();
-            
-            // Add services to the container.
-            ServiceConfiguration.ConfigureServices(builder.Services, configuration);
+                var configuration = ServiceConfiguration.BuildConfiguration();
 
-            var app = builder.Build();
+                var logger = new LoggerConfiguration()
+                    .ReadFrom
+                    .Configuration(configuration)
+                    .CreateLogger();
 
-            ServiceConfiguration.ConfigureMiddleware(app);
+                Log.Logger = logger;
 
-            app.Run();
+                // Add services to the container.
+                ServiceConfiguration.ConfigureServices(builder.Services, configuration, logger);
+
+                var app = builder.Build();
+
+                ServiceConfiguration.ConfigureMiddleware(app);
+                
+                app.Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }            
         }
     }
 }
