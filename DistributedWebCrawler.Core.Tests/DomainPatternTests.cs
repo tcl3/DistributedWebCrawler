@@ -41,6 +41,9 @@ namespace DistributedWebCrawler.Core.Tests
         [InlineData("test", "te")]
         [InlineData("t*est", "te")]
         [InlineData("t*est", "test1")]
+        [InlineData("*.google.com", "oogle.com")]
+        [InlineData("*.google.com", "ogle.com")]
+        [InlineData("google.com", "ogle.com")]
         public void MatchShouldReturnFalseForNonMatchingPattern(string nonMatchingPattern, string domain)
         {
             MatchTest(nonMatchingPattern, domain, expectedResult: false);
