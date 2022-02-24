@@ -58,9 +58,7 @@ namespace DistributedWebCrawler.Core.RequestProcessors
 
             foreach (var currentGroup in linksGroupedByHost.Where(x => x.Key != null))
             {
-                var currentUri = currentGroup.Key;
-
-                if (currentUri == null) continue;
+                var currentUri = currentGroup.Key!;
 
                 var paths = currentGroup.ToList();
 

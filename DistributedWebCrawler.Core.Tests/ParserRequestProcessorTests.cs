@@ -1,10 +1,13 @@
 ﻿using AutoFixture.Xunit2;
+using DistributedWebCrawler.Core.Extensions;
 using DistributedWebCrawler.Core.Interfaces;
 using DistributedWebCrawler.Core.Models;
 using DistributedWebCrawler.Core.RequestProcessors;
 using DistributedWebCrawler.Core.Tests.Attributes;
 using DistributedWebCrawler.Core.Tests.Collections;
 using Moq;
+using System;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -42,6 +45,7 @@ namespace DistributedWebCrawler.Core.Tests
             var failure = Assert.IsAssignableFrom<QueuedItemResult<ErrorCode<ParseFailure>>>(result);
 
             Assert.Equal(ParseFailure.NoLinksFound, failure.Result.Error);
+
             requestProducerMock.Verify(x => x.Enqueue(It.IsAny<SchedulerRequest>()), Times.Never());
         }
 
@@ -54,8 +58,10 @@ namespace DistributedWebCrawler.Core.Tests
         {
             var result = await sut.ProcessItemAsync(request);
 
-            var success = Assert.IsAssignableFrom<QueuedItemResult<ParseSuccess>>(result);            
-            requestProducerMock.Verify(x => x.Enqueue(It.IsAny<SchedulerRequest>()), Times.Once());
+            var success = Assert.IsAssignableFrom<QueuedItemResult<ParseSuccess>>(result);
+            
+            Assert.Equal(request.Uri, success.Result.Uri);
+            requestProducerMock.Verify(x => x.Enqueue(It.Is(IsValidSchedulerRequest(request))), Times.Once());
         }
 
         [Theory]
@@ -81,8 +87,8 @@ namespace DistributedWebCrawler.Core.Tests
         {
             var result = await sut.ProcessItemAsync(request);
 
-            var success = Assert.IsAssignableFrom<QueuedItemResult<ParseSuccess>>(result);            
-            requestProducerMock.Verify(x => x.Enqueue(It.IsAny<SchedulerRequest>()), Times.Once());
+            var success = Assert.IsAssignableFrom<QueuedItemResult<ParseSuccess>>(result);
+            requestProducerMock.Verify(x => x.Enqueue(It.Is(IsValidSchedulerRequest(request))), Times.Once());
         }
 
         [Theory]
@@ -98,6 +104,12 @@ namespace DistributedWebCrawler.Core.Tests
 
             var success = Assert.IsAssignableFrom<QueuedItemResult<ParseSuccess>>(result);
             requestProducerMock.Verify(x => x.Enqueue(It.IsAny<SchedulerRequest>()), Times.Never());
+        }
+
+        private static Expression<Func<SchedulerRequest, bool>> IsValidSchedulerRequest(ParseRequest parseRequest)
+        {
+            return schedulerRequest => 
+            schedulerRequest.CurrentCrawlDepth == parseRequest.CurrentCrawlDepth + 1;
         }
     }
 }
