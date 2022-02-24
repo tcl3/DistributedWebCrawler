@@ -79,7 +79,7 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
             HttpStatusCode statusCode = HttpStatusCode.OK,
             string content = "",
             string? locationHeaderValue = null,
-            string? contentTypeHeaderValue = null)
+            string? contentTypeHeaderValue = "text/plain")
         {
             _statusCode = statusCode;
             _content = content;
@@ -100,11 +100,11 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
                 if (_content != null)
                 {
                     var content = new StringContent(_content);
-                    
+
+                    content.Headers.Remove("Content-Type");
                     // Done this way so that potentially invalid content types can be used
                     if (_contentTypeHeaderValue != null)
                     {
-                        content.Headers.Remove("Content-Type");
                         content.Headers.TryAddWithoutValidation("Content-Type", _contentTypeHeaderValue);
                     }
 
@@ -113,7 +113,7 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
 
                 if (_locationHeaderValue != null)
                 {
-                    result = result.Do(x => x.Headers.Location = new Uri(_locationHeaderValue));
+                    result = result.Do(x => x.Headers.TryAddWithoutValidation("Location", _locationHeaderValue));
                 }
 
                 return result;

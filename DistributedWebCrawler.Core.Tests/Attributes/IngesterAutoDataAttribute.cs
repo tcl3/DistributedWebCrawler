@@ -4,14 +4,14 @@ using System.Net;
 
 namespace DistributedWebCrawler.Core.Tests.Attributes
 {
-    internal class IngesterAutoDataAttribute : MoqAutoDataAttribute
+    internal class IngesterAutoDataAttribute : MoqInlineAutoDataAttribute
     {
 
         public IngesterAutoDataAttribute(
             bool maxDepthReached = false,
             HttpStatusCode statusCode = HttpStatusCode.OK,
             string? locationHeaderValue = null,
-            string? contentTypeHeaderValue = null,
+            string? contentTypeHeaderValue = "text/plain",
             string content = "",
             string[]? includeMediaTypes = null,
             string[]? excludeMediaTypes = null,
