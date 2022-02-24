@@ -31,7 +31,8 @@ namespace DistributedWebCrawler.Core.Tests
 
             var result = await sut.ProcessItemAsync(request);
 
-            Assert.IsAssignableFrom<QueuedItemResult<RobotsDownloaderSuccess>>(result);
+            var success = Assert.IsAssignableFrom<QueuedItemResult<RobotsDownloaderSuccess>>(result);
+            Assert.Equal(request.Uri, success.Result.Uri);
             keyValueStoreMock.Verify(x => x.GetAsync<SchedulerRequest>(It.IsAny<string>()), Times.Once());
             keyValueStoreMock.Verify(x => x.RemoveAsync(It.IsAny<string>()), Times.Once());
             schedulerRequestProducerMock.Verify(x => x.Enqueue(schedulerRequest), Times.Once());
