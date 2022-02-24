@@ -13,7 +13,7 @@ namespace DistributedWebCrawler.Core.Tests
         private static readonly Guid TestObjectValue = Guid.NewGuid();
 
         [Fact]
-        public async Task PutStringWithGet()
+        public async Task PutStringThenGet()
         {
             var sut = new InMemoryKeyValueStore();
             await sut.PutAsync(TestKey, TestStringValue);
@@ -22,11 +22,41 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Fact]
-        public async Task PutObjectWithGet()
+        public async Task PutStringWithExpiryThenGet()
+        {
+            var fixedTime = DateTimeOffset.Now;
+            SystemClock.DateTimeOffsetNow = () => fixedTime;
+
+            var sut = new InMemoryKeyValueStore();
+            
+            await sut.PutAsync(TestKey, TestStringValue);
+            SystemClock.DateTimeOffsetNow = () => fixedTime + TimeSpan.FromMilliseconds(1);
+
+            var result = await sut.GetAsync(TestKey);
+            Assert.Equal(TestStringValue, result);
+        }
+
+        [Fact]
+        public async Task PutObjectThenGet()
         {
             var sut = new InMemoryKeyValueStore();
             await sut.PutAsync(TestKey, TestObjectValue);
             var result = await sut.GetAsync<Guid>(TestKey);
+            Assert.Equal(TestObjectValue, result);
+        }
+
+        [Fact]
+        public async Task PutObjectWithExpiryThenGet()
+        {
+            var fixedTime = DateTimeOffset.Now;
+            SystemClock.DateTimeOffsetNow = () => fixedTime;
+
+            var sut = new InMemoryKeyValueStore();
+            
+            await sut.PutAsync(TestKey, TestObjectValue, TimeSpan.FromMilliseconds(1));
+            SystemClock.DateTimeOffsetNow = () => fixedTime + TimeSpan.FromMilliseconds(1);
+            var result = await sut.GetAsync<Guid>(TestKey);
+            
             Assert.Equal(TestObjectValue, result);
         }
 
