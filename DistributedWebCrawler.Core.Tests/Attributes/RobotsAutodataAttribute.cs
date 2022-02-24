@@ -2,8 +2,8 @@
 {
     internal class RobotsAutodataAttribute : MoqInlineAutoDataAttribute
     {
-        public RobotsAutodataAttribute(string? robotsContent, bool expectedResult)
-            : base(values: new object?[] { robotsContent, expectedResult})
+        public RobotsAutodataAttribute(string? robotsContent, bool expectedResult, bool shouldInvokeCallback)
+            : base(values: new object?[] { robotsContent, expectedResult, shouldInvokeCallback })
         {
 
         }
