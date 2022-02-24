@@ -14,14 +14,17 @@ namespace DistributedWebCrawler.Core.Tests
     {
 
     }
+
     public abstract class InMemoryEventReceiverTests<TSuccess, TFailure>
         where TSuccess : notnull
         where TFailure : notnull, IErrorCode
     {
         [MoqAutoData]
         [Theory]
-        public void EnsureOnCompletedEventIsCalled([Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore, 
-            InMemoryEventReceiver<TSuccess, TFailure> sut, ItemCompletedEventArgs<TSuccess> args)
+        public void EnsureOnCompletedEventIsCalled(
+            [Frozen] InMemoryEventStore<TSuccess, TFailure> eventStore, 
+            InMemoryEventReceiver<TSuccess, TFailure> sut, 
+            ItemCompletedEventArgs<TSuccess> args)
         {
             IEventReceiver castedSut = sut;
             var eventCalled = false;
@@ -36,17 +39,24 @@ namespace DistributedWebCrawler.Core.Tests
                 return Task.CompletedTask;
             }
 
+            var initialDelegateCount = eventStore.OnCompletedAsyncHandler!.GetInvocationList().Length;
+
             sut.OnCompletedAsync += OnCompletedAsync;
             castedSut.OnCompletedAsync += OnCompletedAsync;
 
             Assert.NotNull(eventStore.OnCompletedAsyncHandler);
-            
+
+            var x = eventStore.OnCompletedAsyncHandler!.GetInvocationList();
+            Assert.Equal(initialDelegateCount + 2, eventStore.OnCompletedAsyncHandler!.GetInvocationList().Length);
+
             eventStore.OnCompletedAsyncHandler!(this, args);
             Assert.True(eventCalled);
 
             sut.OnCompletedAsync -= OnCompletedAsync;
             castedSut.OnCompletedAsync -= OnCompletedAsync;
             eventCalled = false;
+
+            Assert.Equal(initialDelegateCount, eventStore.OnCompletedAsyncHandler!.GetInvocationList().Length);
 
             eventStore.OnCompletedAsyncHandler!(this, args);
 
@@ -71,10 +81,13 @@ namespace DistributedWebCrawler.Core.Tests
                 return Task.CompletedTask;
             }
 
+            var initialDelegateCount = eventStore.OnFailedAsyncHandler!.GetInvocationList().Length;
+
             sut.OnFailedAsync += OnFailedAsync;
             castedSut.OnFailedAsync += OnFailedAsync;
 
             Assert.NotNull(eventStore.OnFailedAsyncHandler);
+            Assert.Equal(initialDelegateCount + 2, eventStore.OnFailedAsyncHandler!.GetInvocationList().Length);
 
             eventStore.OnFailedAsyncHandler!(this, args);
             Assert.True(eventCalled);
@@ -82,6 +95,8 @@ namespace DistributedWebCrawler.Core.Tests
             sut.OnFailedAsync -= OnFailedAsync;
             castedSut.OnFailedAsync -= OnFailedAsync;
             eventCalled = false;
+
+            Assert.Equal(initialDelegateCount, eventStore.OnFailedAsyncHandler!.GetInvocationList().Length);
 
             eventStore.OnFailedAsyncHandler!(this, args);
 
@@ -105,15 +120,21 @@ namespace DistributedWebCrawler.Core.Tests
                 return Task.CompletedTask;
             }
 
+            var initialDelegateCount = eventStore.OnComponentUpdateAsyncHandler!.GetInvocationList().Length;
+
             sut.OnComponentUpdateAsync += OnComponentUpdate;
 
             Assert.NotNull(eventStore.OnComponentUpdateAsyncHandler);
+            Assert.Equal(initialDelegateCount + 1, eventStore.OnComponentUpdateAsyncHandler!.GetInvocationList().Length);
 
             eventStore.OnComponentUpdateAsyncHandler!(this, args);
             Assert.True(eventCalled);
 
             sut.OnComponentUpdateAsync -= OnComponentUpdate;
             eventCalled = false;
+
+            Assert.Equal(initialDelegateCount, eventStore.OnComponentUpdateAsyncHandler!.GetInvocationList().Length);
+
             eventStore.OnComponentUpdateAsyncHandler!(this, args);
             Assert.False(eventCalled);
         }
