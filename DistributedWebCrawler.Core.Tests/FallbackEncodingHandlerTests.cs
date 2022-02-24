@@ -11,7 +11,7 @@ namespace DistributedWebCrawler.Core.Tests
     public class FallbackEncodingHandlerTests
     {
         [Theory]
-        [HttpClientWithFallbackEncodingAutoData(charset: null)]
+        [HttpClientWithFallbackEncodingAutoData(responseCharSet: null)]
         public async Task ResponseWithNullCharsetShouldNotBeModified(Uri uri, HttpClient client)
         {
             var response = await client.GetAsync(uri);
@@ -19,7 +19,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [HttpClientWithFallbackEncodingAutoData(charset: "UTF-16")]
+        [HttpClientWithFallbackEncodingAutoData(responseCharSet: "UTF-16")]
         public async Task ResponseWithValidCharsetShouldNotBeModified(Uri uri, HttpClient client)
         {
             var response = await client.GetAsync(uri);
@@ -27,7 +27,8 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [HttpClientWithFallbackEncodingAutoData(charset: "NOT-A-REAL-CHARSET")]
+        [HttpClientWithFallbackEncodingAutoData(responseCharSet: "NOT-A-REAL-CHARSET", fallbackEncoding: "UTF-8")]
+        [HttpClientWithFallbackEncodingAutoData(responseCharSet: "NOT-A-REAL-CHARSET", fallbackEncoding: "UTF-16")]
         public async Task ResponseWithInvalidCharsetShouldHaveCharsetReplacedByFallback(Uri uri, Encoding fallbackEncoding, HttpClient client)
         {
             var response = await client.GetAsync(uri);
@@ -35,7 +36,7 @@ namespace DistributedWebCrawler.Core.Tests
         }
 
         [Theory]
-        [HttpClientWithFallbackEncodingAutoData(charset: "NOT-A-REAL-CHARSET")]
+        [HttpClientWithFallbackEncodingAutoData(responseCharSet: "NOT-A-REAL-CHARSET")]
         public async Task ExceptionShouldBeThrownWhenTimeoutOccursWhileReadingResponse(Uri uri, HttpClient client)
         {
             var cts = new CancellationTokenSource();
