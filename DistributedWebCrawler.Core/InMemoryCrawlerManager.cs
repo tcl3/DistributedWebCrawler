@@ -13,7 +13,6 @@ namespace DistributedWebCrawler.Core
         private readonly IEnumerable<ICrawlerComponent> _crawlerComponents;
         private readonly ISeeder _seeder;
 
-        private bool _isSeeded;
         private bool _isStarted;
 
         public EventReceiverCollection Components { get; }
@@ -34,11 +33,7 @@ namespace DistributedWebCrawler.Core
 
             _isStarted = true;
 
-            if (!_isSeeded)
-            {
-                await _seeder.SeedAsync().ConfigureAwait(false);
-                _isSeeded = true;
-            }            
+            await _seeder.SeedAsync().ConfigureAwait(false);
 
             await ForEachComponent(c => c.StartAsync(startState), ComponentFilter.MatchAll).ConfigureAwait(false);
         }
