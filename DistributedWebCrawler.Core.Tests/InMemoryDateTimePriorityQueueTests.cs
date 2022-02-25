@@ -84,8 +84,6 @@ namespace DistributedWebCrawler.Core.Tests
             Assert.Equal(itemsToEnqueue, results.OrderBy(x => x));
         }
 
-
-
         [Fact]
         public async Task DequeueShouldNotReturnUntilEnqueueDateIsReached()
         {
@@ -93,12 +91,13 @@ namespace DistributedWebCrawler.Core.Tests
 
             var fixedTime = DateTimeOffset.Now;
             var enqueuePriority = fixedTime.AddMilliseconds(1);
+            TimeSpan? calculatedDelayTimespan = null;
             try
             {
                 SystemClock.DateTimeOffsetNow = () => fixedTime;
                 SystemClock.DelayAsync = (timespan, _) =>
                 {
-                    Assert.Equal(timespan, enqueuePriority - fixedTime);
+                    calculatedDelayTimespan = timespan;
                     return Task.CompletedTask;
                 };
 
@@ -109,8 +108,44 @@ namespace DistributedWebCrawler.Core.Tests
 
                 var dequeuedItem = await sut.DequeueAsync(cts.Token);
 
+                Assert.NotNull(calculatedDelayTimespan);
+                Assert.Equal(calculatedDelayTimespan!.Value, enqueuePriority - fixedTime);
                 Assert.Equal(itemToEnqueue, dequeuedItem);
             } 
+            finally
+            {
+                SystemClock.Reset();
+            }
+        }
+
+        [Fact]
+        public async Task DequeueShouldReturnImmediatelyIfEnqueuePriorityNotInFuture()
+        {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
+            var fixedTime = DateTimeOffset.Now;
+            var enqueuePriority = fixedTime;
+            TimeSpan? calculatedDelayTimespan = null;
+            try
+            {
+                SystemClock.DateTimeOffsetNow = () => fixedTime;
+                SystemClock.DelayAsync = (timespan, _) =>
+                {
+                    // This should not be called
+                    calculatedDelayTimespan = timespan;
+                    return Task.CompletedTask;
+                };
+
+                var sut = new InMemoryDateTimePriorityQueue<int>();
+
+                var itemToEnqueue = 1;
+                await sut.EnqueueAsync(itemToEnqueue, enqueuePriority, cts.Token);
+
+                var dequeuedItem = await sut.DequeueAsync(cts.Token);
+
+                Assert.Null(calculatedDelayTimespan);
+                Assert.Equal(itemToEnqueue, dequeuedItem);
+            }
             finally
             {
                 SystemClock.Reset();
