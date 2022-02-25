@@ -62,6 +62,17 @@ namespace DistributedWebCrawler.ManagerAPI
 
         public static WebApplication ConfigureMiddleware(WebApplication app)
         {
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path.Value == "/")
+                {
+                    context.Response.Redirect("/app");
+                    return;
+                }
+
+                await next();
+            });
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
