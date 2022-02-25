@@ -12,38 +12,55 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
 {
     internal class FakeHttpMessageHandlerCustomization : ICustomization
     {
-        private readonly string? _exceptionMessage;
-        private readonly bool _isCancelled;
+        private readonly HttpResponseEntry? _defaultResponseEntry;
+        private readonly Dictionary<Uri, HttpResponseEntry?> _responseLookup;
 
-        public FakeHttpMessageHandlerCustomization(bool isCancelled = false)
+        public FakeHttpMessageHandlerCustomization()
         {
-            _isCancelled = isCancelled;
+            _responseLookup = new();
         }
 
-        public FakeHttpMessageHandlerCustomization(string? exceptionMessage)
+        public FakeHttpMessageHandlerCustomization(IEnumerable<Uri> allowedUris)
         {
-            _exceptionMessage = exceptionMessage ?? "Test Exception";
+            _responseLookup = allowedUris.ToDictionary(k => k, v => (HttpResponseEntry?)null);
+        }
+
+        public FakeHttpMessageHandlerCustomization(bool isCancelled) : this()
+        {
+            _defaultResponseEntry = new HttpResponseEntry
+            {
+                IsCancelled = isCancelled,
+            };
+        }
+
+        public FakeHttpMessageHandlerCustomization(string? exceptionMessage) : this()
+        {
+            _defaultResponseEntry = new HttpResponseEntry
+            {
+                Exception = new HttpRequestException(exceptionMessage ?? "Test Exception")
+            };
+        }
+
+        public FakeHttpMessageHandlerCustomization(Dictionary<Uri, HttpResponseEntry?> responseLookup)
+        {
+            _responseLookup = responseLookup;
         }
 
         public void Customize(IFixture fixture)
         {
-            fixture.Customize<FakeHttpMessageHandler>(composer =>
+            fixture.Customize<FakeHttpMessageHandler>(composer => composer.FromFactory(() =>
             {
-                IPostprocessComposer<FakeHttpMessageHandler> result = composer;
-
-                if (_exceptionMessage != null)
+                var defaultResponseEntry = _defaultResponseEntry;
+                if (defaultResponseEntry == null)
                 {
-                    var exception = new HttpRequestException(_exceptionMessage);
-                    result = result.Do(x => x.SetException(exception));
+                    defaultResponseEntry = new HttpResponseEntry
+                    {
+                        ResponseMessage = fixture.Create<HttpResponseMessage>(),
+                    };
                 }
 
-                if (_isCancelled)
-                {
-                    result = result.Do(x => x.SetCancelled(true));
-                }
-
-                return result;
-            });
+                return new FakeHttpMessageHandler(_responseLookup, defaultResponseEntry);
+            }));
         }
     }
 }

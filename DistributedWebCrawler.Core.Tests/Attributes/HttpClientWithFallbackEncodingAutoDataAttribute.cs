@@ -23,7 +23,8 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
             }
 
             fixture.Customize(new HttpResponseMessageCharsetCustomization(responseCharSet))
-                   .Customize(new HttpClientCustomization<FallbackEncodingHandler>());
+                .Customize(new FakeHttpMessageHandlerCustomization())
+                .Customize(new HttpClientCustomization<FallbackEncodingHandler>());
 
             return fixture;
         }

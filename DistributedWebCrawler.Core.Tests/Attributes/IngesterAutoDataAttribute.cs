@@ -28,12 +28,14 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
                     maxContentLengthBytes >= 0 ? maxContentLengthBytes : null, 
                     maxConcurrentItems, 
                     maxRedirects),
-                
+
                 new HttpClientCustomization(
                     statusCode, 
                     content, 
                     locationHeaderValue,
                     contentTypeHeaderValue),
+
+                new FakeHttpMessageHandlerCustomization(),
             }, configureMembers: true)
         {
         }

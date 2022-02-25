@@ -1,44 +1,66 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Tests.Fakes
 {
-    public class FakeHttpMessageHandler : HttpMessageHandler
+    internal class HttpResponseEntry
     {
-        private readonly HttpResponseMessage _response;
-        private HttpRequestException? _exceptionToThrow;
-        private bool _isCancelled;
+        public HttpResponseMessage? ResponseMessage { get; set; }
+        public HttpRequestException? Exception { get; set; }
+        public bool IsCancelled { get; set; }
+    }
 
-        public FakeHttpMessageHandler(HttpResponseMessage response)
+    internal class FakeHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly IDictionary<Uri, HttpResponseEntry?> _responseLookup;
+
+        private readonly HttpResponseEntry? _defaultResponse;
+
+        public FakeHttpMessageHandler(IDictionary<Uri, HttpResponseEntry?> responseLookup, HttpResponseEntry? defaultResponse)
         {
-            _response = response;
+            _responseLookup = responseLookup;
+            _defaultResponse = defaultResponse;
         }
 
-        public void SetException(HttpRequestException exceptionToThrow)
+        public FakeHttpMessageHandler(HttpResponseEntry defaultResponse)
         {
-            _exceptionToThrow = exceptionToThrow;
-        }
-
-        public void SetCancelled(bool isCancelled)
-        {
-            _isCancelled = isCancelled;
-        }
+            _responseLookup = new Dictionary<Uri, HttpResponseEntry?>();
+            _defaultResponse = defaultResponse;
+        } 
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var responseTask = new TaskCompletionSource<HttpResponseMessage>();
-            if (_isCancelled)
+
+            if (request.RequestUri == null || !_responseLookup.Any() 
+                || (_responseLookup.TryGetValue(request.RequestUri, out var responseEntry) && responseEntry == null))
             {
-                responseTask.SetCanceled();
+                responseEntry = _defaultResponse ?? throw new InvalidOperationException($"No response set up for URI {request.RequestUri}");
             }
-            else if (_exceptionToThrow != null)
+
+            if (responseEntry != null)
             {
-                responseTask.SetException(_exceptionToThrow);
+                if (responseEntry.IsCancelled)
+                {
+                    responseTask.SetCanceled(cancellationToken);
+                }
+                else if (responseEntry.Exception != null)
+                {
+                    responseTask.SetException(responseEntry.Exception);
+                }
+                else if (responseEntry?.ResponseMessage != null)
+                {
+                    responseTask.SetResult(responseEntry.ResponseMessage);
+                }
             }
-            else
+
+            if (!responseTask.Task.IsCompleted)
             {
-                responseTask.SetResult(_response);
+                throw new HttpRequestException($"Response not set for URI {request.RequestUri}");
             }
 
             return responseTask.Task;

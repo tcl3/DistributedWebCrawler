@@ -1,5 +1,8 @@
 ﻿using AutoFixture;
 using DistributedWebCrawler.Core.Tests.Customizations;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 
 namespace DistributedWebCrawler.Core.Tests.Attributes
@@ -7,11 +10,30 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
     internal class HttpClientAutoDataAttribute : MoqAutoDataAttribute
     {
         public HttpClientAutoDataAttribute(
-            HttpStatusCode statusCode = HttpStatusCode.OK, 
+            HttpStatusCode statusCode = HttpStatusCode.OK,
             string content = "",
             string? locationHeaderValue = null,
-            string? contentTypeHeaderValue = null) 
-            : base(new HttpClientCustomization(statusCode, content, locationHeaderValue, contentTypeHeaderValue))
+            string? contentTypeHeaderValue = null)
+            : base(new ICustomization[]
+            {
+                new FakeHttpMessageHandlerCustomization(),
+                new HttpClientCustomization(statusCode, content, locationHeaderValue, contentTypeHeaderValue)
+            })
+        {
+
+        }
+
+        public HttpClientAutoDataAttribute(
+            string[] allowedUris,
+            HttpStatusCode statusCode = HttpStatusCode.OK,
+            string content = "",
+            string? locationHeaderValue = null,
+            string? contentTypeHeaderValue = null)
+            : base(new ICustomization[]
+            {
+                new FakeHttpMessageHandlerCustomization(allowedUris.Select(uriString => new Uri(uriString))),
+                new HttpClientCustomization(statusCode, content, locationHeaderValue, contentTypeHeaderValue)
+            })
         {
 
         }
