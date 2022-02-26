@@ -65,7 +65,7 @@ namespace DistributedWebCrawler.Core.Tests.Http
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(address));
                     Assert.Equal(0, sut.ActiveSockets);
                 }
-
+                Assert.Equal(0, sut.ActiveSockets);
                 Assert.Equal(0, sut.TotalBytesSent);
                 Assert.Equal(0, sut.TotalBytesReceived);
             }
