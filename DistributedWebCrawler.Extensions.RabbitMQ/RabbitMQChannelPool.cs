@@ -11,6 +11,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
     public class RabbitMQChannelPool
     {
         private const int MaxPoolSize = 200;
+
         private readonly PooledChannel[] _channelPool;
         private int _channelsInUse;
         private readonly IPersistentConnection _connection;
@@ -50,7 +51,7 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
                 _connection.TryConnect();
             }
 
-            using var pooledChannel = GetPooledChannel(exchangeName);
+            using var pooledChannel = GetPooledChannel();
             var channel = pooledChannel.Channel;
 
             channel.ExchangeDeclare(exchange: exchangeName, type: exchangeType);
@@ -65,9 +66,8 @@ namespace DistributedWebCrawler.Extensions.RabbitMQ
             });
         }
 
-        public IPooledChannel GetPooledChannel(string exchangeName)
+        public IPooledChannel GetPooledChannel()
         {
-            //var channelKey = new PooledChannelKey(exchangeName, Environment.CurrentManagedThreadId);
             lock(channelPoolLock)
             {
                 var channelExists = TryGetChannelFromPool(out var index);
