@@ -127,8 +127,6 @@ namespace DistributedWebCrawler.Core.RequestProcessors
                 return schedulerRequest.Success(new SchedulerSuccess(schedulerRequest.Uri, Enumerable.Empty<string>()));
             }
 
-            schedulerRequest.Paths = pathsToVisit;
-
             var urisToVisit = pathsToVisit.Select(path => new Uri(schedulerRequest.Uri, path)).ToArray();
 
             await _schedulerIngestQueue.AddFromSchedulerAsync(schedulerRequest, urisToVisit, cancellationToken).ConfigureAwait(false);

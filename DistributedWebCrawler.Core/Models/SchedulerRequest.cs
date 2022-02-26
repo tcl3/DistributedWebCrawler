@@ -12,6 +12,6 @@ namespace DistributedWebCrawler.Core.Models
         }
 
         public int CurrentCrawlDepth { get; set; }
-        public IEnumerable<string> Paths { get; set; } = Enumerable.Empty<string>();
+        public IEnumerable<string> Paths { get; init; } = Enumerable.Empty<string>();
     }
 }
