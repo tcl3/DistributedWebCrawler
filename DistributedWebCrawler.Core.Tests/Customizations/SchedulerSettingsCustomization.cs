@@ -14,7 +14,7 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
         private readonly Uri? _uri;
         private readonly string[]? _paths;
         private readonly int? _currentCrawlDepth;
-        private readonly bool _respectsRobotsTxt;
+        private readonly bool? _respectsRobotsTxt;
         private readonly string[]? _includeDomains;
         private readonly string[]? _excludeDomains;
         private readonly int _sameDomainCrawlDelayMillis;
@@ -25,7 +25,7 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
             Uri? uri = null,
             string[]? paths = null,
             int? currentCrawlDepth = null,
-            bool respectsRobotsTxt = false,
+            bool? respectsRobotsTxt = null,
             string[]? includeDomains = null,
             string[]? excludeDomains = null,
             int sameDomainCrawlDelayMillis = 1,

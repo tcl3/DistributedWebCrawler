@@ -27,7 +27,7 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
                     uri: uri == null ? null : new Uri(uri, UriKind.Absolute),
                     paths: paths ?? new[] {"/"},
                     currentCrawlDepth: currentCrawlDepth,
-                    respectsRobotsTxt: respectsRobotsTxt,
+                    respectsRobotsTxt: respectsRobotsTxt ? true : null,
                     includeDomains: includeDomains,
                     excludeDomains: excludeDomains,
                     maxCrawlDepth: maxCrawlDepth,
