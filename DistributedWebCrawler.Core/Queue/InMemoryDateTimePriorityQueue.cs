@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DistributedWebCrawler.Core.Queue
 {
-    public class InMemoryDateTimePriorityQueue<TData> : IAsyncPriorityQueue<TData, DateTimeOffset>
+    public class InMemoryDateTimePriorityQueue<TData> : IAsyncDateTimePriorityQueue<TData>
     {
         private readonly SimplePriorityQueue<TData, DateTimeOffset> _priorityQueue;
         private readonly IComparer<DateTimeOffset> _priorityComparer;

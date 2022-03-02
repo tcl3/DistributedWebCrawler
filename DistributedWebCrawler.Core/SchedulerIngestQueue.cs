@@ -25,7 +25,7 @@ namespace DistributedWebCrawler.Core
         private readonly ConcurrentDictionary<string, IEnumerable<Uri>> _queuedPathsLookup;
         private readonly ConcurrentDictionary<Guid, SchedulerQueueEntry> _activeQueueEntries;
         private readonly ConcurrentDictionary<string, DomainStatus> _activeDomains;
-        private readonly InMemoryDateTimePriorityQueue<SchedulerQueueEntry> _nextPathForHostQueue;
+        private readonly IAsyncDateTimePriorityQueue<SchedulerQueueEntry> _nextPathForHostQueue;
         private readonly CancellationTokenSource _cts;
 
         private const int IngestQueueMaxItems = 500;
@@ -41,7 +41,7 @@ namespace DistributedWebCrawler.Core
             Ingesting
         }
 
-        private record SchedulerQueueEntry(
+        public record SchedulerQueueEntry(
             Uri Uri, 
             string Domain, 
             SchedulerRequest SchedulerRequest);
@@ -51,7 +51,8 @@ namespace DistributedWebCrawler.Core
             IEventReceiver<IngestSuccess, IngestFailure> ingestEventReceiver,
             ILogger<SchedulerIngestQueue> logger,
             IProducer<IngestRequest> ingestRequestProducer,
-            IDomainParser domainParser)
+            IDomainParser domainParser,
+            IAsyncDateTimePriorityQueue<SchedulerQueueEntry> nextPathForHostQueue)
         {
             _schedulerSettings = schedulerSettings;
             _ingestEventReceiver = ingestEventReceiver;
@@ -63,7 +64,7 @@ namespace DistributedWebCrawler.Core
 
             _queuedPathsLookup = new();
             _activeQueueEntries = new();
-            _nextPathForHostQueue = new();
+            _nextPathForHostQueue = nextPathForHostQueue;
             _activeDomains = new();
 
             _cts = new();

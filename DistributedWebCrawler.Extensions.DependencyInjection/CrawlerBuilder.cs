@@ -12,6 +12,7 @@ using Nager.PublicSuffix;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DistributedWebCrawler.Core.Components;
+using DistributedWebCrawler.Core.Queue;
 
 namespace DistributedWebCrawler.Extensions.DependencyInjection
 {
@@ -83,6 +84,7 @@ namespace DistributedWebCrawler.Extensions.DependencyInjection
         {
             _services.AddSingleton<ICrawlerComponent, TaskQueueComponent<SchedulerRequest, SchedulerSuccess, ErrorCode<SchedulerFailure>, AnnotatedSchedulerSettings>>();
             _services.AddSingleton<IRequestProcessor<SchedulerRequest>, SchedulerRequestProcessor>();
+            _services.AddSingleton(typeof(IAsyncDateTimePriorityQueue<>), typeof(InMemoryDateTimePriorityQueue<>));
             _services.AddSingleton<ISchedulerIngestQueue, SchedulerIngestQueue>();
 
             _services.TryAddSingleton<IDomainParser>(_ => new DomainParser(new WebTldRuleProvider()));
