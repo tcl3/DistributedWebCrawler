@@ -17,6 +17,8 @@ services:
         DEV_MODE: "false"
     networks:
        - rabbitmq_net
+    volumes:
+      - log_storage:/app/Logs/
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -40,6 +42,8 @@ services:
   #  networks:
   #     - rabbitmq_net
   #     - redis_net
+  #  volumes:
+  #    - log_storage:/app/Logs/
   #  depends_on:
   #    rabbitmq:
   #      condition: service_healthy
@@ -62,6 +66,8 @@ services:
     networks:
         - redis_net
         - rabbitmq_net
+    volumes:
+      - log_storage:/app/Logs/
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -82,6 +88,8 @@ services:
     networks:
        - rabbitmq_net
        - redis_net
+    volumes:
+      - log_storage:/app/Logs/
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -104,6 +112,8 @@ services:
     networks:
        - rabbitmq_net
        - redis_net
+    volumes:
+      - log_storage:/app/Logs/
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -126,6 +136,8 @@ services:
     networks:
        - rabbitmq_net
        - redis_net
+    volumes:
+      - log_storage:/app/Logs/
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -179,10 +191,45 @@ services:
     networks:
       - rabbitmq_net
     volumes:
-      - ~/.docker-conf/redisinight:/db 
+      - ~/.docker-conf/redisinight:/db
+
+  loki:
+      image: grafana/loki:latest
+      hostname: loki
+      ports:
+        - "3100:3100"
+      command: -config.file=/etc/loki/local-config.yaml
+      networks:
+        - loki
+
+  promtail:
+    image: grafana/promtail:latest
+    hostname: pomtail
+    volumes:      
+      - log_storage:/var/log/
+      - ./pomtail-config/config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana:/var/lib/grafana
+      #- C:/docker-config/grafana/:/etc/grafana/
+    networks:
+      - loki
+
+volumes:
+  log_storage:
+  grafana:
 
 networks:
   rabbitmq_net:
     driver: bridge
   redis_net:
+    driver: bridge
+  loki:
     driver: bridge
