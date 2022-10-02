@@ -16,24 +16,27 @@ namespace DistributedWebCrawler.Core.Tests.Customizations
         private readonly bool _throwsException;
         private readonly int _numberOfItemsToDequeue;
         private readonly int _cancelAfterMilliseconds;
+        private readonly int _maxConcurrentItems;
 
         public TaskQueueCustomization(
             QueuedItemStatus resultStatus = QueuedItemStatus.Success, 
             bool throwsException = false,
             int numberOfItemsToDequeue = 0,
-            int cancelAfterMilliseconds = 1000)
+            int cancelAfterMilliseconds = 1000,
+            int maxConcurrentItems = 1)
         {
             _resultStatus = resultStatus;
             _throwsException = throwsException;
             _numberOfItemsToDequeue = numberOfItemsToDequeue;
             _cancelAfterMilliseconds = cancelAfterMilliseconds;
+            _maxConcurrentItems = maxConcurrentItems;
         }
 
         public void Customize(IFixture fixture)
         {
             fixture.Register(() => new CancellationTokenSource(TimeSpan.FromMilliseconds(_cancelAfterMilliseconds)));
 
-            fixture.Customize<TestSettings>(c => c.With(x => x.MaxConcurrentItems, 1));
+            fixture.Customize<TestSettings>(c => c.With(x => x.MaxConcurrentItems, _maxConcurrentItems));
             
             var componentDescriptor = new ComponentDescriptor(null!, null!, null!, "Test");
             fixture.Inject(componentDescriptor);

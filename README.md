@@ -79,3 +79,6 @@ This is the default `appsettings.json` with added comments.
   }
 }
 ```
+
+Docker command to run manager only (from this directory) something like: `docker build -t test123/test -f .\DistributedWebCrawler.ManagerAPI\Dockerfile . && docker run -dt -p 49250:80 --name DistributedWebCrawler.ManagerAPI1 test123/test`
+Otherwise `docker-compose up` to run everything

@@ -1,5 +1,5 @@
-import React, { Dispatch, Suspense, useEffect, useMemo, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { Dispatch, useEffect,  useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import
 {
   setupSignalRConnection,

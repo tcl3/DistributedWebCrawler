@@ -91,10 +91,7 @@ namespace DistributedWebCrawler.ManagerAPI
 
             app.MapControllers();
 
-            app.UseSpa(spa =>
-            {
-                spa.Options.SourcePath = "app";
-            });
+            app.UseSpa(x => { });
 
             return app;
         }

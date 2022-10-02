@@ -26,14 +26,60 @@ services:
   # This is an example of how to run multiple crawler components in a single container. 
   #
   # Be sure to uncomment the service in docker-override.yml if using this
-  #components:
+  components:
+    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+    container_name: 'components'
+    build:
+      context: .
+      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+    environment:
+      COMPONENTAPI_ROLE: "scheduler,ingester,parser,robotsdownloader"
+      RABBITMQ_HOSTNAME: "rabbitmq"
+      #RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: "crawler"
+      RABBITMQ_PASSWORD: "test"
+      REDIS_CONNECTIONSTRING: "redis:6379"
+    networks:
+       - rabbitmq_net
+       - redis_net
+    volumes:
+      - log_storage:/app/Logs/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  #scheduler:
   #  image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
-  #  container_name: 'components'
+  #  container_name: 'scheduler'
   #  build:
   #    context: .
   #    dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
   #  environment:
-  #    COMPONENTAPI_ROLE: "scheduler,ingester,parser,robotsdownloader"
+  #    COMPONENTAPI_ROLE: "scheduler" 
+  #    RABBITMQ_HOSTNAME: "rabbitmq"
+  #    #RABBITMQ_PORT: "5672"
+  #    RABBITMQ_USERNAME: "crawler"
+  #    RABBITMQ_PASSWORD: "test"
+  #    REDIS_CONNECTIONSTRING: "redis:6379"
+  #  networks:
+  #      - redis_net
+  #      - rabbitmq_net
+  #  volumes:
+  #    - log_storage:/app/Logs/
+  #  depends_on:
+  #    rabbitmq:
+  #      condition: service_healthy
+
+  #ingester:
+  #  image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+  #  container_name: 'ingester'
+  #  build:
+  #    context: .
+  #    dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+  #  environment:
+  #    COMPONENTAPI_ROLE: "ingester"
   #    RABBITMQ_HOSTNAME: "rabbitmq"
   #    #RABBITMQ_PORT: "5672"
   #    RABBITMQ_USERNAME: "crawler"
@@ -50,99 +96,53 @@ services:
   #    redis:
   #      condition: service_healthy
 
-  scheduler:
-    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
-    container_name: 'scheduler'
-    build:
-      context: .
-      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
-    environment:
-      COMPONENTAPI_ROLE: "scheduler" 
-      RABBITMQ_HOSTNAME: "rabbitmq"
-      #RABBITMQ_PORT: "5672"
-      RABBITMQ_USERNAME: "crawler"
-      RABBITMQ_PASSWORD: "test"
-      REDIS_CONNECTIONSTRING: "redis:6379"
-    networks:
-        - redis_net
-        - rabbitmq_net
-    volumes:
-      - log_storage:/app/Logs/
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
+  #parser:
+  #  image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+  #  container_name: 'parser'
+  #  build:
+  #    context: .
+  #    dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+  #  environment:
+  #    COMPONENTAPI_ROLE: "parser"
+  #    RABBITMQ_HOSTNAME: "rabbitmq"
+  #    #RABBITMQ_PORT: "5672"
+  #    RABBITMQ_USERNAME: "crawler"
+  #    RABBITMQ_PASSWORD: "test"
+  #    REDIS_CONNECTIONSTRING: "redis:6379"
+  #  networks:
+  #     - rabbitmq_net
+  #     - redis_net
+  #  volumes:
+  #    - log_storage:/app/Logs/
+  #  depends_on:
+  #    rabbitmq:
+  #      condition: service_healthy
+  #    redis:
+  #      condition: service_healthy
 
-  ingester:
-    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
-    container_name: 'ingester'
-    build:
-      context: .
-      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
-    environment:
-      COMPONENTAPI_ROLE: "ingester"
-      RABBITMQ_HOSTNAME: "rabbitmq"
-      #RABBITMQ_PORT: "5672"
-      RABBITMQ_USERNAME: "crawler"
-      RABBITMQ_PASSWORD: "test"
-      REDIS_CONNECTIONSTRING: "redis:6379"
-    networks:
-       - rabbitmq_net
-       - redis_net
-    volumes:
-      - log_storage:/app/Logs/
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  parser:
-    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
-    container_name: 'parser'
-    build:
-      context: .
-      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
-    environment:
-      COMPONENTAPI_ROLE: "parser"
-      RABBITMQ_HOSTNAME: "rabbitmq"
-      #RABBITMQ_PORT: "5672"
-      RABBITMQ_USERNAME: "crawler"
-      RABBITMQ_PASSWORD: "test"
-      REDIS_CONNECTIONSTRING: "redis:6379"
-    networks:
-       - rabbitmq_net
-       - redis_net
-    volumes:
-      - log_storage:/app/Logs/
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  robotsdownloader:
-    image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
-    container_name: 'robotsdownloader'
-    build:
-      context: .
-      dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
-    environment:
-      COMPONENTAPI_ROLE: "robotsdownloader"
-      RABBITMQ_HOSTNAME: "rabbitmq"
-      #RABBITMQ_PORT: "5672"
-      RABBITMQ_USERNAME: "crawler"
-      RABBITMQ_PASSWORD: "test"
-      REDIS_CONNECTIONSTRING: "redis:6379"
-    networks:
-       - rabbitmq_net
-       - redis_net
-    volumes:
-      - log_storage:/app/Logs/
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+  #robotsdownloader:
+  #  image: ${DOCKER_REGISTRY-}distributedwebcrawlercomponentapi
+  #  container_name: 'robotsdownloader'
+  #  build:
+  #    context: .
+  #    dockerfile: DistributedWebCrawler.ComponentAPI/Dockerfile
+  #  environment:
+  #    COMPONENTAPI_ROLE: "robotsdownloader"
+  #    RABBITMQ_HOSTNAME: "rabbitmq"
+  #    #RABBITMQ_PORT: "5672"
+  #    RABBITMQ_USERNAME: "crawler"
+  #    RABBITMQ_PASSWORD: "test"
+  #    REDIS_CONNECTIONSTRING: "redis:6379"
+  #  networks:
+  #     - rabbitmq_net
+  #     - redis_net
+  #  volumes:
+  #    - log_storage:/app/Logs/
+  #  depends_on:
+  #    rabbitmq:
+  #      condition: service_healthy
+  #    redis:
+  #      condition: service_healthy
 
   rabbitmq:
     image: rabbitmq:3-management-alpine

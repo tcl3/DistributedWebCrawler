@@ -1,7 +1,7 @@
 {
   "IngesterSettings": {
     "MaxContentLengthBytes": 131072,
-    "MaxDomainsToCrawl": 100,
+    "MaxDomainsToCrawl": 200,
     "MaxRedirects": 20,
     "IncludeMediaTypes": [ "text/html" ],
     "ExcludeMediaTypes": [],
@@ -11,21 +11,21 @@
   "SchedulerSettings": {
     "MaxCrawlDepth": 10,
     "MaxConcurrentSchedulerRequests": 1,
-    "RespectsRobotsTxt": false,
-    "SameDomainCrawlDelayMillis": 5000,
+    "RespectsRobotsTxt": true,
+    "SameDomainCrawlDelayMillis": 864000000,
     "IncludeDomains": [],
     "ExcludeDomains": null,
     "QueueItemTimeoutSeconds": 300
   },
 
   "ParserSettings": {
-    "MaxConcurrentThreads": 1,
+    "MaxConcurrentThreads": 2,
     "QueueItemTimeoutSeconds": 30
   },
 
   "RobotsTxtSettings": {
     "CacheIntervalSeconds": 86400,
-    "MaxConcurrentRobotsRequests": 50,
+    "MaxConcurrentRobotsRequests": 200,
     "QueueItemTimeoutSeconds": 60
   },
 

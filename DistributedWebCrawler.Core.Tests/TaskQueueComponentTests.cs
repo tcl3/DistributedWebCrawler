@@ -6,6 +6,7 @@ using DistributedWebCrawler.Core.Tests.Attributes;
 using DistributedWebCrawler.Core.Tests.Fakes;
 using Moq;
 using System;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -35,8 +36,12 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] CancellationTokenSource cts,
             TestComponent sut)
         {
-            await sut.StartAsync(CrawlerRunningState.Paused, cts.Token);
+            Assert.Equal(CrawlerComponentStatus.NotStarted, sut.Status);
 
+            await sut.StartAsync(CrawlerRunningState.Paused, cts.Token);
+            
+            Assert.Equal(CrawlerComponentStatus.Paused, sut.Status);
+            
             await WaitForCancellationAsync(sut);
 
             consumerMock.Verify(x => x.DequeueAsync(), Times.Never());
@@ -50,7 +55,9 @@ namespace DistributedWebCrawler.Core.Tests
             TestComponent sut)
         {
             await sut.StartAsync(CrawlerRunningState.Running, cts.Token);
-
+            
+            Assert.Equal(CrawlerComponentStatus.Running, sut.Status);
+            
             await WaitForCancellationAsync(sut);
 
             consumerMock.Verify(x => x.DequeueAsync(), Times.Exactly(2));
@@ -64,10 +71,14 @@ namespace DistributedWebCrawler.Core.Tests
             TestComponent sut)
         {
             await sut.StartAsync(CrawlerRunningState.Paused, cts.Token);
-
+            
+            Assert.Equal(CrawlerComponentStatus.Paused, sut.Status);
+            
             cts.Cancel();
 
             await sut.ResumeAsync();
+
+            Assert.Equal(CrawlerComponentStatus.Running, sut.Status);
 
             await WaitForCancellationAsync(sut);
 
@@ -80,14 +91,47 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] Mock<IEventDispatcher<TestSuccess, ErrorCode<TestFailure>>> eventDispatcherMock,
             [Frozen] TestRequest request,
             [Frozen] CancellationTokenSource cts,
+            [Frozen] NodeStatus nodeStatus,
             TestComponent sut)
         {
             await sut.StartAsync(CrawlerRunningState.Running, cts.Token);
 
+            Assert.Equal(CrawlerComponentStatus.Running, sut.Status);
+
             await WaitForCancellationAsync(sut);
 
             eventDispatcherMock.Verify(x => x.NotifyCompletedAsync(request, It.IsAny<ComponentInfo>(), It.IsAny<TestSuccess>()), Times.Once());
+            eventDispatcherMock.Verify(x => x.NotifyComponentStatusUpdateAsync(It.IsAny<ComponentInfo>(), It.Is(IsValidComponentStatus(nodeStatus))), Times.Once());
         }
+
+        //[Theory]
+        //[TaskQueueAutoData(resultStatus: QueuedItemStatus.Success, numberOfItemsToDequeue: 2, maxConcurrentItems: 2)]
+        //public async Task WhenRequestProcessorReturnsSuccessNotifierShouldBeCalled2(
+        //    [Frozen] Mock<IEventDispatcher<TestSuccess, ErrorCode<TestFailure>>> eventDispatcherMock,
+        //    [Frozen] TestRequest request,
+        //    [Frozen] CancellationTokenSource cts,
+        //    [Frozen] NodeStatus nodeStatus,
+        //    TestComponent sut)
+        //{
+        //    var invocationCount = 0;
+        //    var expectedTasksInUse = true;
+        //    eventDispatcherMock.Setup(x => x.NotifyComponentStatusUpdateAsync(sut.ComponentInfo, It.IsAny<ComponentStatus>()))
+        //        .Callback<ComponentInfo, ComponentStatus>((info, status) =>
+        //        {
+        //            invocationCount++;
+        //            expectedTasksInUse = expectedTasksInUse && status.TasksInUse == invocationCount;
+        //        });
+
+        //    await sut.StartAsync(CrawlerRunningState.Running, cts.Token);
+        //    Assert.Equal(CrawlerComponentStatus.Running, sut.Status);
+
+        //    await WaitForCancellationAsync(sut);
+
+        //    Assert.True(expectedTasksInUse);
+
+        //    eventDispatcherMock.Verify(x => x.NotifyCompletedAsync(request, sut.ComponentInfo, It.IsAny<TestSuccess>()), Times.Exactly(2));
+        //    eventDispatcherMock.Verify(x => x.NotifyComponentStatusUpdateAsync(It.IsAny<ComponentInfo>(), It.Is(IsValidComponentStatus(nodeStatus))), Times.Exactly(2));
+        //}
 
         [Theory]
         [TaskQueueAutoData(resultStatus: QueuedItemStatus.Failed, numberOfItemsToDequeue: 1)]
@@ -95,13 +139,17 @@ namespace DistributedWebCrawler.Core.Tests
             [Frozen] Mock<IEventDispatcher<TestSuccess, ErrorCode<TestFailure>>> eventDispatcherMock,
             [Frozen] TestRequest request,
             [Frozen] CancellationTokenSource cts,
+            [Frozen] NodeStatus nodeStatus,
             TestComponent sut)
         {
             await sut.StartAsync(CrawlerRunningState.Running, cts.Token);
+            
+            Assert.Equal(CrawlerComponentStatus.Running, sut.Status);
 
             await WaitForCancellationAsync(sut);
 
-            eventDispatcherMock.Verify(x => x.NotifyFailedAsync(request, It.IsAny<ComponentInfo>(), It.IsAny<ErrorCode<TestFailure>>()), Times.Once());
+            eventDispatcherMock.Verify(x => x.NotifyFailedAsync(request, sut.ComponentInfo, It.IsAny<ErrorCode<TestFailure>>()), Times.Once());
+            eventDispatcherMock.Verify(x => x.NotifyComponentStatusUpdateAsync(sut.ComponentInfo, It.Is(IsValidComponentStatus(nodeStatus))), Times.Once());
         }
 
         [Theory]
@@ -113,6 +161,8 @@ namespace DistributedWebCrawler.Core.Tests
             TestComponent sut)
         {
             await sut.StartAsync(CrawlerRunningState.Running, cts.Token);
+
+            Assert.Equal(CrawlerComponentStatus.Running, sut.Status);
 
             await WaitForCancellationAsync(sut);
 
@@ -151,6 +201,10 @@ namespace DistributedWebCrawler.Core.Tests
         private static async Task WaitForCancellationAsync(TestComponent component)
         {
             await Assert.ThrowsAsync<TaskCanceledException>(() => component.WaitUntilCompletedAsync());
+        }
+        private static Expression<Func<ComponentStatus, bool>> IsValidComponentStatus(NodeStatus nodeStatus)
+        {
+            return c => c.QueueCount == 0 && c.NodeStatus == nodeStatus;
         }
     }
 }

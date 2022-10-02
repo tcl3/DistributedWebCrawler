@@ -73,6 +73,11 @@ namespace DistributedWebCrawler.Core
         public Task AddFromSchedulerAsync(SchedulerRequest schedulerRequest, IEnumerable<Uri> urisToVisit,
             CancellationToken cancellationToken = default)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(SchedulerIngestQueue));
+            }
+
             if (!_isStarted)
             {
                 Start();
@@ -102,7 +107,7 @@ namespace DistributedWebCrawler.Core
             {
                 if (!_isStarted)
                 {
-                    _ = IngestQueueLoop(_cts.Token);
+                    _ = Task.Run(() => IngestQueueLoop(_cts.Token), _cts.Token);
                     _isStarted = true;
                 }
             }

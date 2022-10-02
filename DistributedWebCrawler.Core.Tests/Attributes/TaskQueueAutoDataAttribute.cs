@@ -9,12 +9,14 @@ namespace DistributedWebCrawler.Core.Tests.Attributes
             QueuedItemStatus resultStatus = QueuedItemStatus.Success,
             bool throwsException = false,
             int numberOfItemsToDequeue = 0,
-            int cancelAfterMilliseconds = 1000)
+            int cancelAfterMilliseconds = 1000,
+            int maxConcurrentItems = 1)
             : base(new TaskQueueCustomization(
                 resultStatus, 
                 throwsException, 
                 numberOfItemsToDequeue,
-                cancelAfterMilliseconds), 
+                cancelAfterMilliseconds,
+                maxConcurrentItems), 
             configureMembers: true)
         {
 
